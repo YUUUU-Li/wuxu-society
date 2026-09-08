@@ -1,8 +1,16 @@
----
-layout: "base.njk"
-active: "library"
-footerNote: "文本录自社内原稿；署名格式为缩写（笔名）。页面由婺需文学社站点构建器依 taste-skill 规范生成。"
----
+{% set ak = author | akOf %}
+{% set branch = author | branchOf %}
+{% set active = "library" %}
+{% set seoTitle = title ~ " | 婺需文学社" %}
+{% set desc = author ~ "《" ~ title ~ "》全文与相关联作品。" %}
+{% set footerNote = "文本录自社内原稿；署名格式为缩写（笔名）。页面由婺需文学社站点构建器依 taste-skill 规范生成。" %}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+{% include "partials/head.njk" %}
+</head>
+<body>
+{% include "partials/nav.njk" %}
 <main>
 <section class="wrap page-head">
 <p class="crumb"><a href="index.html">首页</a> / <a href="library.html">作品库</a> / {{ title }}</p>
@@ -12,9 +20,10 @@ footerNote: "文本录自社内原稿；署名格式为缩写（笔名）。页�
 <section class="wrap poem-body rv"><div class="lib-body">
 {{ content | safe }}
 </div></section>
-{% if related %}
+{% set relGroups = { slug: page.fileSlug, author: author, imageries: imageries, source: source, related: related } | relOf(collections.works) %}
+{% if relGroups.length %}
 <section class="wrap rel rv"><h3>相关联作品</h3>
-{% for g in related | relGroups %}
+{% for g in relGroups %}
 <h4>{{ g.heading }}</h4><ul>
 {% for r in g.items %}
 <li><span class="t"><a class="plink" href="{{ r.to }}.html">{{ r.title }}</a></span><span class="reason">{{ r.label }}</span></li>
@@ -24,3 +33,7 @@ footerNote: "文本录自社内原稿；署名格式为缩写（笔名）。页�
 </section>
 {% endif %}
 </main>
+{% include "partials/footer.njk" %}
+<script src="site.js"></script>
+</body>
+</html>

@@ -1,21 +1,8 @@
 ---
-layout: "work.njk"
-permalink: "{{ file }}"
-seoTitle: "我想去二次元 | 婺需文学社"
-desc: "txy（飞鸟）《我想去二次元》全文与相关联作品。"
 title: "我想去二次元"
-file: "w-ershiyuan.html"
 author: "txy（飞鸟）"
-ak: "txy"
-branch: "杭州分部"
 genre: "科幻短篇"
-group: "other"
 imageries: ["星际", "爱"]
-related:
-  - to: "w-wenyib"
-    cat: "author"
-    title: "文艺b与地雷女"
-    label: "同作者 · 社员同名篇目"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

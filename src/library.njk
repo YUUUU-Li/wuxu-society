@@ -17,7 +17,7 @@ footerNote: "文本录自社内原稿。页面由婺需文学社站点构建器�
 {% for g in groups %}
   <section class="wrap idx-group"><div class="sec-head rv"><h2>{{ g.h2 }}</h2><hr class="hair" /></div><div class="idx-list">
   {% for slug in g.slugs %}{% set w = wm[slug] %}{% if w %}
-  <div class="idx-row rv"><span><a class="plink" href="{{ w.data.file }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
+  <div class="idx-row rv"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
   {% endif %}{% endfor %}
   </div></section>
 {% endfor %}

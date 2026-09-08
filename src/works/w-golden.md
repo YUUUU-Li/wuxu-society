@@ -1,43 +1,9 @@
 ---
-layout: "work.njk"
-permalink: "{{ file }}"
-seoTitle: "完美的黄金回旋 | 婺需文学社"
-desc: "hde（新酒 · Hugo）《完美的黄金回旋》全文与相关联作品。"
 title: "完美的黄金回旋"
-file: "w-golden.html"
 author: "hde（新酒 · Hugo）"
-ak: "hde"
-branch: "杭州分部"
 genre: "散文"
-group: "huiyi"
 source: "公众号回忆文会《时间溯流》"
-themes: ["回忆文会"]
 imageries: ["成长"]
-related:
-  - to: "qingming-hde"
-    cat: "author"
-    title: "棋逢对手诗逢友"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-yangzhouman"
-    cat: "author"
-    title: "扬州慢"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-wangdong"
-    cat: "author"
-    title: "望冬"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-huanxisha"
-    cat: "source"
-    title: "浣溪沙·昨夜秋风入心关"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-changxiangsi"
-    cat: "source"
-    title: "长相思·思乡"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-shaonianyou"
-    cat: "source"
-    title: "少年游"
-    label: "公众号回忆文会《时间溯流》"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

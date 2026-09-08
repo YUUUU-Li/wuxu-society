@@ -35,7 +35,21 @@
 | 重新生成全站 | `npm run build`（产物在 `dist/`） |
 | 本地预览 | `npm run serve`，浏览器开 <http://localhost:8080> |
 
-作品页 `front matter` 字段说明：`title` 题名 / `author` 署名（含笔名）/ `ak` 姓名缩写（锚点）/ `branch` 分部 / `genre` 体裁 / `source` 出处（可选）/ `group` 所属分组 / `imageries` 意象 / `excerpt` 首页卡片摘句 / `related` 相关联作品（`cat`: `strong` 本作关联、`author` 同作者、`imagery` 同意象、`source` 同时同源）。正文片段里 `<p class="prose">` 散文、`stanza` 诗句（行间用 `<br />`）、`analysis` 赏析、`byline` 落款、`stanza kaiti` 楷体诗句。
+作品页 `front matter` 只需这几项（其余全由构建器推导：页面路径=文件名、SEO 标题/描述、分部、署名缩写、关联作品）：
+
+| 字段 | 含义 | 是否必填 |
+|---|---|---|
+| `title` | 题名 | 必填 |
+| `author` | 署名（姓名缩写（笔名），如 `ylj（济枫）`） | 必填 |
+| `genre` | 体裁（如 七律 / 词 / 散文） | 必填 |
+| `imageries` | 意象标签列表，如 `["雨", "清明"]` | 推荐（自动关联用） |
+| `source` | 出处/系列（如 甲辰清明首聚）→ 自动生成"同时同源" | 可选 |
+| `related` | 唱和/组诗等**人工关系**（`to` + 一句 `label`）；同作者/同意象/同时同源**不需要填**，构建时自动计算 | 可选 |
+| `fgenre` | 全文源库里展示的体裁（极少数需要，如"词 · 附赏析"） | 可选 |
+
+正文片段放在 `---` 之后：`<p class="prose">` 散文、`stanza` 诗句（行间用 `<br />`）、`analysis` 赏析、`byline` 落款、`stanza kaiti` 楷体诗句，每段一个 `<p>`，改字只动这里。
+
+新增一篇作品 = 复制任意一篇 `src/works/*.md` 改内容 → 把文件名（不含 `.md`）加进 `src/_data/groups.json` 对应分组的 `slugs` → `npm run build`。同作者/同意象/同时同源关联会**自动出现在所有相关页面**，无需手工维护。
 
 ## 发布
 

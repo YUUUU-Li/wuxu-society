@@ -1,43 +1,9 @@
 ---
-layout: "work.njk"
-permalink: "{{ file }}"
-seoTitle: "回忆 | 婺需文学社"
-desc: "ylj（济枫）《回忆》全文与相关联作品。"
 title: "回忆"
-file: "w-huishou2.html"
 author: "ylj（济枫）"
-ak: "ylj"
-branch: "杭州分部"
 genre: "散文"
-group: "huiyi"
 source: "公众号回忆文会《时间溯流》"
-themes: ["回忆文会"]
 imageries: ["月亮", "回忆"]
-related:
-  - to: "w-feng"
-    cat: "author"
-    title: "风"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-luochun"
-    cat: "author"
-    title: "落春"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-huishou1"
-    cat: "imagery"
-    title: "当时只道是寻常"
-    label: "意象：回忆"
-  - to: "w-huanxisha"
-    cat: "source"
-    title: "浣溪沙·昨夜秋风入心关"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-changxiangsi"
-    cat: "source"
-    title: "长相思·思乡"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-shaonianyou"
-    cat: "source"
-    title: "少年游"
-    label: "公众号回忆文会《时间溯流》"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

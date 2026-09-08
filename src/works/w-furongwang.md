@@ -1,34 +1,9 @@
 ---
-layout: "work.njk"
-permalink: "{{ file }}"
-seoTitle: "芙蓉王诗（并自序） | 婺需文学社"
-desc: "lfk（谰予）《芙蓉王诗（并自序）》全文与相关联作品。"
 title: "芙蓉王诗（并自序）"
-file: "w-furongwang.html"
 author: "lfk（谰予）"
-ak: "lfk"
-branch: "杭州分部"
 genre: "古风长诗"
-group: "other"
 imageries: ["花木", "梦"]
-ft_genre: "古风长诗 · 附评二则"
-related:
-  - to: "qingming-lfk"
-    cat: "author"
-    title: "清明偷潜深春"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-liuxia"
-    cat: "author"
-    title: "留夏"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-mei"
-    cat: "author"
-    title: "梅"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-qiubomei"
-    cat: "author"
-    title: "秋波媚"
-    label: "同作者 · 社员同名篇目"
+fgenre: "古风长诗 · 附评二则"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

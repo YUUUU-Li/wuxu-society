@@ -1,43 +1,9 @@
 ---
-layout: "work.njk"
-permalink: "{{ file }}"
-seoTitle: "当时只道是寻常 | 婺需文学社"
-desc: "cyk（昱白）《当时只道是寻常》全文与相关联作品。"
 title: "当时只道是寻常"
-file: "w-huishou1.html"
 author: "cyk（昱白）"
-ak: "cyk"
-branch: "金华总部"
 genre: "散文"
-group: "huiyi"
 source: "公众号回忆文会《时间溯流》"
-themes: ["回忆文会"]
 imageries: ["回忆", "高中"]
-related:
-  - to: "qingming-cyk"
-    cat: "author"
-    title: "七百里浙南"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-huanxisha"
-    cat: "author"
-    title: "浣溪沙·昨夜秋风入心关"
-    label: "同作者 · 社员同名篇目"
-  - to: "w-huishou2"
-    cat: "imagery"
-    title: "回忆"
-    label: "意象：回忆"
-  - to: "w-changxiangsi"
-    cat: "source"
-    title: "长相思·思乡"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-shaonianyou"
-    cat: "source"
-    title: "少年游"
-    label: "公众号回忆文会《时间溯流》"
-  - to: "w-xiaochongshan"
-    cat: "source"
-    title: "小重山·秋漫红砖一寸深"
-    label: "公众号回忆文会《时间溯流》"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->
