@@ -18,6 +18,7 @@
 ├─ dist/                      # 构建产物（git 忽略，Netlify 发布此目录）
 ├─ docs/作品上传指南.md        # ★ 给社员的投稿图文教程（clone/Obsidian 写作/Git/上线）
 ├─ docs/投稿功能方案.md        # ★ 网页投稿功能设计（表单→PR→预览审核→一键发布，待实施）
+├─ docs/修改网站速查.md        # ★ 维护者 Git 速查（clone→分支→提交→合并→推送→反悔药）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
 └─ netlify.toml
