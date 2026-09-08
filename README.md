@@ -11,14 +11,16 @@
 │  ├─ index.njk               # 首页
 │  ├─ members.njk             # 社员大全（由 src/_data/members.json 自动生成列表）
 │  ├─ library.njk             # 作品库（由分组数据 + works 自动生成）
+│  ├─ submit.njk              # 投稿页（表单 → 投稿函数自动开 PR）
 │  ├─ _fulltext.njk           # 全文源库（构建时自动汇齐全部 43 篇正文）
 │  ├─ _data/                  # groups.json 分组顺序 / members.json 社员档案 / site.json
 │  ├─ _includes/              # 全站唯一的 head / 导航 / 页脚 / 作品页模板
 │  └─ static/                 # site.css / site.js / 图标（原样复制进产物）
 ├─ dist/                      # 构建产物（git 忽略，Netlify 发布此目录）
 ├─ docs/作品上传指南.md        # ★ 给社员的投稿图文教程（clone/Obsidian 写作/Git/上线）
-├─ docs/投稿功能方案.md        # ★ 网页投稿功能设计（表单→PR→预览审核→一键发布，待实施）
+├─ docs/投稿功能方案.md        # ★ 网页投稿功能设计（表单→PR→预览审核→一键发布，代码已就绪）
 ├─ docs/修改网站速查.md        # ★ 维护者 Git 速查（clone→分支→提交→合并→推送→反悔药）
+├─ netlify/functions/submit.js # 投稿接口: 表单→自动开 PR（需 GITHUB_TOKEN_SUBMIT 环境变量）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
 └─ netlify.toml
