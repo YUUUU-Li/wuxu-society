@@ -16,6 +16,7 @@
 │  ├─ _includes/              # 全站唯一的 head / 导航 / 页脚 / 作品页模板
 │  └─ static/                 # site.css / site.js / 图标（原样复制进产物）
 ├─ dist/                      # 构建产物（git 忽略，Netlify 发布此目录）
+├─ docs/作品上传指南.md        # ★ 给社员的投稿图文教程（clone/Obsidian 写作/Git/上线）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
 └─ netlify.toml
@@ -29,8 +30,9 @@
 
 | 想做什么 | 怎么做 |
 |---|---|
+| 第一次接触 / 想投稿 | 先读 **[作品上传指南](docs/作品上传指南.md)**：clone → Obsidian 写作 → 提交推送，全程图解 |
 | 改已有作品的字 | 编辑 `src/works/对应篇.md` 的正文片段（`<p>` 每段一段，改字只动这里） |
-| 新增一篇作品 | ① 复制 `src/works/w-feng.md` 为 `src/works/新名字.md`，改 front matter（标题/作者/体裁/意象/关联）与正文；② 把 slug 加进 `src/_data/groups.json` 相应分组的 `slugs` 列表；③ 有需要再更新 `members.json`/首页摘句 |
+| 新增一篇作品 | ① 复制 `src/works/w-feng.md` 为 `src/works/新名字.md`，改 front matter（`title/author/genre/imageries/source`，唱和类再加 `related`）与正文；② 把文件名加进 `src/_data/groups.json` 相应分组的 `slugs`；③ 新社员需先在 `src/_data/members.json` 建档。关联自动生成，无需手填 |
 | 改导航/页脚/字体 | 只改 `src/_includes/` 下对应文件 |
 | 重新生成全站 | `npm run build`（产物在 `dist/`） |
 | 本地预览 | `npm run serve`，浏览器开 <http://localhost:8080> |
