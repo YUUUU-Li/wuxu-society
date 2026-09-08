@@ -1,0 +1,13 @@
+{
+  "name": "wuxu-literary-society",
+  "version": "2.0.0",
+  "private": true,
+  "description": "婺需文学社官方网站源码 (Eleventy 静态站点)",
+  "scripts": {
+    "build": "eleventy",
+    "serve": "eleventy --serve"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^2.0.1"
+  }
+}

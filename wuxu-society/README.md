@@ -1,55 +1,54 @@
-# 婺需文学社 · 官方网站
+# 婺需文学社 · 网站源码 (Eleventy 静态站)
 
-以诗会友，以文养心。本仓库为婺需文学社官网的全部源码（静态站点），公开主页：<https://wuxu-literary.netlify.app>
+以诗会友，以文养心。公开站点：<https://wuxu-literary.netlify.app>
 
-## 目录说明
+## 这是什么结构
 
-| 内容 | 说明 |
+```
+wuxu-society/                 # 仓库根（git 在此）
+├─ src/                       # ★ 唯一需要手写的源码
+│  ├─ works/*.md              # 每篇作品一个文件: YAML 元数据 + 正文片段（新增/改字都在这里）
+│  ├─ index.njk               # 首页
+│  ├─ members.njk             # 社员大全（由 src/_data/members.json 自动生成列表）
+│  ├─ library.njk             # 作品库（由分组数据 + works 自动生成）
+│  ├─ _fulltext.njk           # 全文源库（构建时自动汇齐全部 43 篇正文）
+│  ├─ _data/                  # groups.json 分组顺序 / members.json 社员档案 / site.json
+│  ├─ _includes/              # 全站唯一的 head / 导航 / 页脚 / 作品页模板
+│  └─ static/                 # site.css / site.js / 图标（原样复制进产物）
+├─ dist/                      # 构建产物（git 忽略，Netlify 发布此目录）
+├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
+├─ .eleventy.js / package.json
+└─ netlify.toml
+```
+
+**不再手写的东西**：46 份重复的 `<head>`/导航/页脚、作品库列表、社员列表、全文源库——全部由 Eleventy 从数据自动生成。改一处导航，全站生效。
+
+## 日常操作（给社员）
+
+前置：装 [Node.js](https://nodejs.org) 后首次运行 `npm install`。
+
+| 想做什么 | 怎么做 |
 |---|---|
-| `index.html` | 首页（缘起 / 雅集档案 / 同题作品 / 邀君入社） |
-| `members.html` | 社员大全（各分部 + 笔名 + 作品索引） |
-| `library.html` | 作品库目录（每篇作品一个独立页） |
-| `qingming-*.html` | 清明首聚 7 篇作品页 |
-| `w-*.html` | 其余 36 篇作品页（词、诗、散文、小说） |
-| `site.css` / `site.js` | 全站共享样式与脚本（含站点图标注入） |
-| `favicon.png` | 站点图标（浏览器标签页） |
-| `_fulltext.html` | **全文源库**：所有作品的正文都收在这里，新增/改字先改这里 |
-| `data-works.json` | **作品元数据**：作者、笔名、意象、时间归属（用于自动生成关联） |
-| `deploy-kit/`（仓库外） | 本地预览与临时分享工具（见下） |
+| 改已有作品的字 | 编辑 `src/works/对应篇.md` 的正文片段（`<p>` 每段一段，改字只动这里） |
+| 新增一篇作品 | ① 复制 `src/works/w-feng.md` 为 `src/works/新名字.md`，改 front matter（标题/作者/体裁/意象/关联）与正文；② 把 slug 加进 `src/_data/groups.json` 相应分组的 `slugs` 列表；③ 有需要再更新 `members.json`/首页摘句 |
+| 改导航/页脚/字体 | 只改 `src/_includes/` 下对应文件 |
+| 重新生成全站 | `npm run build`（产物在 `dist/`） |
+| 本地预览 | `npm run serve`，浏览器开 <http://localhost:8080> |
 
-## 设计规范
-
-页面由 taste-skill（design-taste-frontend）规范生成：微青纸色 + 墨色 + 朱砂单强调、全直角、单主题浅色。风格改动请保持一致。
-
-## 如何本地预览
-
-```
-python -m http.server 8000 --directory .     # 然后浏览器打开 http://127.0.0.1:8000
-```
-
-## 如何修改内容（重要）
-
-- **改已有文字/图片**：优先改 `_fulltext.html` 里对应篇目（这是正文唯一事实源），然后重新生成作品页；
-- **新增一篇作品**：在 `_fulltext.html` 增加一个条目 + 在 `data-works.json` 增加一条元数据，再重新生成；
-- **作品页 `w-*.html` / `qingming-*.html` 属于生成产物**：直接手改它们可以，但下次重新生成会被覆盖；
-- 重生成与关联计算可由 DeepSeek Harness 协助完成（打开本文件夹后直接吩咐即可）。
+作品页 `front matter` 字段说明：`title` 题名 / `author` 署名（含笔名）/ `ak` 姓名缩写（锚点）/ `branch` 分部 / `genre` 体裁 / `source` 出处（可选）/ `group` 所属分组 / `imageries` 意象 / `excerpt` 首页卡片摘句 / `related` 相关联作品（`cat`: `strong` 本作关联、`author` 同作者、`imagery` 同意象、`source` 同时同源）。正文片段里 `<p class="prose">` 散文、`stanza` 诗句（行间用 `<br />`）、`analysis` 赏析、`byline` 落款、`stanza kaiti` 楷体诗句。
 
 ## 发布
 
-- 当前托管于 Netlify：<https://wuxu-literary.netlify.app>
-- 已与 GitHub 连接后可实现"推送即自动部署"；
-- 备用：`deploy-kit/1-start-server.cmd` + `2-start-tunnel.cmd`（临时公网分享，无需账号）。
+- Netlify 构建配置见 `netlify.toml`（命令 `npm run build`，发布目录 `dist/`）；GitHub 推送即自动部署。
+- 老成员注意：仓库根在 `wuxu-society/` 这一层，连 Netlify 时 base directory 填 `wuxu-society`。
 
-## 协作流程（给成员）
+## 设计规范
 
-```
-git clone <本仓库地址>
-# 编辑本地文件...
-git add .
-git commit -m "本次改动说明"
-git push
-git pull     # 动手前先拉取最新版，减少冲突
-```
+沿用 taste-skill（design-taste-frontend）：微青纸色 + 墨色 + 朱砂单强调、全直角、单主题浅色。样式改动请保持一致；字体栈已含系统回退（Noto Serif SC → Songti SC/SimSun）。
+
+## 迁移记录（2026-09）
+
+旧站为 46 个手工 HTML（每个页面重复头部/页脚，正文存在 `_fulltext.html` 与页面两份且**缺清明 7 篇**）。现已整体迁移：正文统一收进 `src/works/*.md`（43/43 篇齐全），页面由模板生成，并与旧页面逐页比对一致后移除旧文件。历史内容如需找回可用 `git log`。
 
 ## 版权
 

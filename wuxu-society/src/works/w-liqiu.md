@@ -1,0 +1,45 @@
+---
+layout: "work.njk"
+permalink: "{{ file }}"
+seoTitle: "离秋 | 婺需文学社"
+desc: "lys《离秋》全文与相关联作品。"
+title: "离秋"
+file: "w-liqiu.html"
+author: "lys"
+ak: "lys"
+branch: "北京分部"
+genre: "七言古风"
+group: "other"
+source: "四季组诗"
+themes: ["四季组诗"]
+imageries: ["秋", "雨", "离别相思"]
+ft_genre: "七言古风 · 四季组诗 · 秋"
+related:
+  - to: "w-luochun"
+    cat: "strong"
+    title: "落春"
+    label: "四季组诗 · 四人分题"
+  - to: "w-liuxia"
+    cat: "strong"
+    title: "留夏"
+    label: "四季组诗 · 四人分题"
+  - to: "w-wangdong"
+    cat: "strong"
+    title: "望冬"
+    label: "四季组诗 · 四人分题"
+  - to: "w-wuti"
+    cat: "author"
+    title: "无题"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-xiaochongshan"
+    cat: "imagery"
+    title: "小重山·秋漫红砖一寸深"
+    label: "意象：秋、雨、离别相思"
+  - to: "w-rumengling"
+    cat: "imagery"
+    title: "如梦令·稀星朦胧雨骤"
+    label: "意象：秋、离别相思"
+---
+
+<!-- 正文片段: 每段一个 <p>；改字请只动这里 -->
+<p class="stanza">曲终始觉秋色冷，执手相看泪空横。<br />雨打梧桐催红叶，风摇孤雁唤乌篷。<br />年年可恨离别雨，岁岁难堪多事风。<br />何当闻鸡舞剑起？动如参商那得逢。</p>

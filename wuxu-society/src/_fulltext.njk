@@ -1,0 +1,11 @@
+---
+permalink: "_fulltext.html"
+title: "全文源库"
+---
+{# 全文源库: 构建时由 src/works/*.md 自动重建, 勿手改 #}
+{% set wm = collections.works | worksMap %}
+<div class="lib-list">
+{% for slug in fulltext_order %}{% set w = wm[slug] %}{% if w %}<details class="lib-item" id="{{ slug }}"><summary><span class="t">{{ w.data.ft_title or w.data.title }}</span><span class="a">{{ w.data.ft_author or w.data.author }}</span><span class="f">{{ w.data.ft_genre or w.data.genre }}</span></summary><div class="lib-body">
+{{ w.templateContent | safe }}</div></details>
+{% endif %}{% endfor %}
+</div>

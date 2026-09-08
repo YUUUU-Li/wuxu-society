@@ -1,0 +1,31 @@
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <h4>{{ site.name }}</h4>
+        <p>以诗会友，以文养心。愿旧诗与新声都有人听。</p>
+      </div>
+      <div>
+        <h4>页面</h4>
+        <ul>
+          {% if home %}
+          <li><a href="#origin">缘起</a></li>
+          <li><a href="#gathering">雅集档案</a></li>
+          {% else %}
+          <li><a href="index.html">首页</a></li>
+          {% endif %}
+          <li><a href="members.html">社员大全</a></li>
+          <li><a href="library.html">作品库</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>联系</h4>
+        <ul>
+          <li><a href="mailto:wuxu.literature@example.com">wuxu.literature@example.com</a></li>
+          <!-- TODO: 换成真实社务邮箱 -->
+        </ul>
+      </div>
+    </div>
+    <p class="demo-note">{{ footerNote }}</p>
+  </div>
+</footer>

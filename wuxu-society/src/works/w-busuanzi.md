@@ -1,0 +1,43 @@
+---
+layout: "work.njk"
+permalink: "{{ file }}"
+seoTitle: "卜算子·沙场 | 婺需文学社"
+desc: "zk（道格）《卜算子·沙场》全文与相关联作品。"
+title: "卜算子·沙场"
+file: "w-busuanzi.html"
+author: "zk（道格）"
+ak: "zk"
+branch: "杭州分部"
+genre: "词"
+group: "other"
+imageries: ["山水", "征人"]
+ft_title: "卜算子 · 沙场"
+related:
+  - to: "w-guixiang"
+    cat: "author"
+    title: "清明归乡路途"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-chongyang"
+    cat: "author"
+    title: "沁园春·重阳"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-yuanxiao"
+    cat: "author"
+    title: "元宵独观烟花"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-yizhengren"
+    cat: "author"
+    title: "忆征人"
+    label: "同作者 · 社员同名篇目"
+  - to: "qingming-cyk"
+    cat: "imagery"
+    title: "七百里浙南"
+    label: "意象：山水"
+  - to: "w-feng"
+    cat: "imagery"
+    title: "风"
+    label: "意象：山水"
+---
+
+<!-- 正文片段: 每段一个 <p>；改字请只动这里 -->
+<p class="stanza">薄雾隐晨曦，碧水藏光影。将士酣然枕戈眠，猎猎旌旗冷。<br />平地起惊雷，甲胄翻宁静。如血残阳战马嘶，宛若修罗境。</p>

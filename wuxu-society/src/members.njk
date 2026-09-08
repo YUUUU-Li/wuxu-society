@@ -1,0 +1,37 @@
+---
+layout: "base.njk"
+permalink: "members.html"
+title: "社员大全"
+seoTitle: "社员大全 | 婺需文学社"
+desc: "婺需文学社社员大全：缩写与笔名对照、分部、作品索引。"
+active: "members"
+footerNote: "名单与笔名对照据社员 2026 年整理版；本名、分部与笔名如有变动请告知更正。页面由婺需文学社站点构建器依 taste-skill 规范生成。"
+---
+<main>
+  <section class="wrap page-head">
+    <p class="crumb"><a href="index.html">首页</a> / 社员大全</p>
+    <h1 class="p-title rv">社员大全</h1>
+    <p class="lead rv" style="margin-top:16px">名单自甲辰清明立社起陆续更新。社员以姓名拼音缩写互称，部分另有笔名；文中链接指向各自已收录作品（<a class="ink-link" href="library.html">作品库</a>），署名与归属以原稿为准。</p>
+  </section>
+
+  <section class="wrap">
+  {% for sec in members %}
+    <div class="branch-sec rv">
+      <h3>{{ sec.branch }} <small>{{ sec.members.length }} 人</small></h3>
+      <div class="member-grid">
+      {% for m in sec.members %}
+        <div class="member" id="{{ m.id }}">
+          <span class="m-name">{{ m.name }}</span>
+          <span class="m-role">{{ m.role }}</span>
+          <span class="m-branch">{{ m.branch }}</span>
+          {% if m.note %}<p class="m-note">{{ m.note }}</p>{% endif %}
+          {% for l in m.links %}
+          <a class="plink" href="{{ l.href }}">{{ l.label }}</a>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+  </section>
+</main>

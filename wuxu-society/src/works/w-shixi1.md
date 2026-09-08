@@ -1,0 +1,42 @@
+---
+layout: "work.njk"
+permalink: "{{ file }}"
+seoTitle: "十二月的夕阳堕入山林（其一） | 婺需文学社"
+desc: "zk（道格）《十二月的夕阳堕入山林（其一）》全文与相关联作品。"
+title: "十二月的夕阳堕入山林（其一）"
+file: "w-shixi1.html"
+author: "zk（道格）"
+ak: "zk"
+branch: "杭州分部"
+genre: "七律"
+group: "other"
+imageries: ["月星", "离别相思"]
+related:
+  - to: "w-guixiang"
+    cat: "author"
+    title: "清明归乡路途"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-chongyang"
+    cat: "author"
+    title: "沁园春·重阳"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-yuanxiao"
+    cat: "author"
+    title: "元宵独观烟花"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-yizhengren"
+    cat: "author"
+    title: "忆征人"
+    label: "同作者 · 社员同名篇目"
+  - to: "w-shixi2"
+    cat: "imagery"
+    title: "十二月的夕阳堕入山林（其二）"
+    label: "意象：月星、离别相思"
+  - to: "w-mei"
+    cat: "imagery"
+    title: "梅"
+    label: "意象：离别相思"
+---
+
+<!-- 正文片段: 每段一个 <p>；改字请只动这里 -->
+<p class="stanza">月逐烟云梅倚时，长歌一曲雁来迟。<br />惊鸿影照羞花貌，骚客空怜绰约姿。<br />巾帼已为豪杰气，笔行且作易安词。<br />世间但有惆怅客，我念君时人笑痴。</p>
