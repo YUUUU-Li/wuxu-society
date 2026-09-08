@@ -1,4 +1,0 @@
-# Netlify 部署配置（相对仓库根下的 base directory: wuxu-society）
-[build]
-  command = "npm run build"
-  publish = "dist"

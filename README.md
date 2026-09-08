@@ -5,7 +5,7 @@
 ## 这是什么结构
 
 ```
-wuxu-society/                 # 仓库根（git 在此）
+仓库根 = 站点根（git 在此）
 ├─ src/                       # ★ 唯一需要手写的源码
 │  ├─ works/*.md              # 每篇作品一个文件: YAML 元数据 + 正文片段（新增/改字都在这里）
 │  ├─ index.njk               # 首页
@@ -39,8 +39,7 @@ wuxu-society/                 # 仓库根（git 在此）
 
 ## 发布
 
-- Netlify 构建配置见 `netlify.toml`（命令 `npm run build`，发布目录 `dist/`）；GitHub 推送即自动部署。
-- 老成员注意：仓库根在 `wuxu-society/` 这一层，连 Netlify 时 base directory 填 `wuxu-society`。
+- Netlify 构建配置见 `netlify.toml`（命令 `npm run build`，发布目录 `dist/`）；GitHub 推送即自动部署。仓库根即站点根，无需填 base directory。
 
 ## 设计规范
 
