@@ -49,19 +49,19 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
     <div class="zz-comments">
       <p class="zz-cap">评论 · 楼式，笔名/昵称制（游客亦可评，随评随写）</p>
       <ol class="z-list" id="z-list">
-        <li class="z-item">
+        <li class="z-item" id="z-1">
           <span class="z-no">1</span>
           <div class="z-body">
-            <span class="z-meta">泊珩 · 2026-09-09 10:21</span>
+            <div class="z-mrow"><span class="z-meta">泊珩 · 2026-09-09 10:21</span></div>
             <div class="z-quote">“当时明月在，曾照彩云归。”</div>
             <p class="z-text">"明月"与"彩云"两样并置，一出一归，情致都在没说出的那句里。</p>
             <div class="z-acts"><button class="z-like" type="button"><span>同感 3</span><i>泊珩 · 济枫 · cty</i></button><button class="z-reply" type="button">回复</button></div>
           </div>
         </li>
-        <li class="z-item">
+        <li class="z-item" id="z-2">
           <span class="z-no">2</span>
           <div class="z-body">
-            <span class="z-meta">jwl · 2026-09-09 10:47</span>
+            <div class="z-mrow"><span class="z-meta">jwl · 2026-09-09 10:47</span></div>
             <p class="z-text">读此句想起晏几道写"犹恐相逢是梦中"，此处"曾照"二字，淡淡怅惘便有了着落。</p>
             <div class="z-acts"><button class="z-like" type="button"><span>同感 1</span><i>cty</i></button><button class="z-reply" type="button">回复</button></div>
           </div>
@@ -196,8 +196,8 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
         var n = 0;
         Array.prototype.forEach.call(floors, function (o) {
           if (o === it) return;
-          var m = o.querySelector(".z-meta");
-          if (m && m.textContent.indexOf("（#" + no + "）") !== -1) n++;
+          var rf = o.querySelector(".z-ref");
+          if (rf && rf.textContent.indexOf("（#" + no + "）") !== -1) n++;
         });
         var b = it.querySelector(".z-reply");
         if (b) b.textContent = n ? "回复 · " + n : "回复";
@@ -221,17 +221,64 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
       var li = document.createElement("li");
       li.className = "z-item";
       var no = String(zlist.children.length + 1);
-      var meta = replyTo
-        ? esc(nm) + " · " + fmtTime() + " · 回复 " + esc(replyTo.meta.split(" · ")[0]) + "（#" + replyTo.no + "）"
-        : esc(nm) + " · " + fmtTime();
-      li.innerHTML = '<span class="z-no">' + no + '</span><div class="z-body"><span class="z-meta">' + meta + "</span>" +
+      li.id = "z-" + no;
+      var left = esc(nm) + " · " + fmtTime();
+      var right = replyTo
+        ? '<span class="z-right"><a class="z-ref" href="#z-' + replyTo.no + '" data-target="' + replyTo.no + '" data-origin="' + no + '">回复 ' + esc(replyTo.meta.split(" · ")[0]) + "（#" + replyTo.no + "）</a></span>"
+        : "";
+      li.innerHTML = '<span class="z-no">' + no + '</span><div class="z-body"><div class="z-mrow"><span class="z-meta">' + left + "</span>" + right + "</div>" +
         renderComment(tx) +
         '<div class="z-acts"><button class="z-like" type="button"><span>同感 0</span><i></i></button><button class="z-reply" type="button">回复</button></div></div>';
       zlist.appendChild(li);
       refreshLabels();
       return li;
     }
+    function flash(el) {
+      el.classList.remove("z-flash");
+      void el.offsetWidth;
+      el.classList.add("z-flash");
+    }
+    function jumpTo(no) {
+      var t = document.getElementById("z-" + no);
+      if (!t) return null;
+      t.scrollIntoView({ behavior: "smooth", block: "center" });
+      flash(t);
+      return t;
+    }
     zlist.addEventListener("click", function (ev) {
+      // 回复标识跳转: 点击 -> 滚到目标楼, 目标楼右侧挂“回 N 楼”
+      var ref = ev.target.closest(".z-ref");
+      if (ref) {
+        ev.preventDefault();
+        var tn = ref.getAttribute("data-target");
+        var t = jumpTo(tn);
+        if (t) {
+          var right = t.querySelector(".z-right");
+          if (!right) {
+            right = document.createElement("span");
+            right.className = "z-right";
+            t.querySelector(".z-mrow").appendChild(right);
+          }
+          var oldBack = right.querySelector(".z-back");
+          if (oldBack) oldBack.remove();
+          var ba = document.createElement("a");
+          ba.className = "z-back";
+          ba.href = "#z-" + ref.getAttribute("data-origin");
+          ba.setAttribute("data-origin", ref.getAttribute("data-origin"));
+          ba.textContent = "回 " + ref.getAttribute("data-origin") + " 楼 ↵";
+          right.appendChild(ba);
+        }
+        return;
+      }
+      // 回到原楼
+      var back = ev.target.closest(".z-back");
+      if (back) {
+        ev.preventDefault();
+        var ori = back.getAttribute("data-origin");
+        jumpTo(ori);
+        back.remove();
+        return;
+      }
       // 同感
       var like = ev.target.closest(".z-like");
       if (like) {
@@ -286,10 +333,10 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
       var para = [];
       var quote = [];
       function flushPara() {
-        if (para.length) { html += '<p class="z-text">' + linkify(esc(para.join("<br />"))) + "</p>"; para = []; }
+        if (para.length) { html += '<p class="z-text">' + linkify(para.map(esc).join("<br />")) + "</p>"; para = []; }
       }
       function flushQuote() {
-        if (quote.length) { html += '<div class="z-quote">' + linkify(esc(quote.join("<br />"))) + "</div>"; quote = []; }
+        if (quote.length) { html += '<div class="z-quote">' + linkify(quote.map(esc).join("<br />")) + "</div>"; quote = []; }
       }
       lines.forEach(function (ln) {
         if (ln.trim().indexOf(">") === 0) {
@@ -312,12 +359,12 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
       li.className = "z-item";
       var now = new Date();
       var ts = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + " " + String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-      li.innerHTML = '<span class="z-no"></span><div class="z-body"><span class="z-meta">' +
-        esc(zn.value.trim()) + " · " + ts + "</span>" +
+      var n = document.getElementById("z-list").children.length + 1;
+      li.id = "z-" + n;
+      li.innerHTML = '<span class="z-no">' + n + '</span><div class="z-body"><div class="z-mrow"><span class="z-meta">' +
+        esc(zn.value.trim()) + " · " + ts + "</span></div>" +
         renderComment(zt.value.trim()) +
         '<div class="z-acts"><button class="z-like" type="button"><span>同感 0</span><i></i></button><button class="z-reply" type="button">回复</button></div></div>';
-      var n = document.getElementById("z-list").children.length + 1;
-      li.querySelector(".z-no").textContent = String(n);
       zf.parentNode.querySelector("ol").appendChild(li);
       if (msg) msg.textContent = "（演示）已发表。正式众注将随 Cloudflare 上线后开放。";
       zt.value = "";

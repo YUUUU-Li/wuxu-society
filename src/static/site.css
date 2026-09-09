@@ -400,3 +400,11 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .z-sub{margin-top:10px;border-left:1px dotted var(--line,#d8d0c0);padding-left:16px;
   display:flex;flex-direction:column;gap:8px}
 .z-reply-item .z-text{margin:2px 0 0;font-size:14px;line-height:1.85}
+
+/* 众注: 楼层标题行(左名时/右回复标识), 跳转与回跳 */
+.z-mrow{display:flex;justify-content:space-between;align-items:baseline;gap:0 14px;flex-wrap:wrap}
+.z-right{display:inline-flex;gap:12px}
+.z-ref,.z-back{font-size:12.5px;color:var(--seal,#9c3f30);text-decoration:none;cursor:pointer;border-bottom:1px dotted var(--seal,#9c3f30)}
+.z-ref:hover,.z-back:hover{border-bottom-style:solid}
+.z-flash{animation:zflash 1.4s ease 1}
+@keyframes zflash{0%{background:rgba(156,63,48,.22)}100%{background:transparent}}
