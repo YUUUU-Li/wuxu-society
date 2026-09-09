@@ -24,6 +24,18 @@ function branchOf(author) {
   return m ? m.branch : "";
 }
 
+// 构建时把许可证复制进静态区, 随站发布(根目录显示为 /LICENSE.txt /LICENSE-CODE.txt)
+for (const [src, dest] of [
+  ["LICENSE", "src/static/LICENSE.txt"],
+  ["LICENSE-CODE", "src/static/LICENSE-CODE.txt"],
+]) {
+  try {
+    fs.copyFileSync(path.join(__dirname, src), path.join(__dirname, dest));
+  } catch (e) {
+    console.warn("复制许可文件失败(跳过):", src, e.message);
+  }
+}
+
 module.exports = function (eleventyConfig) {
   // 静态资源 (css/js/图片) 原样复制到输出根目录
   eleventyConfig.addPassthroughCopy({ "src/static": "/" });
