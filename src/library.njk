@@ -132,7 +132,8 @@ footerNote: "篇目分辑，录自社内原稿。"
     if (flatSec) {
       flatSec.hidden = false;
       flatList.innerHTML = hits.map(function (w) {
-        return '<div class="idx-row rv"><span><a class="plink" href="' + esc(w.h) + '">' + esc(w.t) + "</a></span>" +
+        // 不带 rv: 行是筛选后动态插入的, site.js 的滚动显现监听不会扫到(会保持透明)
+        return '<div class="idx-row"><span><a class="plink" href="' + esc(w.h) + '">' + esc(w.t) + "</a></span>" +
           '<span class="g">' + esc(w.a) + "</span><span class=\"f\">" + esc(w.g) + "</span></div>";
       }).join("");
     }
