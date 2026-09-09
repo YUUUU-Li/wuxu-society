@@ -36,14 +36,14 @@
   function relShuffle() {
     document.querySelectorAll("ul.rel-ul[data-rotate]").forEach(function (ul) {
       var max = parseInt(ul.getAttribute("data-rotate"), 10) || 5;
-      var box = ul.parentNode;
-      var tpl = box.querySelector("template.rel-pool");
-      var li = Array.prototype.slice.call(ul.children);
-      if (tpl) li = li.concat(Array.prototype.slice.call(tpl.content.querySelectorAll("li")));
-      if (!li.length) return;
+      var tpl = ul.parentNode.querySelector("template.rel-pool");
+      // 池 = template 全量节点(唯一)；初始列表只是无 JS 兜底, 不参与抽选, 否则会与池重复
+      var pool = tpl
+        ? Array.prototype.slice.call(tpl.content.querySelectorAll("li"))
+        : Array.prototype.slice.call(ul.children);
+      if (!pool.length) return;
       var h4 = ul.previousElementSibling;
       var btn = h4 && h4.querySelector("button.shuffle");
-      var pool = li.slice();
       function pick() {
         var arr = pool.slice();
         for (var i = arr.length - 1; i > 0; i--) {
