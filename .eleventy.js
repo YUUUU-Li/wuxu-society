@@ -59,6 +59,8 @@ module.exports = function (eleventyConfig) {
       imagery: "同意象",
       source: "同时同源",
     };
+    // 轮换上限: 这两组全量入池, 由页面 JS 每次加载随机抽选
+    const ROTATE_MAX = { author: 5, imagery: 4 };
     const selfIm = self.imageries || [];
     const selfAk = akOf(self.author);
     const bySlug = {};
@@ -75,12 +77,11 @@ module.exports = function (eleventyConfig) {
     const taken = new Set(manual.map((r) => r.to));
     taken.add(self.slug);
 
-    // 同作者: 同缩写作者的其他作品 (最多 4 条, 按全文库顺序)
+    // 同作者: 同缩写作者的其他作品 (全部入池, 页面端轮换显示)
     const authorItems = works
       .filter((w) => w.fileSlug !== self.slug && !taken.has(w.fileSlug) &&
         akOf(w.data.author) === selfAk)
       .sort(sortWork)
-      .slice(0, 4)
       .map((w) => ({
         to: w.fileSlug,
         title: w.data.title,
@@ -88,15 +89,14 @@ module.exports = function (eleventyConfig) {
       }));
     authorItems.forEach((r) => taken.add(r.to));
 
-    // 同意象: 与本作共意象者, 按共享数降序取前 2 (标签按对方意象表列出共有)
+    // 同意象: 与本作共意象者全部入池 (按共享数降序, 页面端轮换)
     const imageryItems = [];
     const imageryCands = works
       .filter((x) => x.fileSlug !== self.slug && !taken.has(x.fileSlug))
       .sort(sortWork)
       .map((w) => ({ w, shared: (w.data.imageries || []).filter((i) => selfIm.includes(i)) }))
       .filter((c) => c.shared.length)
-      .sort((a, b) => b.shared.length - a.shared.length || sortWork(a.w, b.w))
-      .slice(0, 2);
+      .sort((a, b) => b.shared.length - a.shared.length || sortWork(a.w, b.w));
     for (const { w, shared } of imageryCands) {
       imageryItems.push({
         to: w.fileSlug,
@@ -106,14 +106,13 @@ module.exports = function (eleventyConfig) {
       taken.add(w.fileSlug);
     }
 
-    // 同时同源: 出处相同的其他作品 (最多 3 条, 按全文库顺序)
+    // 同时同源: 出处相同的其他作品 (全部列出, 无需轮换)
     const sourceItems = [];
     if (self.source) {
       for (const w of works
         .filter((x) => x.fileSlug !== self.slug && !taken.has(x.fileSlug) &&
           x.data.source === self.source)
-        .sort(sortWork)
-        .slice(0, 3)) {
+        .sort(sortWork)) {
         sourceItems.push({
           to: w.fileSlug,
           title: w.data.title,
@@ -123,10 +122,10 @@ module.exports = function (eleventyConfig) {
     }
 
     const groups = [];
-    if (manual.length) groups.push({ heading: HEAD.strong, items: manual });
-    if (authorItems.length) groups.push({ heading: HEAD.author, items: authorItems });
-    if (imageryItems.length) groups.push({ heading: HEAD.imagery, items: imageryItems });
-    if (sourceItems.length) groups.push({ heading: HEAD.source, items: sourceItems });
+    if (manual.length) groups.push({ heading: HEAD.strong, kind: "strong", rotateMax: 0, items: manual });
+    if (authorItems.length) groups.push({ heading: HEAD.author, kind: "author", rotateMax: ROTATE_MAX.author, items: authorItems });
+    if (imageryItems.length) groups.push({ heading: HEAD.imagery, kind: "imagery", rotateMax: ROTATE_MAX.imagery, items: imageryItems });
+    if (sourceItems.length) groups.push({ heading: HEAD.source, kind: "source", rotateMax: 0, items: sourceItems });
     return groups;
   });
 

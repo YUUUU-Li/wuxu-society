@@ -31,4 +31,36 @@
       }
     });
   }
+
+  /* 关联作品轮换: 每次打开页面随机抽选一批, 点"换一批"再抽 */
+  function relShuffle() {
+    document.querySelectorAll("ul.rel-ul[data-rotate]").forEach(function (ul) {
+      var max = parseInt(ul.getAttribute("data-rotate"), 10) || 5;
+      var box = ul.parentNode;
+      var tpl = box.querySelector("template.rel-pool");
+      var li = Array.prototype.slice.call(ul.children);
+      if (tpl) li = li.concat(Array.prototype.slice.call(tpl.content.querySelectorAll("li")));
+      if (!li.length) return;
+      var h4 = ul.previousElementSibling;
+      var btn = h4 && h4.querySelector("button.shuffle");
+      var pool = li.slice();
+      function pick() {
+        var arr = pool.slice();
+        for (var i = arr.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        var n = Math.min(max, arr.length);
+        var frag = document.createDocumentFragment();
+        for (var k = 0; k < n; k++) frag.appendChild(arr[k]);
+        ul.innerHTML = "";
+        ul.appendChild(frag);
+        if (btn && pool.length > max) btn.hidden = false;
+      }
+      pick();
+      if (btn) btn.addEventListener("click", pick);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", relShuffle);
+  else relShuffle();
 })();
