@@ -96,6 +96,8 @@ a.plink:hover{color:var(--seal)}
 /* ---------- 宗旨横幅 ---------- */
 .motto{text-align:center;background:var(--paper-deep);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
 .motto p{font-size:clamp(1.7rem,4vw,2.7rem);font-weight:700;line-height:1.8;margin:0;letter-spacing:.12em}
+.motto p.motto-lines{display:flex;justify-content:center;flex-wrap:wrap;align-items:baseline;column-gap:.55em;row-gap:.25em;text-align:center}
+.motto p.motto-lines span{white-space:nowrap}
 .motto cite{display:block;margin-top:18px;font-style:normal;color:var(--dim);font-size:15px}
 
 /* ---------- 缘起 ---------- */
@@ -251,9 +253,9 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .duo-acts{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:36px}
 .duo-acts a+a{margin-left:12px}
 @media (max-width:640px){
-  .duo-acts{flex-direction:column;align-items:stretch}
+  .duo-acts{flex-direction:row;align-items:stretch;gap:8px}
   .duo-acts a+a{margin-left:0}
-  .duo-acts .btn{text-align:center;width:100%}
+  .duo-acts .btn{flex:1 1 0;min-width:0;text-align:center;padding:11px 6px;font-size:14px;letter-spacing:.02em}
 }
 
 /* 移动端导航: 菜单按钮(三横线) + 向下展开列表 */

@@ -37,6 +37,12 @@ function rand2() {
 }
 
 // 正文 -> HTML 片段: 空行分段; 诗句段落内行间 <br />
+// 段首标记可切换该段版式:
+//   自序/序/小序/序言/前记/引言/后记/跋/附记  -> 楷体散文段(stanza kaiti)
+//   注/注释/评/评注/赏析                      -> 赏析段(analysis)
+//   其余: 诗体段(stanza, 行间 <br />) 或 散文段(prose)
+const P_KAITI = /^(自序|小序|序言|前记|引言|后记|跋|附记|序)\s*[:：]?\s*/;
+const P_ANALYSIS = /^(注|注释|评注|评|赏析)\s*[:：]?\s*/;
 function bodyToHtml(text, genre) {
   const poetic = POETIC.test(genre || "");
   const paras = text
@@ -47,10 +53,33 @@ function bodyToHtml(text, genre) {
   return paras
     .map((p) => {
       const lines = p.split("\n").map((l) => l.trim()).filter(Boolean);
-      if (poetic) {
-        return '<p class="stanza">' + lines.map(esc).join("<br />") + "</p>";
+      let first = lines[0] || "";
+      let mode = poetic ? "stanza" : "prose";
+      const am = P_ANALYSIS.exec(first);
+      const km = !am && P_KAITI.exec(first);
+      if (am) {
+        mode = "analysis";
+        const rest = first.slice(am[1].length);
+        if (/^[:：]/.test(rest)) first = rest.slice(1).trim(); // 注：正文 / 评：正文
+        else if (rest.trim() === "") first = "";               // 单独一个"注/评"标题行 -> 丢弃
+        /* 评（hde）：… 这类保留原文(含署名), 不改动 */
+      } else if (km) {
+        mode = "kaiti";
+        const rest = first.slice(km[1].length);
+        if (/^[:：]/.test(rest)) first = rest.slice(1).trim(); // 自序：正文
+        else if (rest.trim() === "") first = "";               // 单独"自序"标题行 -> 丢弃
       }
-      return '<p class="prose">' + lines.map(esc).join(" ") + "</p>";
+      const body = [first, ...lines.slice(1)].filter(Boolean).map(esc);
+      if (mode === "stanza") {
+        return '<p class="stanza">' + body.join("<br />") + "</p>";
+      }
+      if (mode === "kaiti") {
+        return '<p class="stanza kaiti">' + body.join("") + "</p>";
+      }
+      if (mode === "analysis") {
+        return '<p class="analysis">' + body.join(" ") + "</p>";
+      }
+      return '<p class="prose">' + body.join(" ") + "</p>";
     })
     .join("\n");
 }

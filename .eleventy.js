@@ -135,16 +135,30 @@ module.exports = function (eleventyConfig) {
     "qingming-xu", "qingming-cty", "qingming-jwl", "qingming-hde",
     "qingming-lfk", "qingming-cyk", "qingming-cyly",
   ];
-  // 从 md 正文取"摘句": 诗句取第一行(stanza 首个 <br /> 前), 散文取首句
+  // 从 md 正文取"摘句": 跳过行号("0、")与过短片段; 诗句取该段首行, 散文取有意义的首句
   function firstLine(slug) {
     try {
       const raw = fs.readFileSync(path.join(__dirname, "src/works", slug + ".md"), "utf8");
       const body = raw.split("---").slice(2).join("---");
-      const pm = /<p class="stanza">([\s\S]*?)<\/p>/.exec(body) ||
-        /<p class="prose">([\s\S]*?)<\/p>/.exec(body);
-      if (!pm) return "";
-      const t = pm[1].split("<br />")[0].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-      return t.length > 34 ? t.slice(0, 34) + "…" : t;
+      const paras = [...body.matchAll(/<p class="(stanza(?:\s+\w+)?|prose)">([\s\S]*?)<\/p>/g)];
+      for (const m of paras) {
+        // 先按 <br/> 切成"行", 再剥标签, 保留行结构
+        const segs = m[2]
+          .split(/<br\s*\/?>/)
+          .map((s) => s.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&").trim())
+          .filter(Boolean);
+        // 去掉行号行(0、/1、/一、/01. 等)
+        const real = segs.filter((l) => !/^\d+[、.．]\s*$/.test(l) && !/^[一二三四五六七八九十]+、/.test(l));
+        if (!real.length) continue;
+        let t = real[0];
+        if (t.length < 6) {
+          const next = real.slice(1).find((l) => l.length >= 6);
+          if (!next) continue;
+          t = next;
+        }
+        return t.length > 34 ? t.slice(0, 34) + "…" : t;
+      }
+      return "";
     } catch { return ""; }
   }
   eleventyConfig.addFilter("homeCards", (works) =>
