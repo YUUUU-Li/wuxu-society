@@ -64,6 +64,14 @@ const othersN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data
 assert.strictEqual(rows.length, othersN, `库分组行应 ${othersN}(其余社员作品), 实得 ${rows.length}`);
 assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
 
+// —— 筛选平铺池(含入期作品, 筛选激活时替代分区视图) ——
+const poolM = /id="lib-pool">([\s\S]*?)<\/script>/.exec(lib);
+assert(poolM, "库页含 lib-pool 全站作品池");
+const libPool = JSON.parse(poolM[1].trim());
+assert.strictEqual(libPool.length, nWorksSrc, `lib-pool 应含全部 ${nWorksSrc} 篇(含入期)`);
+assert(lib.includes('id="idx-flat"'), "库页含平铺结果容器");
+assert(libPool.every((w) => w.t && w.a && w.g && w.h), "池条目字段完整");
+
 // —— 登记一致性: works md = groups∪issues 各一次, order 同集合 (删稿脚本防孤儿) ——
 const workSet = new Set(fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));
 const counts = new Map();

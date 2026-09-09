@@ -11,7 +11,7 @@ footerNote: "篇目分辑，录自社内原稿。"
   <section class="wrap page-head">
     <p class="crumb"><a href="index.html">首页</a> / 作品库</p>
     <h1 class="p-title rv">作品库</h1>
-    <p class="lead rv" style="margin-top:16px">每一篇都已单独成页：点击篇目进入该页，页内可查看作者（缩写 + 笔名）与相关联作品（本作关联 / 同作者 / 同意象 / 同时同源）。署名以原稿为准。</p>
+    <p class="lead rv" style="margin-top:16px">每一篇都已单独成页：点击篇目进入该页，页内可查看作者（缩写 + 笔名）与相关联作品（本作关联 / 同作者 / 相似标签 / 同时同源）。署名以原稿为准。</p>
   </section>
 
   <section class="wrap lib-filters">
@@ -48,6 +48,18 @@ footerNote: "篇目分辑，录自社内原稿。"
   {% endif %}{% endfor %}
   </div></section>
 {% endfor %}
+
+{% if site.zhuzhu and site.zhuzhu.enabled %}
+  {# 筛选结果平铺区: 覆盖全站作品(含入期), 筛选激活时替代分区视图 #}
+  <section class="wrap idx-flat" id="idx-flat" hidden>
+    <div class="idx-list" id="idx-flat-list"></div>
+  </section>
+  <script type="application/json" id="lib-pool">[
+{% for slug in fulltext_order %}{% set w = wm[slug] %}{% if w %}
+{"t":{{ w.data.title | jsonify | safe }},"a":{{ w.data.author | jsonify | safe }},"g":{{ w.data.genre | jsonify | safe }},"i":{{ w.data.imageries | jsonarr | safe }},"s":{{ (w.data.source or "") | jsonify | safe }},"h":{{ w.url | jsonify | safe }}}{% if not loop.last %},{% endif %}{% endif %}
+{% endfor %}]
+  </script>
+{% endif %}
 <script>
 (function () {
   "use strict";
@@ -57,9 +69,14 @@ footerNote: "篇目分辑，录自社内原稿。"
   var source = document.getElementById("f-source");
   var reset = document.getElementById("f-reset");
   var count = document.getElementById("f-count");
+  var poolEl = document.getElementById("lib-pool");
+  if (!author || !poolEl) return;
+  var pool = JSON.parse(poolEl.textContent);           // 全站作品(含入期)
+  var archives = document.querySelector(".archives");  // 刊期档案区
   var groups = Array.prototype.slice.call(document.querySelectorAll(".idx-group"));
-  var rows = Array.prototype.slice.call(document.querySelectorAll(".idx-row"));
-  if (!author || !rows.length) return;
+  var flatSec = document.getElementById("idx-flat");
+  var flatList = document.getElementById("idx-flat-list");
+  var total = pool.length;
 
   function fill(sel, values) {
     values.forEach(function (v) {
@@ -69,35 +86,48 @@ footerNote: "篇目分辑，录自社内原稿。"
     });
   }
   var authors = {}, genres = {}, imags = {}, sources = {};
-  rows.forEach(function (r) {
-    authors[r.dataset.author] = 1;
-    genres[r.dataset.genre] = 1;
-    sources[r.dataset.source || "(无出处)"] = 1;
-    (r.dataset.imagery || "").split("|").filter(Boolean).forEach(function (i) { imags[i] = 1; });
+  pool.forEach(function (w) {
+    authors[w.a] = 1;
+    genres[w.g] = 1;
+    sources[w.s || "(无出处)"] = 1;
+    (w.i || []).forEach(function (x) { imags[x] = 1; });
   });
   fill(author, Object.keys(authors).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
   fill(genre, Object.keys(genres));
   fill(imagery, Object.keys(imags).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
   fill(source, Object.keys(sources));
 
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
   function apply() {
     var fa = author.value, fg = genre.value, fi = imagery.value, fs = source.value;
-    var shown = 0;
     var any = fa || fg || fi || fs;
-    rows.forEach(function (r) {
-      var ok = (!fa || r.dataset.author === fa) &&
-        (!fg || r.dataset.genre === fg) &&
-        (!fi || (r.dataset.imagery || "").split("|").indexOf(fi) !== -1) &&
-        (!fs || (r.dataset.source || "(无出处)") === fs);
-      r.style.display = ok ? "" : "none";
-      if (ok) shown++;
+    var hits = pool.filter(function (w) {
+      return (!fa || w.a === fa) &&
+        (!fg || w.g === fg) &&
+        (!fi || (w.i || []).indexOf(fi) !== -1) &&
+        (!fs || (w.s || "(无出处)") === fs);
     });
-    groups.forEach(function (g) {
-      var vis = Array.prototype.some.call(g.querySelectorAll(".idx-row"), function (r) { return r.style.display !== "none"; });
-      g.style.display = vis ? "" : "none";
-    });
-    if (count) count.textContent = "显示 " + shown + " / " + rows.length + " 篇";
+    if (count) count.textContent = "显示 " + hits.length + " / " + total + " 篇";
     if (reset) reset.hidden = !any;
+    if (!any) {
+      // 无筛选: 分区浏览(刊期档案 + 分组)
+      if (archives) archives.style.display = "";
+      groups.forEach(function (g) { g.style.display = ""; });
+      if (flatSec) flatSec.hidden = true;
+      return;
+    }
+    // 有筛选: 只平铺列出命中的作品
+    if (archives) archives.style.display = "none";
+    groups.forEach(function (g) { g.style.display = "none"; });
+    if (flatSec) {
+      flatSec.hidden = false;
+      flatList.innerHTML = hits.map(function (w) {
+        return '<div class="idx-row rv"><span><a class="plink" href="' + esc(w.h) + '">' + esc(w.t) + "</a></span>" +
+          '<span class="g">' + esc(w.a) + "</span><span class=\"f\">" + esc(w.g) + "</span></div>";
+      }).join("");
+    }
   }
   [author, genre, imagery, source].forEach(function (s) {
     s.addEventListener("change", apply);
