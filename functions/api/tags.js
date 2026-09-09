@@ -18,12 +18,11 @@ async function q(db, sql, ...b) {
   return (await db.prepare(sql).bind(...b).all()).results;
 }
 
-module.exports = {
-  async onRequest(context) {
-    const req = context.request;
-    const db = context.env.DB;
-    if (!db) return json(503, { ok: false, error: "数据库尚未配置。" });
-    const u = new URL(req.url);
+export async function onRequest(context) {
+  const req = context.request;
+  const db = context.env.DB;
+  if (!db) return json(503, { ok: false, error: "数据库尚未配置。" });
+  const u = new URL(req.url);
 
     if (req.method === "GET") {
       const work = clean(u.searchParams.get("work"), 60);
@@ -84,5 +83,4 @@ module.exports = {
       }
     }
     return json(405, { ok: false, error: "只接受 GET/POST" });
-  },
-};
+}

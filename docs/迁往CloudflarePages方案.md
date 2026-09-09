@@ -28,11 +28,12 @@
 
 ## 2. 代码侧已做的准备（无需再动）
 
-- **`functions/api/submit.js`**（仓库根）：Cloudflare Pages Functions 适配器，复用
-  `netlify/functions/submit.js` 同一份投稿逻辑（含 Buffer shim、CF 真实 IP 透传、
-  env 桥接）。CF 部署后投稿路由为 `/api/submit`；
-  ⚠️ 勿用 `functions/submit.js`：静态页 `submit.html` 会被 CF 规范化到 `/submit`，
-  会占掉函数路由（函数不触发）——函数必须放不与任何页面同名的路径；
+- **`functions/api/`**（仓库根，ESM）：CF Pages Functions 原生实现，自包含不 require
+  外部文件——`submit.js`（投稿，原样内联逻辑，无 Buffer 垫片/适配层）、`tags.js`（众注标签）、
+  `comments.js`（众注评论）；目录内置 `package.json {"type":"module"}`。
+  部署路由：`/api/submit`、`/api/tags`、`/api/comments`；
+  ⚠️ 勿用 `functions/submit.js` 顶层路由：静态页 `submit.html` 会被 CF 规范化到 `/submit`，
+  会占掉函数路由——函数一律放 `functions/api/` 下不与页面同名；
 - **`src/_data/site.json` 的 `apiEndpoint`**：投稿页提交地址由此字段驱动，现已切为
   `/api/submit`（CF 函数路由）；域名换成自有域名时只改 `url` 字段即可；
 - 验证命令（本仓库内跑）：`node scripts/cf-adapter-smoke.js`（模拟 CF 调用，400 校验路径通）。

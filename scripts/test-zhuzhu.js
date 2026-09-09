@@ -34,11 +34,13 @@ const HDR = { "content-type": "application/json", "cf-connecting-ip": "1.2.3.4" 
 const get = (u) => new Request("https://x.test" + u, { headers: { "cf-connecting-ip": "1.2.3.4" } });
 const post = (u, body) => new Request("https://x.test" + u, { method: "POST", headers: HDR, body: JSON.stringify(body) });
 
-const tags = require(path.join(__dirname, "..", "functions", "api", "tags.js"));
-const comments = require(path.join(__dirname, "..", "functions", "api", "comments.js"));
 const ctx = (request, env = {}, dbOpts = {}) => ({ request, env: { DB: FakeDB(dbOpts), ...env } });
 
 async function main() {
+  const { pathToFileURL } = require("url");
+  const importMod = (rel) => import(pathToFileURL(path.join(__dirname, "..", rel)).href);
+  const tags = await importMod("functions/api/tags.js");
+  const comments = await importMod("functions/api/comments.js");
   // tags GET 缺 work -> 400
   let r = await tags.onRequest(ctx(get("/api/tags")));
   assert.strictEqual(r.status, 400, "tags GET 缺 work 应 400");
