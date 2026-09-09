@@ -150,13 +150,17 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addFilter("homeCards", (works) =>
     works
       .filter((w) => !FOUNDING.includes(w.fileSlug))
-      .map((w) => ({
-        href: w.fileSlug + ".html",
-        title: w.data.title,
-        name: String(w.data.author || "").replace("（", " · ").replace("）", ""),
-        genre: w.data.genre || "",
-        line: firstLine(w.fileSlug),
-      }))
+      .map((w) => {
+        const ex = String(w.data.excerpt || "").trim();
+        const line = ex ? (ex.length > 46 ? ex.slice(0, 46) + "…" : ex) : firstLine(w.fileSlug);
+        return {
+          href: w.fileSlug + ".html",
+          title: w.data.title,
+          name: String(w.data.author || "").replace("（", " · ").replace("）", ""),
+          genre: w.data.genre || "",
+          line,
+        };
+      })
       .sort((a, b) => (orderIdx[a.href.slice(0, -5)] ?? 999) - (orderIdx[b.href.slice(0, -5)] ?? 999))
   );
   eleventyConfig.addFilter("toJSON", (v) => JSON.stringify(v));

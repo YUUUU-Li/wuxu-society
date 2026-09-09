@@ -47,6 +47,11 @@ footerNote: "投稿经编委审阅后才会发布。页面由婺需文学社站�
         <small style="color:var(--dim)">小写字母开头的拼音或英文，会成为作品网页地址（如 <code>w-zhuyingtai</code>）；留空则由系统自动生成。</small>
       </div>
       <div class="field">
+        <label for="sub-excerpt">摘句（选填，缩略显示）</label>
+        <input id="sub-excerpt" name="excerpt" type="text" maxlength="60" placeholder="例：七百里浙南，长车长驾长归途" />
+        <small style="color:var(--dim)">一句话（建议 ≤40 字），将用于首页卡片与列表缩略展示；留空则自动取正文首句。</small>
+      </div>
+      <div class="field">
         <label for="sub-imagery">意象（选填，逗号分隔）</label>
         <input id="sub-imagery" name="imageries" type="text" maxlength="200" placeholder="例：秋，雨，思乡归途" />
         <small style="color:var(--dim)">用于自动关联"同意象"作品；不确定可留空。</small>
@@ -96,6 +101,7 @@ footerNote: "投稿经编委审阅后才会发布。页面由婺需文学社站�
       genre: genre,
       body: body,
       slug: slug,
+      excerpt: form.excerpt.value.trim(),
       imageries: form.imageries.value,
       source: form.source.value,
       website: form.website.value

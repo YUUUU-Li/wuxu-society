@@ -106,13 +106,14 @@ exports.handler = async (event) => {
   const genre = String(input.genre || "").trim().slice(0, 40);
   const source = String(input.source || "").trim().slice(0, 100);
   const imageriesRaw = String(input.imageries || "").trim().slice(0, 200);
+  const excerpt = String(input.excerpt || "").trim().replace(/\s+/g, " ").slice(0, 60);
   const body = String(input.body || "").trim().slice(0, 20000);
   if (!title) return respond(400, { ok: false, error: "缺少题名。" });
   if (!author) return respond(400, { ok: false, error: "缺少署名。" });
   if (!genre) return respond(400, { ok: false, error: "请选择体裁。" });
   if (body.length < 10) return respond(400, { ok: false, error: "正文太短。" });
-  if (/[<>]/.test(title + author + genre + source)) {
-    return respond(400, { ok: false, error: "题名/署名里不能包含 < > 字符。" });
+  if (/[<>]/.test(title + author + genre + source + excerpt)) {
+    return respond(400, { ok: false, error: "题名/署名/摘句里不能包含 < > 字符。" });
   }
   const imageries = imageriesRaw
     ? imageriesRaw.split(/[,，、;；]/).map((s) => s.trim()).filter(Boolean).slice(0, 12)
@@ -163,6 +164,7 @@ exports.handler = async (event) => {
     'genre: "' + genre.replace(/"/g, '\\"') + '"',
   ];
   if (source) fm.push('source: "' + source.replace(/"/g, '\\"') + '"');
+  if (excerpt) fm.push('excerpt: "' + excerpt.replace(/"/g, '\\"') + '"');
   if (imageries.length) {
     fm.push("imageries: [" + imageries.map((s) => JSON.stringify(s)).join(", ") + "]");
   }
