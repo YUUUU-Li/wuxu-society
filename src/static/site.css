@@ -249,13 +249,13 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   color: var(--dim, #8a8a8a); cursor: pointer; border-bottom: 1px dashed currentColor; }
 .rel .shuffle:hover { color: var(--accent, #b0855a); }
 
-/* 首页双按钮: 并排 -> 窄屏自动竖排, 不再错位重叠 */
-.duo-acts{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:36px}
-.duo-acts a+a{margin-left:12px}
+/* 首页双按钮: 横排 + 居中对称等宽 (手机同款, 只是字号略小) */
+.duo-acts{display:flex;justify-content:center;align-items:center;gap:12px;margin:36px auto 0;max-width:560px}
+.duo-acts a+a{margin-left:0}
+.duo-acts .btn{flex:1 1 0;min-width:0;text-align:center;padding:12px 8px;white-space:nowrap}
 @media (max-width:640px){
-  .duo-acts{flex-direction:row;align-items:stretch;gap:8px}
-  .duo-acts a+a{margin-left:0}
-  .duo-acts .btn{flex:1 1 0;min-width:0;text-align:center;padding:11px 6px;font-size:14px;letter-spacing:.02em}
+  .duo-acts{max-width:none;gap:8px;align-items:stretch}
+  .duo-acts .btn{padding:11px 4px;font-size:14px;letter-spacing:.02em}
 }
 
 /* 移动端导航: 菜单按钮(三横线) + 向下展开列表 */
