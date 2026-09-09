@@ -1,10 +1,10 @@
 # 迁往 Cloudflare Pages 方案（构建/托管去 Netlify 化）
 
-> **动机（2026-09）**：Netlify 免费档"构建分钟"额度过小，投稿/日常 push 稍多即烧完，
+> **实施状态（2026-09）**：静态站已迁 CF Pages 并上线 `wuxu-society.pages.dev`；
+> 投稿函数已放 `functions/api/submit.js`（路由 `/api/submit`），**待 CF 后台确认 Functions 目录后生效**；
+> 域名 wuxu.org 绑定后把 `site.json` 的 `url` 换掉即可。
+> **动机回顾**：Netlify 免费档"构建分钟"额度过小，投稿/日常 push 稍多即烧完，
 > 账号进入 operational credits 模式 → **生产部署暂停**（已上线页面不受影响）。
-> Cloudflare Pages 免费档 500 次构建/月、Functions 免费额度大，且与你计划的
-> "自有域名 + Cloudflare" 同栈，故一步到位迁到 CF。
-> **代码侧已就绪**：投稿函数已双平台化（见 §2），其余只差账号侧操作。
 
 ## 0. 迁移前置（在朋友那边确认）
 

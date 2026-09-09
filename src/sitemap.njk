@@ -10,4 +10,10 @@ eleventyExcludeFromCollections: true
 {% for w in collections.works %}
   <url><loc>{{ site.url }}{{ w.url }}</loc></url>
 {% endfor %}
+{% for iss in issues %}
+  <url><loc>{{ site.url }}/{{ iss.id }}.html</loc></url>
+{% endfor %}
+{% for cpt in concepts %}
+  <url><loc>{{ site.url }}/concepts/{{ cpt.id }}.html</loc></url>
+{% endfor %}
 </urlset>
