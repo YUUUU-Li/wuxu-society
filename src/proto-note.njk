@@ -214,7 +214,7 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
         var pm = item.querySelector(".z-meta").textContent.split(" · ")[0];
         var pn = item.querySelector(".z-no").textContent;
         f.innerHTML = '<input class="z-r-name" type="text" maxlength="20" placeholder="笔名/昵称" aria-label="笔名或昵称" />' +
-          '<input class="z-r-text" type="text" maxlength="300" placeholder="回复 ' + pm + '（# ' + pn + '）…" aria-label="回帖内容" />' +
+          '<input class="z-r-text" type="text" maxlength="300" placeholder="回复 ' + pm + '（# ' + pn + '）… 行首加 > 可引原帖" aria-label="回帖内容" />' +
           '<button class="btn ghost z-r-send" type="button">发送</button>' +
           '<button class="z-r-cancel" type="button">取消</button>';
         body.appendChild(f);
@@ -241,8 +241,8 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
         var pn2 = it2.querySelector(".z-no").textContent;
         var d = document.createElement("div");
         d.className = "z-reply-item";
-        d.innerHTML = '<span class="z-meta">' + esc(nm) + " · " + fmtTime() + " · 回复 " + esc(pm2) + "（#" + pn2 + "）</span><p class=\"z-text\">" +
-          linkify(esc(tx)).replace(/\n/g, "<br />") + "</p>";
+        d.innerHTML = '<span class="z-meta">' + esc(nm) + " · " + fmtTime() + " · 回复 " + esc(pm2) + "（#" + pn2 + "）</span>" +
+          renderComment(tx); // 回帖同样支持 > 引文块与自动链接
         sub.appendChild(d);
         closeForm();
         refreshReplyLabel(it2);
