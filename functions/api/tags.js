@@ -32,7 +32,8 @@ export async function onRequest(context) {
           db,
           `SELECT t.id, t.word, t.kind, COUNT(tv.id) AS c FROM tags t
            LEFT JOIN tag_votes tv ON tv.tag_id = t.id AND tv.work_id = ?1
-           GROUP BY t.id ORDER BY c DESC, t.id ASC`,
+           GROUP BY t.id HAVING COUNT(tv.id) > 0
+           ORDER BY c DESC, t.id ASC`,
           work
         );
         const votedRows = await q(
