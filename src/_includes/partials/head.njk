@@ -2,6 +2,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{% if seoTitle %}{{ seoTitle }}{% else %}{{ site.name }} | {{ site.slogan }}{% endif %}</title>
 <meta name="description" content="{{ desc | default(site.slogan) }}" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="{{ site.name }}" />
+<meta property="og:title" content="{% if seoTitle %}{{ seoTitle }}{% else %}{{ title | default(site.name) }}{% endif %}" />
+<meta property="og:description" content="{{ desc | default(site.slogan) }}" />
+<meta property="og:image" content="{{ site.url }}/hero-qingming.jpg" />
+<meta property="og:url" content="{{ site.url }}{{ page.url }}" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet" />

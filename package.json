@@ -5,7 +5,8 @@
   "description": "婺需文学社官方网站源码 (Eleventy 静态站点)",
   "scripts": {
     "build": "eleventy",
-    "serve": "eleventy --serve"
+    "serve": "eleventy --serve",
+    "test": "npm run build && node scripts/test-submit.js && node scripts/verify-dist.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1"

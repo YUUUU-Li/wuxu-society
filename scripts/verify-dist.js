@@ -1,0 +1,68 @@
+// 站点产物断言: node scripts/verify-dist.js (先 npm run build)
+// 对 dist/ 做全站结构性回归, 防模板/登记表/CSS 改坏
+const fs = require("fs");
+const path = require("path");
+const assert = require("assert");
+
+const D = path.join(__dirname, "..", "dist");
+const read = (f) => fs.readFileSync(path.join(D, f), "utf8");
+const exists = (f) => fs.existsSync(path.join(D, f));
+const files = fs.readdirSync(D);
+
+// —— 产物数量与泄漏 ——
+const htmls = files.filter((f) => f.endsWith(".html"));
+assert.strictEqual(htmls.length, 50, `应 50 html, 实得 ${htmls.length}`);
+for (const f of htmls) {
+  const s = read(f);
+  assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
+}
+
+const home = read("index.html");
+const css = read("site.css");
+const lib = read("library.html");
+
+// —— 页脚合并行 + 旧尾巴清除 + 许可证随站 ——
+assert(home.includes('class="foot-note"') && home.includes("© 2024–2026 婺需文学社"), "页脚合并行含 ©");
+assert(!home.includes("taste-skill") && !home.includes("站点构建器依"), "机器尾巴已清除");
+for (const f of ["LICENSE.txt", "LICENSE-CODE.txt", "_headers"]) assert(exists(f), `${f} 缺失`);
+for (const f of ["LICENSE.txt", "LICENSE-CODE.txt"]) {
+  const b = fs.readFileSync(path.join(D, f));
+  assert(b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf, `${f} 缺 UTF-8 BOM`);
+}
+
+// —— 首页结构 ——
+assert(home.includes('<p class="motto-lines"><span>“文章千古事，</span><span>得失寸心知。”</span></p>'), "社训自适应结构");
+assert(home.includes("hero-qingming.jpg") && !/<img[^>]+src="https?:\/\/picsum/.test(home), "hero 本地图");
+assert(home.includes('id="home-picks"') && home.includes('id="home-pool"'), "随机拾读区");
+const pool = JSON.parse(/<script type="application\/json" id="home-pool">(.*?)<\/script>/.exec(home)[1]);
+assert.strictEqual(pool.length, 38, `拾读池应 38, 实得 ${pool.length}`);
+const wy = pool.find((c) => c.href.includes("wenyib"));
+assert(wy && wy.line.startsWith("这是我第几次为你扫墓"), `行号跳过失效: ${wy && wy.line}`);
+
+// —— CSS 关键规则 ——
+const flat = css.replace(/\n/g, "");
+assert(flat.includes('.duo-acts{display:flex;justify-content:center') && flat.includes("max-width:560px"), "双按钮桌面居中横排");
+assert(/@media \(max-width:640px\)\{[^}]*\.duo-acts\{flex-direction:column/.test(flat), "双按钮手机竖排");
+assert(flat.includes(".foot-note{margin-top:26px") && flat.includes("font-size:12px"), "页脚小字规则");
+assert(flat.includes('.nav.open .nav-links{display:flex') && flat.includes(".nav-toggle{display:none"), "汉堡菜单");
+assert(flat.includes("grid-template-columns:minmax(0,1fr) auto auto"), "作品库行弹性列");
+
+// —— 作品库 45 行 + 筛选 ——
+const rows = [...lib.matchAll(/class="idx-row rv" data-author="([^"]*)" data-genre="([^"]*)" data-imagery="([^"]*)" data-source="([^"]*)"/g)];
+assert.strictEqual(rows.length, 45, `库应 45 行, 实得 ${rows.length}`);
+assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
+for (const x of ["author", "genre", "imagery", "source"]) assert(lib.includes(`id="f-${x}"`), `筛选 ${x} 缺失`);
+
+// —— 关联轮换结构抽查 ——
+const gui = read("w-guixiang.html");
+const sec = /<section class="wrap rel rv">([\s\S]*?)<\/section>/.exec(gui);
+assert(sec && sec[1].includes('data-rotate="5"') && sec[1].includes('template class="rel-pool"'), "轮换结构缺失");
+assert(read("w-zhuyingtai.html").includes('class="foot-note"'), "新投稿页正常渲染");
+
+// —— 投稿页字段 ——
+const sub = read("submit.html");
+for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-imagery"', 'name="website"', "/.netlify/functions/submit"]) {
+  assert(sub.includes(x), `投稿页缺 ${x}`);
+}
+
+console.log(`\n✅ verify-dist.js 全部通过 (${htmls.length} 页 / 拾读池 ${pool.length} / 库 ${rows.length} 行)`);
