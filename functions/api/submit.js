@@ -1,8 +1,8 @@
 // Cloudflare Pages Functions 适配器（切换用）：
 // 复用 netlify/functions/submit.js 同一份投稿逻辑，仅做"平台翻译层"。
-// 部署形态：仓库根 /functions/submit.js  ->  Pages Functions 路由 /.functions/submit.js
+// 部署形态：仓库根 /functions/api/submit.js -> Pages Functions 路由 /api/submit
+// （勿放 /functions/submit.js：会与静态页 submit.html 的规范化路径 /submit 撞车，函数不触发）
 // 需在 Cloudflare Pages 环境变量(secret)里配置 GITHUB_TOKEN_SUBMIT。
-// 说明：Buffer 在 workerd 运行时不存在，下面提供最小 shim（仅覆盖本函数用到的两种转换）。
 if (typeof Buffer === "undefined") {
   const enc = new TextEncoder();
   const dec = new TextDecoder();
@@ -32,7 +32,7 @@ if (typeof Buffer === "undefined") {
   };
 }
 
-const { handler } = require("../netlify/functions/submit.js");
+const { handler } = require("../../netlify/functions/submit.js");
 
 function headersToObj(h) {
   const o = {};

@@ -4,8 +4,8 @@
 const path = require("path");
 
 (async () => {
-  const mod = require(path.join(__dirname, "..", "functions", "submit.js"));
-  const req = new Request("https://example.test/submit", {
+  const mod = require(path.join(__dirname, "..", "functions", "api", "submit.js"));
+  const req = new Request("https://example.test/api/submit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "{}",

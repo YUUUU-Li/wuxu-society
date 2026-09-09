@@ -93,7 +93,7 @@ assert(!read("w-feng.html").includes("本期概念"), "未入期作品无概念�
 
 // —— 投稿页字段 ——
 const sub = read("submit.html");
-for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', '"/submit"']) {
+for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', '"/api/submit"']) {
   assert(sub.includes(x), `投稿页缺 ${x}`);
 }
 

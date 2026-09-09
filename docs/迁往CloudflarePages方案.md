@@ -28,11 +28,13 @@
 
 ## 2. 代码侧已做的准备（无需再动）
 
-- **`functions/submit.js`**（仓库根）：Cloudflare Pages Functions 适配器，复用
+- **`functions/api/submit.js`**（仓库根）：Cloudflare Pages Functions 适配器，复用
   `netlify/functions/submit.js` 同一份投稿逻辑（含 Buffer shim、CF 真实 IP 透传、
-  env 桥接）。CF 部署后投稿路由为 `/submit`；
-- **`src/_data/site.json` 新增 `apiEndpoint`**：投稿页提交地址由此字段驱动，
-  目前为 `/.netlify/functions/submit`；**切换 CF 那天把它改成 `/submit`** 即可全站生效；
+  env 桥接）。CF 部署后投稿路由为 `/api/submit`；
+  ⚠️ 勿用 `functions/submit.js`：静态页 `submit.html` 会被 CF 规范化到 `/submit`，
+  会占掉函数路由（函数不触发）——函数必须放不与任何页面同名的路径；
+- **`src/_data/site.json` 的 `apiEndpoint`**：投稿页提交地址由此字段驱动，现已切为
+  `/api/submit`（CF 函数路由）；域名换成自有域名时只改 `url` 字段即可；
 - 验证命令（本仓库内跑）：`node scripts/cf-adapter-smoke.js`（模拟 CF 调用，400 校验路径通）。
 
 > 仍缺：**入社申请**用的 Netlify Forms 在 CF 无对应物。二选一：
