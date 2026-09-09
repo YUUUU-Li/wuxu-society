@@ -239,7 +239,7 @@
   });
 
   /* ---------- 相似标签(余弦) 动态组 ---------- */
-  var relSim = document.getElementById("rel-sim");
+  var relSim = null; // #rel-sim 在脚本之后的 DOM 里, 须等 DOMContentLoaded 再取
   var relPoolData = [];
   function relItem(r) {
     var lis = [];
@@ -259,6 +259,7 @@
     ul.innerHTML = relItem(picked).join("");
   }
   async function loadRel() {
+    relSim = document.getElementById("rel-sim"); // DOM 就绪后容器必在
     if (!relSim) return;
     try {
       var r = await fetch(api + "/related?work=" + encodeURIComponent(work));
@@ -301,6 +302,10 @@
       root.hidden = true;
     }
   }
+  function whenReady(fn) {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
+  }
   loadAll();
-  loadRel();
+  whenReady(loadRel);
 })();
