@@ -328,3 +328,74 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   background:rgba(156,63,48,.04);text-decoration:none;transition:border-color .2s,color .2s}
 .chip:hover{border-color:var(--seal,#9c3f30);color:var(--seal,#9c3f30)}
 .concept-note{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
+
+/* ══ 众注原型(zhu zhu) ══ */
+.zz{max-width:760px;border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
+  padding:22px 26px;margin-top:6px;background:rgba(255,253,248,.6)}
+.zz-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.zz-head h3{font-size:1.15rem;margin:0}
+.zz-rule{font-size:12.5px;color:var(--dim,#6e6a5e)}
+.zz-cap{font-size:12.5px;color:var(--dim,#6e6a5e);margin:12px 0 8px}
+.tag-line{display:flex;flex-wrap:wrap;gap:8px}
+.tagpill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line,#cfc6b4);
+  border-radius:999px;padding:3px 8px 3px 14px;background:#fff;cursor:pointer;font-size:13.5px;color:var(--ink,#3a3630)}
+.tagpill .tp-n{font-size:12px;color:var(--dim,#6e6a5e);background:#f2eee4;border-radius:999px;padding:0 7px;line-height:17px}
+.tagpill.on{border-color:var(--seal,#9c3f30);background:rgba(156,63,48,.08);color:var(--seal,#9c3f30)}
+.tagpill.on .tp-n{background:var(--seal,#9c3f30);color:#fff}
+.tagpill.cand{border-style:dashed}
+.tag-add{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.tag-wrap{position:relative;flex:1 1 200px;min-width:150px;max-width:520px}
+.tag-wrap input{display:block;width:100%;height:28px;box-sizing:border-box;border:1px solid var(--line,#cfc6b4);border-radius:999px;padding:0 12px;font-size:12.5px;line-height:1;background:#fff;color:var(--ink,#3a3630)}
+.sug{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30;background:#fffdf8;
+  border:1px solid var(--line,#cfc6b4);border-radius:8px;box-shadow:0 8px 20px rgba(60,50,30,.12);
+  max-height:156px;overflow-y:auto;padding:5px}
+.sug button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;
+  text-align:left;padding:4px 10px;margin:1px 0;border:none;background:none;border-radius:5px;
+  font-size:13px;cursor:pointer;color:var(--ink,#3a3630)}
+.sug button:hover,.sug button:focus{background:rgba(156,63,48,.08);color:var(--seal,#9c3f30)}
+.sug-c{font-size:11.5px;color:var(--dim,#6e6a5e);background:#f2eee4;border-radius:999px;padding:0 6px;line-height:15px}
+.tag-add .btn{height:28px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  padding:0 16px;font-size:12.5px;font-weight:600;line-height:1;border-radius:999px;flex:none}
+.tag-tip{width:100%;flex:none;order:9;font-size:12px;margin-top:2px}
+.z-list{list-style:none;margin:0;padding:0}
+.z-item{display:flex;gap:12px;padding:14px 0;border-top:1px dashed var(--line,#d8d0c0)}
+.z-item:first-of-type{border-top:none}
+.z-no{flex:none;width:24px;height:24px;border-radius:50%;background:#f2eee4;color:var(--dim,#6e6a5e);
+  font-size:12.5px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.z-body{flex:1;min-width:0}
+.z-meta{font-size:12px;color:var(--dim,#6e6a5e)}
+.z-text{margin:6px 0 4px;font-size:15px;line-height:1.9}
+.z-like{display:inline-flex;gap:10px;align-items:center;border:none;background:none;padding:0;
+  cursor:pointer;font-size:12.5px;color:var(--seal,#9c3f30)}
+.z-like i{font-style:normal;color:var(--dim,#6e6a5e);font-size:12px}
+.z-like.on span{font-weight:600}
+.z-form{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line,#cfc6b4)}
+.z-form input,.z-form textarea{border:1px solid var(--line,#cfc6b4);border-radius:4px;padding:8px 12px;
+  font-size:14.5px;background:#fff;color:var(--ink,#3a3630);font-family:inherit;resize:vertical}
+.z-acts{display:flex;align-items:center;gap:12px}
+.zz-note{margin:16px 0 0;font-size:12.5px;color:var(--dim,#6e6a5e);border-top:1px dotted var(--line,#d8d0c0);padding-top:12px}
+.demo-quote{margin:0;text-align:center;font-size:1.35rem;font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
+.demo-sub{text-align:center;margin-top:6px;font-size:12.5px}
+
+/* 众注: 引文块与链接 */
+.z-quote{border-left:2px solid var(--seal,#9c3f30);background:rgba(156,63,48,.05);
+  margin:8px 0;padding:6px 12px;font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+  font-size:14px;line-height:1.9;color:var(--ink-soft,#544e42)}
+.z-url{color:var(--seal,#9c3f30);word-break:break-all}
+
+/* 众注: 回帖(单层楼中楼) */
+.z-item .z-acts{display:flex;align-items:center;gap:14px;margin-top:2px;flex-wrap:wrap}
+.z-reply{border:none;background:none;padding:0;cursor:pointer;font-size:12.5px;color:var(--dim,#6e6a5e)}
+.z-reply:hover{color:var(--seal,#9c3f30)}
+.z-replyform{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px;
+  background:rgba(156,63,48,.03);border:1px dashed var(--line,#d8d0c0);border-radius:8px}
+.z-r-name{width:110px;border:1px solid var(--line,#cfc6b4);border-radius:999px;padding:0 10px;
+  height:26px;font-size:12.5px;background:#fff;color:var(--ink,#3a3630)}
+.z-r-text{flex:1 1 200px;min-width:150px;border:1px solid var(--line,#cfc6b4);border-radius:999px;
+  padding:0 10px;height:26px;font-size:12.5px;background:#fff;color:var(--ink,#3a3630)}
+.z-r-send{height:26px;padding:0 14px;font-size:12px;border-radius:999px;display:inline-flex;align-items:center}
+.z-r-cancel{border:none;background:none;padding:0 4px;cursor:pointer;font-size:12.5px;color:var(--dim,#6e6a5e)}
+.z-r-cancel:hover{color:var(--seal,#9c3f30)}
+.z-sub{margin-top:10px;border-left:1px dotted var(--line,#d8d0c0);padding-left:16px;
+  display:flex;flex-direction:column;gap:8px}
+.z-reply-item .z-text{margin:2px 0 0;font-size:14px;line-height:1.85}

@@ -12,7 +12,7 @@ const files = fs.readdirSync(D);
 
 // —— 产物数量与泄漏 ——
 const htmls = files.filter((f) => f.endsWith(".html"));
-assert.strictEqual(htmls.length, 54, `应 54 html(51+3 刊期页), 实得 ${htmls.length}`);
+assert.strictEqual(htmls.length, 55, `应 55 html(51 正式+3 刊期页+1 众注原型), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -82,6 +82,7 @@ assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文
 assert(!lib.includes("待辑入新期"), "待辑为空时不显示提示");
 
 // —— 概念卡(P2.3) ——
+assert(exists("proto-note.html") && read("proto-note.html").includes("众注 · 版式演示"), "众注版式原型页(设计稿)");
 assert(exists("concepts/qingming.html") && exists("concepts/lishe.html"), "概念页生成");
 const cq = read("concepts/qingming.html");
 assert(cq.includes("清明") && cq.includes("收录篇目") && cq.includes("清明会序"), "清明概念页含收录作品");

@@ -1,0 +1,312 @@
+---
+layout: "base.njk"
+permalink: "proto-note.html"
+title: "众注原型"
+seoTitle: "众注原型（演示） | 婺需文学社"
+desc: "众注（标签+评论）版式演示。"
+footerNote: "此为众注版式原型演示页，非正式内容。"
+---
+<main>
+  <section class="wrap page-head">
+    <p class="crumb"><a href="index.html">首页</a> / <a href="library.html">作品库</a> / <span class="dim">众注原型（演示）</span></p>
+    <h1 class="p-title rv">众注 · 版式演示</h1>
+    <p class="lead rv" style="margin-top:12px">以下为"标签 + 评论"众注区的<em>静态效果示意</em>：点标签计数会即时增减（仅本页演示，不保存）；正式功能待迁往 Cloudflare 后接入。样式沿用朱砂描边、楷体小注。</p>
+  </section>
+
+  <section class="wrap rv" style="max-width:720px">
+    <h2 class="demo-quote">「当时明月在，曾照彩云归。」</h2>
+    <p class="dim demo-sub">（正文示例句 · 下方为作品页将出现的众注区块）</p>
+  </section>
+
+  <!-- ══ 众注区块原型 ══ -->
+  <section class="wrap zz rv" id="zhuzhu">
+    <div class="zz-head">
+      <h3>众注</h3><span class="zz-rule">以诗会友，勿作恶语</span>
+    </div>
+
+    <!-- 标签行 -->
+    <div class="zz-tags">
+      <p class="zz-cap">标签（你认为的本作品亮点）· 点一下即赞同，可再点取消</p>
+      <div class="tag-line">
+        <button class="tagpill" type="button"><span class="tp-word">思念</span><span class="tp-n">6</span></button>
+        <button class="tagpill" type="button"><span class="tp-word">明月</span><span class="tp-n">5</span></button>
+        <button class="tagpill" type="button"><span class="tp-word">重逢</span><span class="tp-n">3</span></button>
+        <button class="tagpill on" type="button"><span class="tp-word">春景</span><span class="tp-n">2</span></button>
+        <button class="tagpill" type="button"><span class="tp-word">怅惘</span><span class="tp-n">2</span></button>
+        <button class="tagpill" type="button"><span class="tp-word">用典</span><span class="tp-n">1</span></button>
+      </div>
+      <form class="tag-add" id="tag-add">
+        <span class="tag-wrap">
+          <input id="tag-input" type="text" maxlength="12" placeholder="输入标签：有同名/相似即选中匹配；没有再新建" aria-label="输入标签" autocomplete="off" aria-expanded="false" />
+          <div class="sug" id="sug" role="listbox" aria-label="匹配的标签" hidden></div>
+        </span>
+        <button class="btn ghost" type="submit">添加</button>
+        <span class="dim tag-tip">匹配到已有标签＝赞同它；无匹配＝新建（先进候选，编委采纳后转正）</span>
+      </form>
+    </div>
+
+    <!-- 评论 -->
+    <div class="zz-comments">
+      <p class="zz-cap">评论 · 楼式，笔名/昵称制（游客亦可评，随评随写）</p>
+      <ol class="z-list" id="z-list">
+        <li class="z-item">
+          <span class="z-no">1</span>
+          <div class="z-body">
+            <span class="z-meta">泊珩 · 2026-09-09 10:21</span>
+            <div class="z-quote">“当时明月在，曾照彩云归。”</div>
+            <p class="z-text">"明月"与"彩云"两样并置，一出一归，情致都在没说出的那句里。</p>
+            <div class="z-acts"><button class="z-like" type="button"><span>同感 3</span><i>泊珩 · 济枫 · cty</i></button><button class="z-reply" type="button">回复</button></div>
+          </div>
+        </li>
+        <li class="z-item">
+          <span class="z-no">2</span>
+          <div class="z-body">
+            <span class="z-meta">jwl · 2026-09-09 10:47</span>
+            <p class="z-text">读此句想起晏几道写"犹恐相逢是梦中"，此处"曾照"二字，淡淡怅惘便有了着落。</p>
+            <div class="z-acts"><button class="z-like" type="button"><span>同感 1</span><i>cty</i></button><button class="z-reply" type="button">回复</button></div>
+          </div>
+        </li>
+      </ol>
+      <form class="z-form" id="z-form">
+        <input id="z-name" type="text" maxlength="20" placeholder="笔名/昵称（必填）" aria-label="笔名或昵称" />
+        <textarea id="z-text" rows="3" maxlength="500" placeholder="写几句感受、典故或呼应……（行首加 > 可引原句/他人评论；网址自动成链接）" aria-label="评论内容"></textarea>
+        <div class="z-acts">
+          <button class="btn ghost" type="submit">发表</button>
+          <span class="dim" id="z-msg"></span>
+        </div>
+      </form>
+    </div>
+
+    <p class="zz-note">标签统计到一定数量将进入「候选标签」由编委采纳为正式意象/关联，众注即成为归纳之助 —— 演示页未接入。</p>
+  </section>
+
+  <script>
+  (function () {
+    "use strict";
+    var msg = document.getElementById("z-msg");
+    // 标签点按: 计数增减(统一走 votePill)
+    function votePill(b, plus) {
+      var n = b.querySelector(".tp-n");
+      var c = parseInt(n.textContent, 10);
+      b.classList.toggle("on", !!plus);
+      n.textContent = String(plus ? c + 1 : Math.max(0, c - 1));
+    }
+    document.querySelectorAll(".tagpill").forEach(function (b) {
+      b.addEventListener("click", function () {
+        votePill(b, b.classList.toggle("on"));
+      });
+    });
+    // 添加标签: 命中已有标签=赞同(不重复建); 无匹配=新建候选
+    var ta = document.getElementById("tag-add");
+    var ti = document.getElementById("tag-input");
+    var sug = document.getElementById("sug");
+    var POOL = ["思念","明月","重逢","春景","怅惘","用典","夜","秋","雨","白描","叠字","旷达","怀古","离别","归乡"];
+    function existingPill(word) {
+      var hit = null;
+      document.querySelectorAll(".tagpill").forEach(function (b) {
+        if (!hit && b.querySelector(".tp-word").textContent === word) hit = b;
+      });
+      return hit;
+    }
+    function doAdd(v) {
+      if (!v) return;
+      var hit = existingPill(v);
+      if (hit) {
+        if (!hit.classList.contains("on")) votePill(hit, true);
+        if (msg) msg.textContent = "（演示）已赞同已有标签：" + v;
+      } else {
+        var p = document.createElement("button");
+        p.type = "button";
+        p.className = "tagpill cand on";
+        p.innerHTML = '<span class="tp-word">' + v.replace(/[<>&]/g, "") + '</span><span class="tp-n">1</span>';
+        p.addEventListener("click", function () {
+          votePill(p, p.classList.toggle("on"));
+        });
+        document.querySelector(".tag-line").appendChild(p);
+        if (msg) msg.textContent = "（演示）已新建候选标签：" + v + "（待编委采纳转正）";
+      }
+      ti.value = "";
+      hideSug();
+    }
+    function hideSug() {
+      sug.hidden = true;
+      ti.setAttribute("aria-expanded", "false");
+    }
+    function showSug(list) {
+      sug.innerHTML = "";
+      list.forEach(function (w) {
+        var b = document.createElement("button");
+        b.type = "button";
+        var hit = existingPill(w);
+        var c = hit ? parseInt(hit.querySelector(".tp-n").textContent, 10) : 0;
+        b.innerHTML = '<span>' + w + "</span>" + (c ? '<span class="sug-c">' + c + "</span>" : "");
+        b.addEventListener("mousedown", function (ev) {
+          ev.preventDefault(); // 保住 focus, 再即时处理
+          doAdd(w);
+        });
+        sug.appendChild(b);
+      });
+      if (list.length) {
+        sug.hidden = false;
+        ti.setAttribute("aria-expanded", "true");
+      } else hideSug();
+    }
+    function visibleWords() {
+      var s = {};
+      document.querySelectorAll(".tagpill .tp-word").forEach(function (w) { s[w.textContent] = 1; });
+      return s;
+    }
+    function refresh() {
+      var q = ti.value.trim();
+      var vis = visibleWords(); // 顶行已展示的标签不再进联想
+      var base = q ? POOL.filter(function (w) { return w.indexOf(q) !== -1; }) : POOL.slice();
+      var m = base.filter(function (w) { return !vis[w]; });
+      showSug(m.slice(0, 6)); // 联想只给前 6 个, 框小可滚动
+    }
+    ti.addEventListener("input", refresh);
+    ti.addEventListener("focus", function () { refresh(); });
+    ti.addEventListener("blur", function () { setTimeout(hideSug, 160); });
+    ti.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") hideSug();
+    });
+    ta.addEventListener("submit", function (e) {
+      e.preventDefault();
+      doAdd(ti.value.trim());
+    });
+    // 同感 + 回帖(事件委托, 静态/动态楼通用)
+    var zlist = document.getElementById("z-list");
+    var activeForm = null;
+    function fmtTime() {
+      var n = new Date();
+      return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0") + " " + String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
+    }
+    function closeForm() {
+      if (activeForm) { activeForm.remove(); activeForm = null; }
+    }
+    function replyCount(item) {
+      var sub = item.querySelector(".z-sub");
+      return sub ? sub.children.length : 0;
+    }
+    function refreshReplyLabel(item) {
+      var b = item.querySelector(".z-reply");
+      var n = replyCount(item);
+      b.textContent = "回复" + (n ? " · " + n : "");
+    }
+    zlist.addEventListener("click", function (ev) {
+      // 同感
+      var like = ev.target.closest(".z-like");
+      if (like) {
+        var s = like.querySelector("span");
+        var m = /^同感 (\d+)/.exec(s.textContent);
+        var on = like.classList.toggle("on");
+        s.textContent = "同感 " + (on ? parseInt(m[1], 10) + 1 : parseInt(m[1], 10) - 1);
+        return;
+      }
+      // 回复按钮: 展开/收起本楼的回复行
+      var rep = ev.target.closest(".z-reply");
+      if (rep) {
+        var item = rep.closest(".z-item");
+        if (item.querySelector(".z-replyform")) { closeForm(); return; }
+        closeForm();
+        var body = item.querySelector(".z-body");
+        var f = document.createElement("div");
+        f.className = "z-replyform";
+        var pm = item.querySelector(".z-meta").textContent.split(" · ")[0];
+        var pn = item.querySelector(".z-no").textContent;
+        f.innerHTML = '<input class="z-r-name" type="text" maxlength="20" placeholder="笔名/昵称" aria-label="笔名或昵称" />' +
+          '<input class="z-r-text" type="text" maxlength="300" placeholder="回复 ' + pm + '（# ' + pn + '）…" aria-label="回帖内容" />' +
+          '<button class="btn ghost z-r-send" type="button">发送</button>' +
+          '<button class="z-r-cancel" type="button">取消</button>';
+        body.appendChild(f);
+        activeForm = f;
+        f.querySelector(".z-r-name").focus();
+        return;
+      }
+      // 发送回帖
+      var send = ev.target.closest(".z-r-send");
+      if (send) {
+        var f2 = send.closest(".z-replyform");
+        var it2 = f2.closest(".z-item");
+        var nm = f2.querySelector(".z-r-name").value.trim();
+        var tx = f2.querySelector(".z-r-text").value.trim();
+        if (!nm) { f2.querySelector(".z-r-name").focus(); if (msg) msg.textContent = "回帖需填笔名/昵称（演示）。"; return; }
+        if (!tx) { f2.querySelector(".z-r-text").focus(); if (msg) msg.textContent = "写点回帖内容吧（演示）。"; return; }
+        var sub = it2.querySelector(".z-sub");
+        if (!sub) {
+          sub = document.createElement("div");
+          sub.className = "z-sub";
+          it2.querySelector(".z-body").appendChild(sub);
+        }
+        var pm2 = it2.querySelector(".z-meta").textContent.split(" · ")[0];
+        var pn2 = it2.querySelector(".z-no").textContent;
+        var d = document.createElement("div");
+        d.className = "z-reply-item";
+        d.innerHTML = '<span class="z-meta">' + esc(nm) + " · " + fmtTime() + " · 回复 " + esc(pm2) + "（#" + pn2 + "）</span><p class=\"z-text\">" +
+          linkify(esc(tx)).replace(/\n/g, "<br />") + "</p>";
+        sub.appendChild(d);
+        closeForm();
+        refreshReplyLabel(it2);
+        if (msg) msg.textContent = "（演示）回帖已发表。";
+        return;
+      }
+      // 取消回帖
+      var can = ev.target.closest(".z-r-cancel");
+      if (can) { closeForm(); return; }
+    });
+    // 评论发表(演示: 本地追加; 支持 > 引文块与自动链接)
+    var zf = document.getElementById("z-form");
+    var zn = document.getElementById("z-name");
+    var zt = document.getElementById("z-text");
+
+    function esc(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function linkify(s) {
+      return s.replace(/(https?:\/\/[^\s<]+)/g, '<a class="z-url" href="$1" rel="nofollow noopener" target="_blank">$1</a>');
+    }
+    // 行解析: "> " 开头归引文块, 其余归正文段(保换行)
+    function renderComment(src) {
+      var lines = src.replace(/\r/g, "").split("\n");
+      var html = "";
+      var para = [];
+      var quote = [];
+      function flushPara() {
+        if (para.length) { html += '<p class="z-text">' + linkify(esc(para.join("<br />"))) + "</p>"; para = []; }
+      }
+      function flushQuote() {
+        if (quote.length) { html += '<div class="z-quote">' + linkify(esc(quote.join("<br />"))) + "</div>"; quote = []; }
+      }
+      lines.forEach(function (ln) {
+        if (ln.trim().indexOf(">") === 0) {
+          flushPara();
+          quote.push(ln.replace(/^\s*>\s?/, ""));
+        } else {
+          flushQuote();
+          para.push(ln);
+        }
+      });
+      flushPara();
+      flushQuote();
+      return html;
+    }
+    zf.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!zn.value.trim()) { if (msg) msg.textContent = "请填笔名（演示）。"; return; }
+      if (!zt.value.trim()) { if (msg) msg.textContent = "写点什么吧（演示）。"; return; }
+      var li = document.createElement("li");
+      li.className = "z-item";
+      var now = new Date();
+      var ts = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + " " + String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      li.innerHTML = '<span class="z-no"></span><div class="z-body"><span class="z-meta">' +
+        esc(zn.value.trim()) + " · " + ts + "</span>" +
+        renderComment(zt.value.trim()) +
+        '<div class="z-acts"><button class="z-like" type="button"><span>同感 0</span><i></i></button><button class="z-reply" type="button">回复</button></div></div>';
+      var n = document.getElementById("z-list").children.length + 1;
+      li.querySelector(".z-no").textContent = String(n);
+      zf.parentNode.querySelector("ol").appendChild(li);
+      if (msg) msg.textContent = "（演示）已发表。正式众注将随 Cloudflare 上线后开放。";
+      zt.value = "";
+    });
+  })();
+  </script>
+</main>
