@@ -21,14 +21,26 @@
       msg.className = "form-msg";
       var name = form.penname.value.trim();
       var mail = form.mail.value.trim();
-      var mailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail);
-      if (!name){ msg.textContent = "请先留下笔名或称呼。"; msg.className = "form-msg err"; form.penname.focus(); }
-      else if (!mail){ msg.textContent = "请填写邮箱，方便社长回信。"; msg.className = "form-msg err"; form.mail.focus(); }
-      else if (!mailOk){ msg.textContent = "邮箱格式不正确，请检查后重试。"; msg.className = "form-msg err"; form.mail.focus(); }
-      else {
-        msg.textContent = "已收到申请。入社说明将发送至你的邮箱，请静候。";
-        form.reset();
-      }
+      if (!name) { msg.textContent = "请留下笔名或称呼。"; msg.classList.add("err"); return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { msg.textContent = "邮箱格式似乎不对，请检查。"; msg.classList.add("err"); return; }
+      msg.textContent = "正在提交…";
+      var fd = new FormData(form);
+      fd.set("form-name", "join");
+      fetch("/", {
+        method: "POST",
+        body: fd,
+        headers: { Accept: "application/json" }
+      })
+        .then(function (r) { if (!r.ok) throw new Error("submit-failed"); return r.json(); })
+        .then(function () {
+          msg.className = "form-msg";
+          msg.textContent = "已收到申请。入社说明将发送至你的邮箱，请静候。";
+          form.reset();
+        })
+        .catch(function () {
+          msg.className = "form-msg err";
+          msg.textContent = "提交失败：本地预览无法提交属正常，请到线上站点申请；或直接邮件 wuxuliterature@163.com 联系。";
+        });
     });
   }
 

@@ -216,7 +216,11 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
         </ul>
       </div>
 
-      <form class="fm rv" id="join-form" novalidate aria-label="入社申请">
+      <form class="fm rv" id="join-form" name="join" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate aria-label="入社申请">
+        <input type="hidden" name="form-name" value="join" />
+        <p style="position:absolute;left:-9999px" aria-hidden="true">
+          <label>请勿填写<input type="text" name="bot-field" tabindex="-1" autocomplete="off" /></label>
+        </p>
         <div class="field">
           <label for="penname">笔名或称呼</label>
           <input id="penname" name="penname" type="text" autocomplete="name" placeholder="例：枕月" required />

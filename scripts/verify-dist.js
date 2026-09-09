@@ -37,6 +37,7 @@ assert(home.includes('id="home-picks"') && home.includes('id="home-pool"'), "随
 assert(home.includes('id="wechat"') && home.includes("wechat-qr.jpg") && home.includes("婺需文学社"), "公众号名片区(二维码+名称)");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");
 assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length, 1, "社训句全页只保留一处(公众号简介)");
+assert(home.includes('data-netlify="true"') && home.includes('name="form-name" value="join"'), "入社表单已接 Netlify Forms");
 const pool = JSON.parse(/<script type="application\/json" id="home-pool">(.*?)<\/script>/.exec(home)[1]);
 assert.strictEqual(pool.length, 38, `拾读池应 38, 实得 ${pool.length}`);
 const wy = pool.find((c) => c.href.includes("wenyib"));
