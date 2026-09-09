@@ -1,6 +1,7 @@
 -- 众注系统 D1 建表脚本(随 Cloudflare Pages + D1 上线执行)
--- 执行方式(本地/CI): npx wrangler d1 execute zhuzhu --file=sql/zhuzhu.sql --remote
--- 说明: 先显后删; 昵称自由填写; 标签分 预设/候选/已采纳; 编委可删评论/合并候选标签
+-- 执行方式(推荐): Cloudflare D1 控制台(数据库页 -> Console)整段粘贴本文件内容
+-- 或命令行: npx wrangler d1 execute <库名> --remote --file=sql/zhuzhu.sql
+-- 计票口径: 同一 IP 对同一作品+标签/评论 一票(voter_key/liker_key = 访问者 IP, 与函数代码一致)
 
 CREATE TABLE IF NOT EXISTS tags (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -13,9 +14,8 @@ CREATE TABLE IF NOT EXISTS tag_votes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   work_id    TEXT NOT NULL,                  -- 作品 slug
   tag_id     INTEGER NOT NULL REFERENCES tags(id),
-  voter_ip   TEXT NOT NULL DEFAULT '',
-  voter_name TEXT NOT NULL DEFAULT '',       -- 昵称(可空=匿名计数)
-  UNIQUE(work_id, tag_id, voter_ip, voter_name)  -- 一人一票(同一 IP+昵称 仅一次)
+  voter_key  TEXT NOT NULL DEFAULT '',       -- 访问者 IP(一人一票)
+  UNIQUE(work_id, tag_id, voter_key)
 );
 
 CREATE TABLE IF NOT EXISTS comments (
@@ -32,16 +32,15 @@ CREATE TABLE IF NOT EXISTS comments (
 CREATE TABLE IF NOT EXISTS comment_likes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   comment_id INTEGER NOT NULL REFERENCES comments(id),
-  liker_ip   TEXT NOT NULL DEFAULT '',
-  liker_name TEXT NOT NULL DEFAULT '',
-  UNIQUE(comment_id, liker_ip, liker_name)
+  liker_key  TEXT NOT NULL DEFAULT '',       -- 访问者 IP(一人一票)
+  UNIQUE(comment_id, liker_key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_tv_work   ON tag_votes(work_id);
-CREATE INDEX IF NOT EXISTS idx_cm_work   ON comments(work_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_tv_work    ON tag_votes(work_id);
+CREATE INDEX IF NOT EXISTS idx_cm_work    ON comments(work_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_cl_comment ON comment_likes(comment_id);
 
--- 起步预置标签(社里共拟后可增删; 展示与联想用 kind='预设' 且 word 唯一)
+-- 起步预置标签(社里共拟后可增删; 联想候选用 kind='预设' 的词)
 INSERT OR IGNORE INTO tags(word, kind) VALUES
   ('思念','预设'), ('明月','预设'), ('重逢','预设'), ('春景','预设'),
   ('怅惘','预设'), ('用典','预设'), ('夜','预设'), ('秋','预设'),
