@@ -79,6 +79,7 @@ assert(read("issue-2026-09.html").includes("九月投稿辑") && read("issue-202
 assert(read("issue-huiyi-shijianliuliu.html").includes("回忆文会《时间溯流》") && read("issue-huiyi-shijianliuliu.html").includes("w-golden"), "回忆文会期页内容");
 assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
+assert(!lib.includes("待辑入新期"), "待辑为空时不显示提示");
 
 // —— 投稿页字段 ——
 const sub = read("submit.html");

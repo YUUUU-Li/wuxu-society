@@ -9,6 +9,7 @@ const REPO = "wuxu-society";
 const BASE = "main";
 const GROUPS_PATH = "src/_data/groups.json";
 const ORDER_PATH = "src/_data/fulltext_order.json";
+const PENDING_PATH = "src/_data/pending_issue.json";
 const GH = "https://api.github.com";
 
 // 体裁里含这些词的按"诗句"排版(行间 <br />, class=stanza), 否则按散文段落
@@ -244,6 +245,25 @@ exports.handler = async (event) => {
       method: "PUT",
       body: JSON.stringify({ message: "投稿: 登记全文库 " + slug, content: orderB64, sha: orderRes.sha, branch }),
     });
+    // 5b) 待辑登记(best-effort): 新稿记入 pending_issue.json, 编委封期后转正入期
+    try {
+      const pendRes = await gh("/repos/" + OWNER + "/" + REPO + "/contents/" + PENDING_PATH + "?ref=" + BASE);
+      const pend = JSON.parse(Buffer.from(pendRes.content, "base64").toString("utf8"));
+      if (Array.isArray(pend) && !pend.includes(slug)) {
+        pend.push(slug);
+        await gh("/repos/" + OWNER + "/" + REPO + "/contents/" + PENDING_PATH, {
+          method: "PUT",
+          body: JSON.stringify({
+            message: "投稿: 记待辑 " + slug,
+            content: Buffer.from(JSON.stringify(pend, null, 2), "utf8").toString("base64"),
+            sha: pendRes.sha,
+            branch,
+          }),
+        });
+      }
+    } catch (e) {
+      console.warn("待辑登记跳过(不影响投稿):", e && e.message ? e.message : e);
+    }
   const noteBody = editorNote
     ? "## 给编委的附言\n" + editorNote.split("\n").map((l) => "> " + l).join("\n") + "\n\n"
     : "";

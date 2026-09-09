@@ -315,3 +315,6 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   font-size:1.12rem;color:var(--ink-soft,#544e42);line-height:2;letter-spacing:.04em;
   border-left:3px solid var(--seal,#9c3f30);background:rgba(156,63,48,.05);
   padding:6px 0 6px 18px;margin:4px 0 0}
+
+/* 刊期档案: 待辑提示 */
+.pending-hint{font-size:13px;color:var(--seal,#9c3f30);margin:6px 0 2px}

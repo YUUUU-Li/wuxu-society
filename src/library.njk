@@ -28,6 +28,7 @@ footerNote: "篇目分辑，录自社内原稿。"
 {% set wm = collections.works | worksMap %}
   <section class="wrap archives">
     <div class="sec-head rv"><h2>刊期档案</h2><hr class="hair" /></div>
+    {% if pending_issue and pending_issue.length %}<p class="pending-hint rv">另有 {{ pending_issue.length }} 篇来稿待辑入新期 · 编委封期后归档</p>{% endif %}
     {% for iss in issues %}
     <div class="archive-row rv">
       <div class="vol"><a href="{{ iss.id }}.html">{{ iss.title }}</a><small>{{ iss.type }} · {{ iss.period }}</small></div>

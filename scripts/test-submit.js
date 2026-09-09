@@ -5,6 +5,7 @@ const assert = require("assert");
 
 let md = "";
 let prBody = "";
+let pendingPut = "";
 function mockFetch(url, opts) {
   const path = /\/repos\/YUUUU-Li\/wuxu-society\/(.*)/.exec(url)[1];
   const method = (opts && opts.method) || "GET";
@@ -20,6 +21,12 @@ function mockFetch(url, opts) {
     return Promise.resolve(new Response(JSON.stringify({ sha: "gs", content: b64([{ key: "other", slugs: [] }]) }), { status: 200 }));
   if (method === "GET" && /fulltext_order\.json/.test(path))
     return Promise.resolve(new Response(JSON.stringify({ sha: "os", content: b64(["w-feng"]) }), { status: 200 }));
+  if (method === "GET" && /pending_issue\.json/.test(path))
+    return Promise.resolve(new Response(JSON.stringify({ sha: "ps", content: b64([]) }), { status: 200 }));
+  if (method === "PUT" && /pending_issue\.json/.test(path)) {
+    pendingPut = Buffer.from(body.content, "base64").toString("utf8");
+    return Promise.resolve(new Response("{}", { status: 200 }));
+  }
   if (method === "PUT" && /works\//.test(path)) {
     md = Buffer.from(body.content, "base64").toString("utf8");
     return Promise.resolve(new Response("{}", { status: 201 }));
@@ -91,7 +98,11 @@ async function main() {
   assert(prBody.includes("> 此为第三稿。\n> 如合适请以笔名发布。"), "附言按行转引用");
   assert(!md.includes("此为第三稿"), "附言不进作品 md");
 
-  console.log("\n✅ test-submit.js 全部通过 (校验/诗句/散文/自序/评注/摘句/蜜罐/附言)");
+  // 8) 待辑登记: 每篇投稿 slug 写入 pending_issue.json
+  const pend = JSON.parse(pendingPut);
+  assert(Array.isArray(pend) && pend.length === 1 && /^w-/.test(pend[0]), "pending_issue.json 登记待辑 slug");
+
+  console.log("\n✅ test-submit.js 全部通过 (校验/诗句/散文/自序/评注/摘句/蜜罐/附言/待辑登记)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

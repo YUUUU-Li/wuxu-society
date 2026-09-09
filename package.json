@@ -6,7 +6,8 @@
   "scripts": {
     "build": "eleventy",
     "serve": "eleventy --serve",
-    "test": "npm run build && node scripts/test-submit.js && node scripts/verify-dist.js"
+    "test": "npm run build && node scripts/test-submit.js && node scripts/verify-dist.js",
+    "seal-issue": "node scripts/seal-issue.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1"
