@@ -20,6 +20,7 @@
 ├─ docs/作品上传指南.md        # ★ 给社员的投稿图文教程（clone/Obsidian 写作/Git/上线）
 ├─ docs/投稿功能方案.md        # ★ 网页投稿功能设计（表单→PR→预览审核→一键发布，代码已就绪）
 ├─ docs/修改网站速查.md        # ★ 维护者 Git 速查（clone→分支→提交→合并→推送→反悔药）
+├─ docs/网站精进方案.md        # ★ 精进路线（关联轮换/筛选/评论系统/刊期概念化，P0-P2）
 ├─ netlify/functions/submit.js # 投稿接口: 表单→自动开 PR（需 GITHUB_TOKEN_SUBMIT 环境变量）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
