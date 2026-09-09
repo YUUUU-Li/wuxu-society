@@ -97,6 +97,14 @@ footerNote: "篇目分辑，录自社内原稿。"
   fill(imagery, Object.keys(imags).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
   fill(source, Object.keys(sources));
 
+  // URL 参数预选(如 library.html?author=xx), 兼作可分享筛选链接
+  var qs = new URLSearchParams(location.search);
+  var bind = { author: author, genre: genre, imagery: imagery, source: source };
+  ["author", "genre", "imagery", "source"].forEach(function (k) {
+    var v = qs.get(k);
+    if (v && bind[k]) bind[k].value = v;
+  });
+
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
