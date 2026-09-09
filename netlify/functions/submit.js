@@ -8,6 +8,7 @@ const OWNER = "YUUUU-Li";
 const REPO = "wuxu-society";
 const BASE = "main";
 const GROUPS_PATH = "src/_data/groups.json";
+const ORDER_PATH = "src/_data/fulltext_order.json";
 const GH = "https://api.github.com";
 
 // 体裁里含这些词的按"诗句"排版(行间 <br />, class=stanza), 否则按散文段落
@@ -158,7 +159,7 @@ exports.handler = async (event) => {
       method: "POST",
       body: JSON.stringify({ ref: "refs/heads/" + branch, sha: headSha }),
     });
-    // 3) 读 groups.json (main 上, 分支内容相同)
+    // 3) 读 groups.json 与 fulltext_order.json (main 上, 分支内容相同)
     const groupsRes = await gh(
       "/repos/" + OWNER + "/" + REPO + "/contents/" + GROUPS_PATH + "?ref=" + BASE
     );
@@ -167,15 +168,26 @@ exports.handler = async (event) => {
     if (!bucket) throw new Error("groups.json 缺少 other 分组");
     if (!bucket.slugs.includes(slug)) bucket.slugs.push(slug);
     const groupsB64 = Buffer.from(JSON.stringify(groups, null, 2), "utf8").toString("base64");
+    // 3b) 读 fulltext_order.json 并把新 slug 追加到末尾 (全文源库顺序)
+    const orderRes = await gh(
+      "/repos/" + OWNER + "/" + REPO + "/contents/" + ORDER_PATH + "?ref=" + BASE
+    );
+    const order = JSON.parse(Buffer.from(orderRes.content, "base64").toString("utf8"));
+    if (!order.includes(slug)) order.push(slug);
+    const orderB64 = Buffer.from(JSON.stringify(order, null, 2), "utf8").toString("base64");
     // 4) 提交作品 md (新文件, 无需 sha)
     await gh("/repos/" + OWNER + "/" + REPO + "/contents/src/works/" + slug + ".md", {
       method: "PUT",
       body: JSON.stringify({ message: "投稿: " + title + "（" + author + "）", content: Buffer.from(md, "utf8").toString("base64"), branch }),
     });
-    // 5) 更新 groups.json
+    // 5) 更新 groups.json 与 fulltext_order.json
     await gh("/repos/" + OWNER + "/" + REPO + "/contents/" + GROUPS_PATH, {
       method: "PUT",
       body: JSON.stringify({ message: "投稿: 登记 " + slug, content: groupsB64, sha: groupsRes.sha, branch }),
+    });
+    await gh("/repos/" + OWNER + "/" + REPO + "/contents/" + ORDER_PATH, {
+      method: "PUT",
+      body: JSON.stringify({ message: "投稿: 登记全文库 " + slug, content: orderB64, sha: orderRes.sha, branch }),
     });
     // 6) 开 PR
     const pr = await gh("/repos/" + OWNER + "/" + REPO + "/pulls", {
