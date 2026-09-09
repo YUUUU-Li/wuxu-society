@@ -173,24 +173,63 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
       e.preventDefault();
       doAdd(ti.value.trim());
     });
-    // 同感 + 回帖(事件委托, 静态/动态楼通用)
+    // 同感 + 回复(水源式平铺: 回帖也是一楼, 元信息标“回复 XX（#N）”; 支持 > 引文与换行)
     var zlist = document.getElementById("z-list");
-    var activeForm = null;
+    var activeBar = null;
     function fmtTime() {
       var n = new Date();
       return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0") + " " + String(n.getHours()).padStart(2, "0") + ":" + String(n.getMinutes()).padStart(2, "0");
     }
-    function closeForm() {
-      if (activeForm) { activeForm.remove(); activeForm = null; }
+    function closeBar() {
+      if (activeBar) { activeBar.remove(); activeBar = null; }
     }
-    function replyCount(item) {
-      var sub = item.querySelector(".z-sub");
-      return sub ? sub.children.length : 0;
+    function floorMeta(item) {
+      var noEl = item.querySelector(".z-no");
+      var mEl = item.querySelector(".z-meta");
+      return { no: noEl ? noEl.textContent : "", meta: mEl ? mEl.textContent : "" };
     }
-    function refreshReplyLabel(item) {
-      var b = item.querySelector(".z-reply");
-      var n = replyCount(item);
-      b.textContent = "回复" + (n ? " · " + n : "");
+    // 每个楼的“回复 · N”= 全楼中标记回复了该楼的数量
+    function refreshLabels() {
+      var floors = zlist.querySelectorAll(".z-item");
+      Array.prototype.forEach.call(floors, function (it) {
+        var no = floorMeta(it).no;
+        var n = 0;
+        Array.prototype.forEach.call(floors, function (o) {
+          if (o === it) return;
+          var m = o.querySelector(".z-meta");
+          if (m && m.textContent.indexOf("（#" + no + "）") !== -1) n++;
+        });
+        var b = it.querySelector(".z-reply");
+        if (b) b.textContent = n ? "回复 · " + n : "回复";
+      });
+    }
+    function openBar(item) {
+      closeBar();
+      var fm = floorMeta(item);
+      var body = item.querySelector(".z-body");
+      var f = document.createElement("div");
+      f.className = "z-replyform";
+      f.innerHTML = '<input class="z-r-name" type="text" maxlength="20" placeholder="笔名/昵称" aria-label="笔名或昵称" />' +
+        '<textarea class="z-r-text" rows="2" maxlength="300" placeholder="回复 ' + fm.meta.split(" · ")[0] + '（#' + fm.no + '）… 行首加 > 可引原帖" aria-label="回帖内容"></textarea>' +
+        '<button class="btn ghost z-r-send" type="button">发送</button>' +
+        '<button class="z-r-cancel" type="button">取消</button>';
+      body.appendChild(f);
+      activeBar = f;
+      f.querySelector(".z-r-name").focus();
+    }
+    function appendFloor(nm, tx, replyTo) {
+      var li = document.createElement("li");
+      li.className = "z-item";
+      var no = String(zlist.children.length + 1);
+      var meta = replyTo
+        ? esc(nm) + " · " + fmtTime() + " · 回复 " + esc(replyTo.meta.split(" · ")[0]) + "（#" + replyTo.no + "）"
+        : esc(nm) + " · " + fmtTime();
+      li.innerHTML = '<span class="z-no">' + no + '</span><div class="z-body"><span class="z-meta">' + meta + "</span>" +
+        renderComment(tx) +
+        '<div class="z-acts"><button class="z-like" type="button"><span>同感 0</span><i></i></button><button class="z-reply" type="button">回复</button></div></div>';
+      zlist.appendChild(li);
+      refreshLabels();
+      return li;
     }
     zlist.addEventListener("click", function (ev) {
       // 同感
@@ -202,27 +241,15 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
         s.textContent = "同感 " + (on ? parseInt(m[1], 10) + 1 : parseInt(m[1], 10) - 1);
         return;
       }
-      // 回复按钮: 展开/收起本楼的回复行
+      // 回复: 展开/收起回复条
       var rep = ev.target.closest(".z-reply");
       if (rep) {
         var item = rep.closest(".z-item");
-        if (item.querySelector(".z-replyform")) { closeForm(); return; }
-        closeForm();
-        var body = item.querySelector(".z-body");
-        var f = document.createElement("div");
-        f.className = "z-replyform";
-        var pm = item.querySelector(".z-meta").textContent.split(" · ")[0];
-        var pn = item.querySelector(".z-no").textContent;
-        f.innerHTML = '<input class="z-r-name" type="text" maxlength="20" placeholder="笔名/昵称" aria-label="笔名或昵称" />' +
-          '<input class="z-r-text" type="text" maxlength="300" placeholder="回复 ' + pm + '（# ' + pn + '）… 行首加 > 可引原帖" aria-label="回帖内容" />' +
-          '<button class="btn ghost z-r-send" type="button">发送</button>' +
-          '<button class="z-r-cancel" type="button">取消</button>';
-        body.appendChild(f);
-        activeForm = f;
-        f.querySelector(".z-r-name").focus();
+        if (item.querySelector(".z-replyform")) { closeBar(); refreshLabels(); return; }
+        openBar(item);
         return;
       }
-      // 发送回帖
+      // 发送回帖(平铺成新楼)
       var send = ev.target.closest(".z-r-send");
       if (send) {
         var f2 = send.closest(".z-replyform");
@@ -231,28 +258,16 @@ footerNote: "此为众注版式原型演示页，非正式内容。"
         var tx = f2.querySelector(".z-r-text").value.trim();
         if (!nm) { f2.querySelector(".z-r-name").focus(); if (msg) msg.textContent = "回帖需填笔名/昵称（演示）。"; return; }
         if (!tx) { f2.querySelector(".z-r-text").focus(); if (msg) msg.textContent = "写点回帖内容吧（演示）。"; return; }
-        var sub = it2.querySelector(".z-sub");
-        if (!sub) {
-          sub = document.createElement("div");
-          sub.className = "z-sub";
-          it2.querySelector(".z-body").appendChild(sub);
-        }
-        var pm2 = it2.querySelector(".z-meta").textContent.split(" · ")[0];
-        var pn2 = it2.querySelector(".z-no").textContent;
-        var d = document.createElement("div");
-        d.className = "z-reply-item";
-        d.innerHTML = '<span class="z-meta">' + esc(nm) + " · " + fmtTime() + " · 回复 " + esc(pm2) + "（#" + pn2 + "）</span>" +
-          renderComment(tx); // 回帖同样支持 > 引文块与自动链接
-        sub.appendChild(d);
-        closeForm();
-        refreshReplyLabel(it2);
-        if (msg) msg.textContent = "（演示）回帖已发表。";
+        appendFloor(nm, tx, floorMeta(it2));
+        closeBar();
+        if (msg) msg.textContent = "（演示）已回帖为一楼。";
         return;
       }
-      // 取消回帖
+      // 取消
       var can = ev.target.closest(".z-r-cancel");
-      if (can) { closeForm(); return; }
+      if (can) { closeBar(); return; }
     });
+    refreshLabels();
     // 评论发表(演示: 本地追加; 支持 > 引文块与自动链接)
     var zf = document.getElementById("z-form");
     var zn = document.getElementById("z-name");

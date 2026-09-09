@@ -390,9 +390,10 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .z-replyform{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px;
   background:rgba(156,63,48,.03);border:1px dashed var(--line,#d8d0c0);border-radius:8px}
 .z-r-name{width:110px;border:1px solid var(--line,#cfc6b4);border-radius:999px;padding:0 10px;
-  height:26px;font-size:12.5px;background:#fff;color:var(--ink,#3a3630)}
-.z-r-text{flex:1 1 200px;min-width:150px;border:1px solid var(--line,#cfc6b4);border-radius:999px;
-  padding:0 10px;height:26px;font-size:12.5px;background:#fff;color:var(--ink,#3a3630)}
+  height:28px;font-size:12.5px;background:#fff;color:var(--ink,#3a3630);flex:none}
+.z-r-text{flex:1 1 220px;min-width:180px;border:1px solid var(--line,#cfc6b4);border-radius:10px;
+  padding:6px 10px;font-size:12.5px;line-height:1.6;font-family:inherit;background:#fff;color:var(--ink,#3a3630);
+  resize:vertical;max-height:130px}
 .z-r-send{height:26px;padding:0 14px;font-size:12px;border-radius:999px;display:inline-flex;align-items:center}
 .z-r-cancel{border:none;background:none;padding:0 4px;cursor:pointer;font-size:12.5px;color:var(--dim,#6e6a5e)}
 .z-r-cancel:hover{color:var(--seal,#9c3f30)}
