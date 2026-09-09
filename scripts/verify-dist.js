@@ -12,7 +12,7 @@ const files = fs.readdirSync(D);
 
 // —— 产物数量与泄漏 ——
 const htmls = files.filter((f) => f.endsWith(".html"));
-assert.strictEqual(htmls.length, 51, `应 51 html(50+404), 实得 ${htmls.length}`);
+assert.strictEqual(htmls.length, 53, `应 53 html(51+2 刊期页), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -70,6 +70,13 @@ assert(read("w-zhuyingtai.html").includes('class="foot-note"'), "新投稿页正
 assert(read("404.html").includes("此页无从寻觅"), "404 页存在");
 assert(exists("sitemap.xml") && read("sitemap.xml").includes(siteUrl + "/") && (read("sitemap.xml").match(/<url>/g) || []).length >= 50, "sitemap.xml 含全站 URL");
 assert(exists("robots.txt") && read("robots.txt").includes("Sitemap: " + siteUrl + "/sitemap.xml"), "robots.txt 指向 sitemap");
+
+// —— 刊期档案(P2.1) ——
+assert(lib.includes("刊期档案") && lib.includes("issue-qingming-ji.html") && lib.includes("issue-2026-09.html"), "作品库顶部刊期档案(两期)");
+for (const f of ["issue-qingming-ji.html", "issue-2026-09.html"]) assert(exists(f), `期页缺失 ${f}`);
+assert(read("issue-qingming-ji.html").includes("甲辰清明雅集") && read("issue-qingming-ji.html").includes("清明会序"), "清明期页内容");
+assert(read("issue-2026-09.html").includes("九月投稿辑") && read("issue-2026-09.html").includes("w-zhuyingtai"), "投稿辑期页内容");
+assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 
 // —— 投稿页字段 ——
 const sub = read("submit.html");

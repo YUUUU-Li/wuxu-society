@@ -1,0 +1,51 @@
+---
+layout: "base.njk"
+title: "刊期档案"
+seoTitle: "刊期档案 | 婺需文学社"
+desc: "婺需文学社刊期档案：雅集与投稿辑的辑录。"
+active: "library"
+footerNote: "篇目分辑，录自社内原稿。"
+pagination:
+  data: issues
+  size: 1
+  alias: iss
+permalink: "{{ iss.id }}.html"
+eleventyExcludeFromCollections: true
+---
+<main>
+  <section class="wrap page-head">
+    <p class="crumb"><a href="index.html">首页</a> / <a href="library.html">作品库</a> / 刊期档案</p>
+    <h1 class="p-title rv">{{ iss.title }}</h1>
+    <p class="lead rv" style="margin-top:10px">{{ iss.type }} · {{ iss.period }}</p>
+  </section>
+
+  {% if iss.epigraph %}
+  <section class="wrap issue-epi">
+    <p class="epigraph rv">“{{ iss.epigraph }}”</p>
+  </section>
+  {% endif %}
+
+{% set wm = collections.works | worksMap %}
+  <section class="wrap idx-group">
+    <div class="sec-head rv"><h2>本期篇目</h2><hr class="hair" /></div>
+    <div class="idx-list">
+    {% for slug in iss.slugs %}{% set w = wm[slug] %}{% if w %}
+      <div class="idx-row rv"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
+    {% endif %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="wrap archives">
+    <div class="sec-head rv"><h2>全部刊期</h2><hr class="hair" /></div>
+    {% for other in issues %}{% if other.id != iss.id %}
+    <div class="archive-row rv">
+      <div class="vol"><a href="{{ other.id }}.html">{{ other.title }}</a><small>{{ other.type }} · {{ other.period }}</small></div>
+      <div class="toc">
+        {% for slug in other.slugs %}{% set w = wm[slug] %}{% if w %}
+        <div><span class="t"><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span></div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}{% endfor %}
+  </section>
+</main>

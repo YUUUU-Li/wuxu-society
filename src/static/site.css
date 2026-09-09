@@ -308,3 +308,10 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .brand{display:inline-flex;align-items:center}
 .brand-logo{height:30px;width:auto;display:block;max-width:64vw}
 @media (max-width:640px){.brand-logo{height:24px;max-width:58vw}}
+
+/* 刊期档案(作品库)与期页 */
+.archives{margin-top:26px}
+.issue-epi .epigraph{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+  font-size:1.12rem;color:var(--ink-soft,#544e42);line-height:2;letter-spacing:.04em;
+  border-left:3px solid var(--seal,#9c3f30);background:rgba(156,63,48,.05);
+  padding:6px 0 6px 18px;margin:4px 0 0}

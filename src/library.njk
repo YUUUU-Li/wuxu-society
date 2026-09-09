@@ -26,6 +26,20 @@ footerNote: "篇目分辑，录自社内原稿。"
   </section>
 
 {% set wm = collections.works | worksMap %}
+  <section class="wrap archives">
+    <div class="sec-head rv"><h2>刊期档案</h2><hr class="hair" /></div>
+    {% for iss in issues %}
+    <div class="archive-row rv">
+      <div class="vol"><a href="{{ iss.id }}.html">{{ iss.title }}</a><small>{{ iss.type }} · {{ iss.period }}</small></div>
+      <div class="toc">
+        {% for slug in iss.slugs %}{% set w = wm[slug] %}{% if w %}
+        <div><span class="t"><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="w">{{ w.data.fgenre or w.data.genre }}</span></div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
 {% for g in groups %}
   <section class="wrap idx-group"><div class="sec-head rv"><h2>{{ g.h2 }}</h2><hr class="hair" /></div><div class="idx-list">
   {% for slug in g.slugs %}{% set w = wm[slug] %}{% if w %}
