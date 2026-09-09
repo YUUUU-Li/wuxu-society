@@ -105,6 +105,13 @@ assert(pendN ? lib.includes("待辑入新期") : !lib.includes("待辑入新期"
 // —— 众注嵌入(P1) ——
 assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includes("zhuzhu.js"), "作品页含众注容器(默认隐藏, API 点亮)");
 assert(!read("index.html").includes('id="zhuzhu"'), "首页不含众注容器");
+// 相似标签(余弦)动态组 + 元数据资产
+assert(read("w-guixiang.html").includes('id="rel-sim"'), "作品页含相似标签动态容器(有真实分组时)");
+assert(read("w-guixiang.html").includes("相关联作品"), "关联区仍在");
+const relMeta = JSON.parse(read("rel-meta.json"));
+assert.strictEqual(Object.keys(relMeta).length, nWorksSrc, `rel-meta.json 应含 ${nWorksSrc} 篇`);
+assert(relMeta["w-feng"] && Array.isArray(relMeta["w-feng"].imageries), "rel-meta 含意象字段");
+assert(!read("w-guixiang.html").includes(">同意象<"), "旧同意象静态组已移除(相似标签改动态)");
 
 // —— 概念卡(P2.3) ——
 assert(exists("proto-note.html") && read("proto-note.html").includes("众注 · 版式演示"), "众注版式原型页(设计稿)");

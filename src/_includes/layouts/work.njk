@@ -29,6 +29,9 @@
 {% if relGroups.length %}
 <section class="wrap rel rv"><h3>相关联作品</h3>
 {% for g in relGroups %}
+{% if g.kind === "similar" %}
+{% if site.zhuzhu and site.zhuzhu.enabled %}<div class="rel-sim" id="rel-sim" data-work="{{ page.fileSlug }}" hidden></div>{% endif %}
+{% else %}
 {% if g.rotateMax and g.items.length > g.rotateMax %}
 <h4 class="rel-h4">{{ g.heading }}<span class="cnt">共 {{ g.items.length }} 篇 · 每次打开随机呈现</span><button class="shuffle" type="button" hidden>换一批 ↻</button></h4>
 <ul class="rel-ul" data-rotate="{{ g.rotateMax }}">
@@ -42,6 +45,7 @@
 <ul>
 {% for r in g.items %}<li><span class="t"><a class="plink" href="{{ r.to }}.html">{{ r.title }}</a></span><span class="reason">{{ r.label }}</span></li>{% endfor %}
 </ul>
+{% endif %}
 {% endif %}
 {% endfor %}
 </section>

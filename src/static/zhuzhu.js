@@ -238,6 +238,47 @@
     postComment(nm, tx, null);
   });
 
+  /* ---------- 相似标签(余弦) 动态组 ---------- */
+  var relSim = document.getElementById("rel-sim");
+  var relPoolData = [];
+  function relItem(r) {
+    var lis = [];
+    var seen = {};
+    r.forEach(function (x) {
+      if (seen[x.slug]) return;
+      seen[x.slug] = 1;
+      lis.push('<li><span class="t"><a class="plink" href="' + esc(x.slug) + '.html">' + esc(x.title) + "</a></span>" +
+        '<span class="reason">同标签 · ' + esc((x.shared || []).join("、")) + "</span></li>");
+    });
+    return lis;
+  }
+  function drawRel() {
+    if (!relPoolData.length) return;
+    var picked = relPoolData.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 4);
+    var ul = relSim.querySelector(".rel-ul");
+    ul.innerHTML = relItem(picked).join("");
+  }
+  async function loadRel() {
+    if (!relSim) return;
+    try {
+      var r = await fetch(api + "/related?work=" + encodeURIComponent(work));
+      if (!r.ok) throw 0;
+      var j = await r.json();
+      if (!j.ok) throw 0;
+      relPoolData = j.related || [];
+      if (!relPoolData.length) return; // 无候选保持隐藏
+      var showShuffle = relPoolData.length > 4;
+      relSim.innerHTML =
+        '<h4 class="rel-h4">相似标签<span class="cnt">共 ' + relPoolData.length + ' 篇 · 每次打开随机呈现</span>' +
+        (showShuffle ? '<button class="shuffle" type="button">换一批 ↻</button>' : "") + "</h4>" +
+        '<ul class="rel-ul" data-rotate="4"></ul>';
+      var btn = relSim.querySelector(".shuffle");
+      if (btn) btn.addEventListener("click", function () { drawRel(); });
+      relSim.hidden = false;
+      drawRel();
+    } catch (e) { /* 保持隐藏 */ }
+  }
+
   /* ---------- 拉取并点亮 ---------- */
   async function loadAll() {
     try {
@@ -261,4 +302,5 @@
     }
   }
   loadAll();
+  loadRel();
 })();

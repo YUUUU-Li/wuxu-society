@@ -63,6 +63,9 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addFilter("akOf", akOf);
   // 署名 -> 所属分部
   eleventyConfig.addFilter("branchOf", branchOf);
+  // rel-meta.json 用: JSON 安全序列化(未定义按空数组)
+  eleventyConfig.addFilter("jsonify", (o) => JSON.stringify(o));
+  eleventyConfig.addFilter("jsonarr", (o) => JSON.stringify(Array.isArray(o) ? o : []));
 
   // 关联作品自动推导: 强关联(手动related) -> 同作者 -> 同意象 -> 同时同源
   // 每篇作品只出现在最先命中的一类里; 组内按全文库顺序排列
@@ -103,22 +106,8 @@ module.exports = function (eleventyConfig) {
       }));
     authorItems.forEach((r) => taken.add(r.to));
 
-    // 同意象: 与本作共意象者全部入池 (按共享数降序, 页面端轮换)
-    const imageryItems = [];
-    const imageryCands = works
-      .filter((x) => x.fileSlug !== self.slug && !taken.has(x.fileSlug))
-      .sort(sortWork)
-      .map((w) => ({ w, shared: (w.data.imageries || []).filter((i) => selfIm.includes(i)) }))
-      .filter((c) => c.shared.length)
-      .sort((a, b) => b.shared.length - a.shared.length || sortWork(a.w, b.w));
-    for (const { w, shared } of imageryCands) {
-      imageryItems.push({
-        to: w.fileSlug,
-        title: w.data.title,
-        label: "意象：" + shared.join("、"),
-      });
-      taken.add(w.fileSlug);
-    }
+    // (原"同意象"静态组已移除: 相似标签改由运行时余弦计算,
+    //  见 functions/api/related.js + 作品页 #rel-sim 动态填充; 冷启动=意象词按 1 票回退)
 
     // 同时同源: 出处相同的其他作品 (全部列出, 无需轮换)
     const sourceItems = [];
@@ -138,8 +127,15 @@ module.exports = function (eleventyConfig) {
     const groups = [];
     if (manual.length) groups.push({ heading: HEAD.strong, kind: "strong", rotateMax: 0, items: manual });
     if (authorItems.length) groups.push({ heading: HEAD.author, kind: "author", rotateMax: ROTATE_MAX.author, items: authorItems });
-    if (imageryItems.length) groups.push({ heading: HEAD.imagery, kind: "imagery", rotateMax: ROTATE_MAX.imagery, items: imageryItems });
     if (sourceItems.length) groups.push({ heading: HEAD.source, kind: "source", rotateMax: 0, items: sourceItems });
+    // 相似标签(余弦): 运行时由 /api/related 计算后填充(前端 #rel-sim)。仅当存在真实分组时占位,
+    // 且插在"同时同源"之前(层级: 强关联 -> 同作者 -> 相似标签 -> 同源)
+    if (groups.length) {
+      const simGroup = { heading: "相似标签", kind: "similar", rotateMax: 4, items: [] };
+      const srcIdx = groups.findIndex((g) => g.kind === "source");
+      if (srcIdx >= 0) groups.splice(srcIdx, 0, simGroup);
+      else groups.push(simGroup);
+    }
     return groups;
   });
 

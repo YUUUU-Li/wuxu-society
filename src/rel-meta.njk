@@ -1,0 +1,9 @@
+---
+permalink: "rel-meta.json"
+eleventyExcludeFromCollections: true
+---
+{
+{% for w in collections.works %}
+"{{ w.fileSlug }}":{"title":{{ w.data.title | jsonify | safe }},"imageries":{{ w.data.imageries | jsonarr | safe }}}{% if not loop.last %},{% endif %}
+{% endfor %}
+}
