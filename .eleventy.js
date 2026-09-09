@@ -193,6 +193,41 @@ module.exports = function (eleventyConfig) {
   );
   eleventyConfig.addFilter("toJSON", (v) => JSON.stringify(v));
 
+  // 概念工具: concepts.json(concepts) 与 issues.json(issues) 由 _data 自动注入
+  // conceptsOf(slug): 该作品所属各期带出的概念(去重, 保持期序)
+  eleventyConfig.addFilter("conceptsOf", (concepts, slug, issues) => {
+    const map = {};
+    for (const c of concepts || []) map[c.id] = c;
+    const out = [];
+    for (const iss of issues || []) {
+      if (!Array.isArray(iss.slugs) || !iss.slugs.includes(slug)) continue;
+      for (const cid of iss.concepts || []) {
+        const c = map[cid] || { id: cid, name: cid, note: "" };
+        if (!out.some((x) => x.id === c.id)) out.push(c);
+      }
+    }
+    return out;
+  });
+  // issueConcepts(issue): 某一期的概念列表
+  eleventyConfig.addFilter("issueConcepts", (concepts, iss) => {
+    const map = {};
+    for (const c of concepts || []) map[c.id] = c;
+    return (iss && iss.concepts || []).map((cid) => map[cid] || { id: cid, name: cid, note: "" });
+  });
+  // conceptSlugs(issues, cid): 含该概念的各期收录 slug(去重, 期序)
+  eleventyConfig.addFilter("conceptSlugs", (issues, cid) => {
+    const out = [];
+    for (const iss of issues || []) {
+      if (!Array.isArray(iss.concepts) || !iss.concepts.includes(cid)) continue;
+      for (const s of iss.slugs || []) if (!out.includes(s)) out.push(s);
+    }
+    return out;
+  });
+  // findConcept(concepts, id): 按 id 找概念(用于"相近概念"链)
+  eleventyConfig.addFilter("findConcept", (concepts, id) =>
+    (concepts || []).find((c) => c.id === id)
+  );
+
   return {
     dir: {
       input: "src",

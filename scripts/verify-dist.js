@@ -81,6 +81,15 @@ assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
 assert(!lib.includes("待辑入新期"), "待辑为空时不显示提示");
 
+// —— 概念卡(P2.3) ——
+assert(exists("concepts/qingming.html") && exists("concepts/lishe.html"), "概念页生成");
+const cq = read("concepts/qingming.html");
+assert(cq.includes("清明") && cq.includes("收录篇目") && cq.includes("清明会序"), "清明概念页含收录作品");
+assert(!cq.includes("待补") && !cq.includes("虚位"), "题解留空不显示占位文字");
+assert(read("issue-qingming-ji.html").includes('concepts/qingming.html'), "期页概念链接");
+assert(read("qingming-xu.html").includes("本期概念") && read("qingming-xu.html").includes('concepts/lishe.html'), "作品页本期概念入口");
+assert(!read("w-feng.html").includes("本期概念"), "未入期作品无概念入口");
+
 // —— 投稿页字段 ——
 const sub = read("submit.html");
 for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', "/.netlify/functions/submit"]) {

@@ -318,3 +318,13 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* 刊期档案: 待辑提示 */
 .pending-hint{font-size:13px;color:var(--seal,#9c3f30);margin:6px 0 2px}
+
+/* 概念入口与概念页 */
+.work-concepts{margin:2px auto 26px;max-width:var(--maxw,1120px);padding:0 24px;font-size:14px;color:var(--dim,#6e6a5e)}
+.issue-concepts{margin-top:20px}
+.concept-line{font-size:14.5px;color:var(--dim,#6e6a5e)}
+.chip{display:inline-block;border:1px solid var(--line,#cfc6b4);border-radius:999px;
+  padding:2px 12px;margin:0 6px 6px 0;font-size:13.5px;color:var(--ink-soft,#544e42);
+  background:rgba(156,63,48,.04);text-decoration:none;transition:border-color .2s,color .2s}
+.chip:hover{border-color:var(--seal,#9c3f30);color:var(--seal,#9c3f30)}
+.concept-note{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}

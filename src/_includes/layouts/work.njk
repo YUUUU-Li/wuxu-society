@@ -17,6 +17,10 @@
 <h1 class="p-title rv">{{ title }}</h1>
 <div class="p-meta rv"><span><b>作者</b> <a href="members.html#{{ ak }}">{{ author }}</a></span><span><b>分部</b> {{ branch }}</span><span><b>体裁</b> {{ genre }}</span>{% if source %}<span><b>出处</b> {{ source }}</span>{% endif %}</div>
 </section>
+{% set workCpts = concepts | conceptsOf(page.fileSlug, issues) %}
+{% if workCpts.length %}
+<p class="work-concepts rv">本期概念：{% for c in workCpts %}<a class="chip" href="concepts/{{ c.id }}.html">{{ c.name }}</a>{% endfor %}</p>
+{% endif %}
 <section class="wrap poem-body rv"><div class="lib-body">
 {{ content | safe }}
 </div></section>
