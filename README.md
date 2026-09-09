@@ -22,6 +22,7 @@
 ├─ docs/修改网站速查.md        # ★ 维护者 Git 速查（clone→分支→提交→合并→推送→反悔药）
 ├─ docs/网站精进方案.md        # ★ 精进路线（关联轮换/筛选/评论系统/刊期概念化，P0-P2）
 ├─ docs/域名接入指南.md        # ★ 自有域名接入（Spaceship 买 → Cloudflare → Netlify，含 IP 优选）
+├─ docs/网站自定义指南.md      # ★ 全站可自定义点地图（内容/样式/结构/功能/部署，去哪改）
 ├─ netlify/functions/submit.js # 投稿接口: 表单→自动开 PR（需 GITHUB_TOKEN_SUBMIT 环境变量）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
