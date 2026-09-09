@@ -1,6 +1,9 @@
 <header>
   <div class="wrap nav">
     <a class="brand" href="index.html">{{ site.name }}</a>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="菜单" aria-expanded="false">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
     <nav class="nav-links" aria-label="主导航">
       <a class="txt" href="{% if home %}#origin{% else %}index.html#origin{% endif %}">缘起</a>
       <a class="txt" href="{% if home %}#gathering{% else %}index.html#gathering{% endif %}">雅集</a>

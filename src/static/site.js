@@ -32,6 +32,30 @@
     });
   }
 
+  /* 移动端导航菜单: 点按钮向下展开/收起 */
+  var navWrap = document.querySelector(".nav");
+  var navBtn = document.getElementById("nav-toggle");
+  function setNav(open) {
+    if (navWrap) navWrap.classList.toggle("open", open);
+    if (navBtn) navBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  if (navBtn && navWrap) {
+    navBtn.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      setNav(!navWrap.classList.contains("open"));
+    });
+    document.addEventListener("click", function (e) {
+      if (navWrap.classList.contains("open") && !e.target.closest(".nav")) setNav(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") setNav(false);
+    });
+    // 点击菜单内链接后自动收起
+    navWrap.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function () { setNav(false); });
+    });
+  }
+
   /* 关联作品轮换: 每次打开页面随机抽选一批, 点"换一批"再抽 */
   function relShuffle() {
     document.querySelectorAll("ul.rel-ul[data-rotate]").forEach(function (ul) {

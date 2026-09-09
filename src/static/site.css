@@ -241,3 +241,29 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .rel .shuffle { border: 0; background: none; padding: 0; font: inherit; font-size: .85em;
   color: var(--dim, #8a8a8a); cursor: pointer; border-bottom: 1px dashed currentColor; }
 .rel .shuffle:hover { color: var(--accent, #b0855a); }
+
+/* 首页双按钮: 并排 -> 窄屏自动竖排, 不再错位重叠 */
+.duo-acts{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:36px}
+.duo-acts a+a{margin-left:12px}
+@media (max-width:640px){
+  .duo-acts{flex-direction:column;align-items:stretch}
+  .duo-acts a+a{margin-left:0}
+  .duo-acts .btn{text-align:center;width:100%}
+}
+
+/* 移动端导航: 菜单按钮(三横线) + 向下展开列表 */
+.nav-toggle{display:none;flex-direction:column;justify-content:center;gap:4px;
+  border:0;background:none;cursor:pointer;padding:10px 6px}
+.nav-toggle .bar{display:block;width:20px;height:2px;background:var(--ink);border-radius:2px}
+@media (max-width:760px){
+  .nav{position:relative}
+  .nav-toggle{display:inline-flex}
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;z-index:60;
+    flex-direction:column;align-items:stretch;gap:0;margin-top:2px;
+    background:var(--paper);border:1px solid rgba(0,0,0,.14);
+    box-shadow:0 14px 28px rgba(0,0,0,.10);padding:8px 6px;border-radius:8px}
+  .nav.open .nav-links{display:flex}
+  .nav-links a.txt{display:block;padding:11px 14px;border-radius:6px;font-size:15px}
+  .nav-links a.txt:hover,.nav-links a.txt.on{background:rgba(176,133,90,.14)}
+  .nav-links .btn{margin:8px 6px 4px;text-align:center;display:block}
+}
