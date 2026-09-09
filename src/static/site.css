@@ -330,8 +330,8 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .concept-note{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
 
 /* ══ 众注原型(zhu zhu) ══ */
-.zz{max-width:760px;border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
-  padding:22px 26px;margin-top:6px;background:rgba(255,253,248,.6)}
+.zz{border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
+  padding:22px 26px;margin-top:48px;background:rgba(255,253,248,.6)}
 .zz-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
 .zz-head h3{font-size:1.15rem;margin:0}
 .zz-rule{font-size:12.5px;color:var(--dim,#6e6a5e)}

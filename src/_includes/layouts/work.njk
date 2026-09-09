@@ -24,6 +24,7 @@
 <section class="wrap poem-body rv"><div class="lib-body">
 {{ content | safe }}
 </div></section>
+{% include "partials/zhuzhu.njk" %}
 {% set relGroups = { slug: page.fileSlug, author: author, imageries: imageries, source: source, related: related } | relOf(collections.works) %}
 {% if relGroups.length %}
 <section class="wrap rel rv"><h3>相关联作品</h3>
@@ -45,7 +46,6 @@
 {% endfor %}
 </section>
 {% endif %}
-{% include "partials/zhuzhu.njk" %}
 </main>
 {% include "partials/footer.njk" %}
 <script src="site.js"></script>
