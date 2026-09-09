@@ -1,33 +1,5 @@
 [
   {
-    "key": "qingming",
-    "h2": "清明首聚 · 立社原创",
-    "slugs": [
-      "qingming-xu",
-      "qingming-jwl",
-      "qingming-cty",
-      "qingming-hde",
-      "qingming-lfk",
-      "qingming-cyk",
-      "qingming-cyly"
-    ]
-  },
-  {
-    "key": "huiyi",
-    "h2": "回忆文会《时间溯流》（公众号）",
-    "slugs": [
-      "w-huanxisha",
-      "w-changxiangsi",
-      "w-shaonianyou",
-      "w-xiaochongshan",
-      "w-yiqinehe",
-      "w-yiqinepa",
-      "w-golden",
-      "w-huishou1",
-      "w-huishou2"
-    ]
-  },
-  {
     "key": "other",
     "h2": "其余社员作品",
     "slugs": [

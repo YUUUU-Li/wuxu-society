@@ -12,7 +12,7 @@ const files = fs.readdirSync(D);
 
 // —— 产物数量与泄漏 ——
 const htmls = files.filter((f) => f.endsWith(".html"));
-assert.strictEqual(htmls.length, 53, `应 53 html(51+2 刊期页), 实得 ${htmls.length}`);
+assert.strictEqual(htmls.length, 54, `应 54 html(51+3 刊期页), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -56,7 +56,7 @@ assert(flat.includes("grid-template-columns:minmax(0,1fr) auto auto"), "作品�
 
 // —— 作品库 45 行 + 筛选 ——
 const rows = [...lib.matchAll(/class="idx-row rv" data-author="([^"]*)" data-genre="([^"]*)" data-imagery="([^"]*)" data-source="([^"]*)"/g)];
-assert.strictEqual(rows.length, 45, `库应 45 行, 实得 ${rows.length}`);
+assert.strictEqual(rows.length, 29, `库分组行应 29(其余社员作品), 实得 ${rows.length}`);
 assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
 for (const x of ["author", "genre", "imagery", "source"]) assert(lib.includes(`id="f-${x}"`), `筛选 ${x} 缺失`);
 
@@ -72,11 +72,13 @@ assert(exists("sitemap.xml") && read("sitemap.xml").includes(siteUrl + "/") && (
 assert(exists("robots.txt") && read("robots.txt").includes("Sitemap: " + siteUrl + "/sitemap.xml"), "robots.txt 指向 sitemap");
 
 // —— 刊期档案(P2.1) ——
-assert(lib.includes("刊期档案") && lib.includes("issue-qingming-ji.html") && lib.includes("issue-2026-09.html"), "作品库顶部刊期档案(两期)");
-for (const f of ["issue-qingming-ji.html", "issue-2026-09.html"]) assert(exists(f), `期页缺失 ${f}`);
+assert(lib.includes("刊期档案") && lib.includes("issue-qingming-ji.html") && lib.includes("issue-2026-09.html") && lib.includes("issue-huiyi-shijianliuliu.html"), "作品库顶部刊期档案(三期)");
+for (const f of ["issue-qingming-ji.html", "issue-2026-09.html", "issue-huiyi-shijianliuliu.html"]) assert(exists(f), `期页缺失 ${f}`);
 assert(read("issue-qingming-ji.html").includes("甲辰清明雅集") && read("issue-qingming-ji.html").includes("清明会序"), "清明期页内容");
 assert(read("issue-2026-09.html").includes("九月投稿辑") && read("issue-2026-09.html").includes("w-zhuyingtai"), "投稿辑期页内容");
+assert(read("issue-huiyi-shijianliuliu.html").includes("回忆文会《时间溯流》") && read("issue-huiyi-shijianliuliu.html").includes("w-golden"), "回忆文会期页内容");
 assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
+assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
 
 // —— 投稿页字段 ——
 const sub = read("submit.html");

@@ -14,7 +14,29 @@
       "qingming-cyk",
       "qingming-cyly"
     ],
-    "concepts": ["清明", "立社"]
+    "concepts": [
+      "清明",
+      "立社"
+    ]
+  },
+  {
+    "id": "issue-huiyi-shijianliuliu",
+    "title": "回忆文会《时间溯流》",
+    "type": "文会",
+    "period": "《时间溯流》特辑（公众号）",
+    "epigraph": "九篇旧作，自公众号回忆文会《时间溯流》辑出，存录于此。",
+    "slugs": [
+      "w-huanxisha",
+      "w-changxiangsi",
+      "w-shaonianyou",
+      "w-xiaochongshan",
+      "w-yiqinehe",
+      "w-yiqinepa",
+      "w-golden",
+      "w-huishou1",
+      "w-huishou2"
+    ],
+    "concepts": []
   },
   {
     "id": "issue-2026-09",
@@ -22,7 +44,10 @@
     "type": "投稿辑",
     "period": "2026 年 9 月",
     "epigraph": "网页投稿开通后的头两篇来稿。自此，凡有新稿攒聚，皆可辑为一期。",
-    "slugs": ["w-zhuyingtai", "w-chenmo"],
+    "slugs": [
+      "w-zhuyingtai",
+      "w-chenmo"
+    ],
     "concepts": []
   }
 ]
