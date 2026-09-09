@@ -129,6 +129,38 @@ module.exports = function (eleventyConfig) {
     return groups;
   });
 
+  // —— 首页"随机拾读"卡片池 ——
+  // 立社同题 7 篇已固定在"同题作品"区, 随机池剔除它们避免同页重复
+  const FOUNDING = [
+    "qingming-xu", "qingming-cty", "qingming-jwl", "qingming-hde",
+    "qingming-lfk", "qingming-cyk", "qingming-cyly",
+  ];
+  // 从 md 正文取"摘句": 诗句取第一行(stanza 首个 <br /> 前), 散文取首句
+  function firstLine(slug) {
+    try {
+      const raw = fs.readFileSync(path.join(__dirname, "src/works", slug + ".md"), "utf8");
+      const body = raw.split("---").slice(2).join("---");
+      const pm = /<p class="stanza">([\s\S]*?)<\/p>/.exec(body) ||
+        /<p class="prose">([\s\S]*?)<\/p>/.exec(body);
+      if (!pm) return "";
+      const t = pm[1].split("<br />")[0].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+      return t.length > 34 ? t.slice(0, 34) + "…" : t;
+    } catch { return ""; }
+  }
+  eleventyConfig.addFilter("homeCards", (works) =>
+    works
+      .filter((w) => !FOUNDING.includes(w.fileSlug))
+      .map((w) => ({
+        href: w.fileSlug + ".html",
+        title: w.data.title,
+        name: String(w.data.author || "").replace("（", " · ").replace("）", ""),
+        genre: w.data.genre || "",
+        line: firstLine(w.fileSlug),
+      }))
+      .sort((a, b) => (orderIdx[a.href.slice(0, -5)] ?? 999) - (orderIdx[b.href.slice(0, -5)] ?? 999))
+  );
+  eleventyConfig.addFilter("toJSON", (v) => JSON.stringify(v));
+
   return {
     dir: {
       input: "src",

@@ -13,12 +13,85 @@ footerNote: "文本录自社内原稿。页面由婺需文学社站点构建器�
     <h1 class="p-title rv">作品库</h1>
     <p class="lead rv" style="margin-top:16px">每一篇都已单独成页：点击篇目进入该页，页内可查看作者（缩写 + 笔名）与相关联作品（本作关联 / 同作者 / 同意象 / 同时同源）。署名以原稿为准。</p>
   </section>
+
+  <section class="wrap lib-filters">
+    <div class="filters rv" role="search" aria-label="筛选作品">
+      <select id="f-author" aria-label="按作者筛选"><option value="">全部作者</option></select>
+      <select id="f-genre" aria-label="按体裁筛选"><option value="">全部体裁</option></select>
+      <select id="f-imagery" aria-label="按意象筛选"><option value="">全部意象</option></select>
+      <select id="f-source" aria-label="按出处筛选"><option value="">全部出处</option></select>
+      <button type="button" class="f-reset" id="f-reset" hidden>清除筛选</button>
+      <span class="f-count" id="f-count"></span>
+    </div>
+  </section>
+
 {% set wm = collections.works | worksMap %}
 {% for g in groups %}
   <section class="wrap idx-group"><div class="sec-head rv"><h2>{{ g.h2 }}</h2><hr class="hair" /></div><div class="idx-list">
   {% for slug in g.slugs %}{% set w = wm[slug] %}{% if w %}
-  <div class="idx-row rv"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
+  <div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
   {% endif %}{% endfor %}
   </div></section>
 {% endfor %}
+<script>
+(function () {
+  "use strict";
+  var author = document.getElementById("f-author");
+  var genre = document.getElementById("f-genre");
+  var imagery = document.getElementById("f-imagery");
+  var source = document.getElementById("f-source");
+  var reset = document.getElementById("f-reset");
+  var count = document.getElementById("f-count");
+  var groups = Array.prototype.slice.call(document.querySelectorAll(".idx-group"));
+  var rows = Array.prototype.slice.call(document.querySelectorAll(".idx-row"));
+  if (!author || !rows.length) return;
+
+  function fill(sel, values) {
+    values.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
+    });
+  }
+  var authors = {}, genres = {}, imags = {}, sources = {};
+  rows.forEach(function (r) {
+    authors[r.dataset.author] = 1;
+    genres[r.dataset.genre] = 1;
+    sources[r.dataset.source || "(无出处)"] = 1;
+    (r.dataset.imagery || "").split("|").filter(Boolean).forEach(function (i) { imags[i] = 1; });
+  });
+  fill(author, Object.keys(authors).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
+  fill(genre, Object.keys(genres));
+  fill(imagery, Object.keys(imags).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
+  fill(source, Object.keys(sources));
+
+  function apply() {
+    var fa = author.value, fg = genre.value, fi = imagery.value, fs = source.value;
+    var shown = 0;
+    var any = fa || fg || fi || fs;
+    rows.forEach(function (r) {
+      var ok = (!fa || r.dataset.author === fa) &&
+        (!fg || r.dataset.genre === fg) &&
+        (!fi || (r.dataset.imagery || "").split("|").indexOf(fi) !== -1) &&
+        (!fs || (r.dataset.source || "(无出处)") === fs);
+      r.style.display = ok ? "" : "none";
+      if (ok) shown++;
+    });
+    groups.forEach(function (g) {
+      var vis = Array.prototype.some.call(g.querySelectorAll(".idx-row"), function (r) { return r.style.display !== "none"; });
+      g.style.display = vis ? "" : "none";
+    });
+    if (count) count.textContent = "显示 " + shown + " / " + rows.length + " 篇";
+    if (reset) reset.hidden = !any;
+  }
+  [author, genre, imagery, source].forEach(function (s) {
+    s.addEventListener("change", apply);
+  });
+  if (reset) reset.addEventListener("click", function () {
+    [author, genre, imagery, source].forEach(function (s) { s.value = ""; });
+    apply();
+  });
+  apply();
+})();
+</script>
 </main>

@@ -272,3 +272,19 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .nav-links a.txt:hover,.nav-links a.txt.on{background:rgba(176,133,90,.14)}
   .nav-links .btn{margin:8px 6px 4px;text-align:center;display:block}
 }
+
+/* 作品库筛选条 */
+.lib-filters{margin-top:30px}
+.lib-filters .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;
+  background:var(--paper-deep, #f1ece2);border:1px solid var(--line-soft);border-radius:10px}
+.lib-filters select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line, #cfc6b4);
+  background:var(--paper, #faf7f0);color:var(--ink, #333);border-radius:6px;max-width:100%}
+.f-reset{font:inherit;font-size:13px;border:1px solid var(--line, #cfc6b4);background:none;
+  color:var(--ink, #333);padding:6px 12px;border-radius:6px;cursor:pointer}
+.f-reset:hover{border-color:var(--seal, #a46b4a);color:var(--seal, #a46b4a)}
+.f-count{font-size:13px;color:var(--dim, #7a7469);margin-left:auto;white-space:nowrap}
+@media (max-width:640px){
+  .lib-filters .filters{flex-direction:column;align-items:stretch}
+  .lib-filters select{width:100%}
+  .f-count{margin-left:0}
+}
