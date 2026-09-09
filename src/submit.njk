@@ -115,7 +115,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     btn.disabled = true;
     btn.textContent = "正在提交…";
     msg.textContent = "正在把稿件送进审稿队列，请稍候…";
-    fetch("/.netlify/functions/submit", {
+    fetch("{{ site.apiEndpoint | default('/.netlify/functions/submit') }}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
