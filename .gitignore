@@ -4,3 +4,6 @@ dist/
 
 # Hermes 桌面附件(不入库)
 .hermes/
+
+# Obsidian vault 本地配置(不入库)
+.obsidian/
