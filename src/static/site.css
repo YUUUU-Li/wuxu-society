@@ -303,3 +303,8 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .wxbox{justify-content:center;text-align:center}
   .wx-info p{margin-left:auto;margin-right:auto}
 }
+
+/* 顶栏品牌 logo(透明底书法字) */
+.brand{display:inline-flex;align-items:center}
+.brand-logo{height:30px;width:auto;display:block;max-width:64vw}
+@media (max-width:640px){.brand-logo{height:24px;max-width:58vw}}
