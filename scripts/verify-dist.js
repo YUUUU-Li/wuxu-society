@@ -63,6 +63,21 @@ const rows = [...lib.matchAll(/class="idx-row rv" data-author="([^"]*)" data-gen
 const othersN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs.length;
 assert.strictEqual(rows.length, othersN, `库分组行应 ${othersN}(其余社员作品), 实得 ${rows.length}`);
 assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
+
+// —— 登记一致性: works md = groups∪issues 各一次, order 同集合 (删稿脚本防孤儿) ——
+const workSet = new Set(fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));
+const counts = new Map();
+const bump = (arr) => arr.forEach((s) => counts.set(s, (counts.get(s) || 0) + 1));
+const issuesData = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/issues.json"), "utf8"));
+bump(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs);
+issuesData.forEach((i) => bump(i.slugs));
+const dupes = [...counts].filter(([, c]) => c > 1).map(([s]) => s);
+assert.strictEqual(dupes.length, 0, `slug 重复登记: ${dupes.join(", ")}`);
+assert.strictEqual(counts.size, workSet.size, `登记表 ${counts.size} 个 slug vs works ${workSet.size} 个文件`);
+for (const s of workSet) assert(counts.has(s), `孤儿(有文件未登记): ${s}`);
+const orderArr = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/fulltext_order.json"), "utf8"));
+assert.strictEqual(orderArr.length, workSet.size, `fulltext_order ${orderArr.length} vs works ${workSet.size}`);
+for (const s of orderArr) assert(workSet.has(s), `order 孤儿: ${s}`);
 for (const x of ["author", "genre", "imagery", "source"]) assert(lib.includes(`id="f-${x}"`), `筛选 ${x} 缺失`);
 
 // —— 关联轮换结构抽查 ——

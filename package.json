@@ -8,7 +8,8 @@
     "serve": "eleventy --serve",
     "test": "npm run build && node scripts/test-submit.js && node scripts/test-zhuzhu.js && node scripts/verify-dist.js",
     "preview": "python scripts/preview_server.py",
-    "seal-issue": "node scripts/seal-issue.js"
+    "seal-issue": "node scripts/seal-issue.js",
+    "remove-work": "node scripts/remove-work.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1"
