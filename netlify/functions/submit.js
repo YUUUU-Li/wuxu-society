@@ -136,6 +136,7 @@ exports.handler = async (event) => {
   const source = String(input.source || "").trim().slice(0, 100);
   const imageriesRaw = String(input.imageries || "").trim().slice(0, 200);
   const excerpt = String(input.excerpt || "").trim().replace(/\s+/g, " ").slice(0, 60);
+  const editorNote = String(input.editorNote || "").trim().replace(/[\r\t]/g, "").slice(0, 500);
   const body = String(input.body || "").trim().slice(0, 20000);
   if (!title) return respond(400, { ok: false, error: "缺少题名。" });
   if (!author) return respond(400, { ok: false, error: "缺少署名。" });
@@ -243,6 +244,9 @@ exports.handler = async (event) => {
       method: "PUT",
       body: JSON.stringify({ message: "投稿: 登记全文库 " + slug, content: orderB64, sha: orderRes.sha, branch }),
     });
+  const noteBody = editorNote
+    ? "## 给编委的附言\n" + editorNote.split("\n").map((l) => "> " + l).join("\n") + "\n\n"
+    : "";
     // 6) 开 PR
     const pr = await gh("/repos/" + OWNER + "/" + REPO + "/pulls", {
       method: "POST",
@@ -251,7 +255,7 @@ exports.handler = async (event) => {
         head: branch,
         base: BASE,
         body:
-          "## 投稿：" + title +
+          noteBody + "## 投稿：" + title +
           "\n- 作者：" + author +
           "\n- 体裁：" + genre +
           (source ? "\n- 出处：" + source : "") +

@@ -52,6 +52,11 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
         <small style="color:var(--dim)">一句话（建议 ≤40 字），将用于首页卡片与列表缩略展示；留空则自动取正文首句。</small>
       </div>
       <div class="field">
+        <label for="sub-note">给编委的附言（选填）</label>
+        <textarea id="sub-note" name="editorNote" rows="2" maxlength="500" placeholder="例：此为第三稿，已按上轮意见修改；或：请以笔名发布。"></textarea>
+        <small style="color:var(--dim)">仅编委在审稿时可见，不会出现在作品页面上。</small>
+      </div>
+      <div class="field">
         <label for="sub-imagery">意象（选填，逗号分隔）</label>
         <input id="sub-imagery" name="imageries" type="text" maxlength="200" placeholder="例：秋，雨，思乡归途" />
         <small style="color:var(--dim)">用于自动关联"同意象"作品；不确定可留空。</small>
@@ -102,6 +107,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       body: body,
       slug: slug,
       excerpt: form.excerpt.value.trim(),
+      editorNote: form.editorNote.value.trim(),
       imageries: form.imageries.value,
       source: form.source.value,
       website: form.website.value

@@ -1,0 +1,13 @@
+---
+permalink: "sitemap.xml"
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{% for u in ["index.html", "library.html", "members.html", "submit.html", "_fulltext.html"] %}
+  <url><loc>{{ site.url }}/{{ u }}</loc></url>
+{% endfor %}
+{% for w in collections.works %}
+  <url><loc>{{ site.url }}{{ w.url }}</loc></url>
+{% endfor %}
+</urlset>

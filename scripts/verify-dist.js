@@ -5,13 +5,14 @@ const path = require("path");
 const assert = require("assert");
 
 const D = path.join(__dirname, "..", "dist");
+const siteUrl = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/site.json"), "utf8")).url;
 const read = (f) => fs.readFileSync(path.join(D, f), "utf8");
 const exists = (f) => fs.existsSync(path.join(D, f));
 const files = fs.readdirSync(D);
 
 // —— 产物数量与泄漏 ——
 const htmls = files.filter((f) => f.endsWith(".html"));
-assert.strictEqual(htmls.length, 50, `应 50 html, 实得 ${htmls.length}`);
+assert.strictEqual(htmls.length, 51, `应 51 html(50+404), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -63,9 +64,14 @@ const sec = /<section class="wrap rel rv">([\s\S]*?)<\/section>/.exec(gui);
 assert(sec && sec[1].includes('data-rotate="5"') && sec[1].includes('template class="rel-pool"'), "轮换结构缺失");
 assert(read("w-zhuyingtai.html").includes('class="foot-note"'), "新投稿页正常渲染");
 
+// —— 站点基建: 404 / sitemap / robots ——
+assert(read("404.html").includes("此页无从寻觅"), "404 页存在");
+assert(exists("sitemap.xml") && read("sitemap.xml").includes(siteUrl + "/") && (read("sitemap.xml").match(/<url>/g) || []).length >= 50, "sitemap.xml 含全站 URL");
+assert(exists("robots.txt") && read("robots.txt").includes("Sitemap: " + siteUrl + "/sitemap.xml"), "robots.txt 指向 sitemap");
+
 // —— 投稿页字段 ——
 const sub = read("submit.html");
-for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-imagery"', 'name="website"', "/.netlify/functions/submit"]) {
+for (const x of ['id="sub-slug"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', "/.netlify/functions/submit"]) {
   assert(sub.includes(x), `投稿页缺 ${x}`);
 }
 

@@ -4,6 +4,7 @@ const { handler } = require("../netlify/functions/submit.js");
 const assert = require("assert");
 
 let md = "";
+let prBody = "";
 function mockFetch(url, opts) {
   const path = /\/repos\/YUUUU-Li\/wuxu-society\/(.*)/.exec(url)[1];
   const method = (opts && opts.method) || "GET";
@@ -24,8 +25,10 @@ function mockFetch(url, opts) {
     return Promise.resolve(new Response("{}", { status: 201 }));
   }
   if (method === "PUT") return Promise.resolve(new Response("{}", { status: 200 }));
-  if (method === "POST" && /pulls$/.test(path))
+  if (method === "POST" && /pulls$/.test(path)) {
+    prBody = JSON.parse(opts.body).body;
     return Promise.resolve(new Response(JSON.stringify({ number: 7 }), { status: 201 }));
+  }
   return Promise.resolve(new Response(JSON.stringify({ message: "unexpected " + method + " " + path }), { status: 500 }));
 }
 global.fetch = mockFetch;
@@ -78,7 +81,17 @@ async function main() {
   assert.strictEqual(hp.statusCode, 200, "蜜罐应假装成功");
   assert.strictEqual(JSON.parse(hp.body).honeypot, true, "蜜罐标记");
 
-  console.log("\n✅ test-submit.js 全部通过 (校验/诗句/散文/自序/评注/摘句/蜜罐)");
+  // 7) 给编委的附言 -> 进 PR body(blockquote), 不进 md
+  r = await post({
+    title: "秋兴", author: "zk（道格）", genre: "七律", body: "玉露凋伤枫树林。\n巫山巫峡气萧森。\n\n次联亦成。",
+    editorNote: "此为第三稿。\n如合适请以笔名发布。",
+  });
+  assert.strictEqual(r.statusCode, 200, r.body);
+  assert(prBody.includes("## 给编委的附言"), "附言标题进 PR body");
+  assert(prBody.includes("> 此为第三稿。\n> 如合适请以笔名发布。"), "附言按行转引用");
+  assert(!md.includes("此为第三稿"), "附言不进作品 md");
+
+  console.log("\n✅ test-submit.js 全部通过 (校验/诗句/散文/自序/评注/摘句/蜜罐/附言)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });
