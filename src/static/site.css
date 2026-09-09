@@ -292,3 +292,14 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .lib-filters select{width:100%}
   .f-count{margin-left:0}
 }
+
+/* 公众号名片(首页) */
+.wxbox{display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-top:24px}
+.wx-qr{width:200px;height:200px;border:1px solid var(--line,#cfc6b4);border-radius:8px;background:#fff;padding:6px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.wx-info h3{margin:0 0 8px;font-size:1.25rem}
+.wx-info p{margin:6px 0;color:var(--ink-soft,#544e42);max-width:34em}
+.wx-tip{font-size:13px;color:var(--dim,#6e6a5e)}
+@media (max-width:640px){
+  .wxbox{justify-content:center;text-align:center}
+  .wx-info p{margin-left:auto;margin-right:auto}
+}

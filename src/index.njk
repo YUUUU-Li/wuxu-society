@@ -245,5 +245,24 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
     </div>
   </section>
 
+  <!-- ============ 公众号 ============ -->
+  {% if site.wechat and site.wechat.name %}
+  <section id="wechat" class="wx">
+    <div class="wrap">
+      <div class="sec-head rv"><h2>公众号</h2><hr class="hair" /></div>
+      <div class="wxbox rv">
+        {% if site.wechat.qr %}
+        <img class="wx-qr" src="{{ site.wechat.qr }}" width="220" height="220" alt="{{ site.wechat.name }} 公众号二维码" loading="lazy" />
+        {% endif %}
+        <div class="wx-info">
+          <h3>{{ site.wechat.name }}</h3>
+          {% if site.wechat.intro %}<p>{{ site.wechat.intro }}</p>{% endif %}
+          <p class="wx-tip">微信扫一扫关注 · 亦可在微信内搜索「{{ site.wechat.name }}」</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
 
 </main>

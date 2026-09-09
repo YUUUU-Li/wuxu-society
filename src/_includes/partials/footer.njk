@@ -23,6 +23,7 @@
         <h4>联系</h4>
         <ul>
           <li><a href="mailto:wuxuliterature@163.com">wuxuliterature@163.com</a></li>
+          {% if site.wechat and site.wechat.name %}<li><a href="index.html#wechat">公众号：{{ site.wechat.name }}</a></li>{% endif %}
           <!-- TODO: 换成真实社务邮箱 -->
         </ul>
       </div>

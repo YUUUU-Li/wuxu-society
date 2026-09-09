@@ -2,5 +2,10 @@
   "name": "婺需文学社",
   "slogan": "以诗会友，以文养心",
   "url": "https://wuxu-literary.netlify.app",
-  "footerNote": "诗文录自社内原稿，署名悉依原作。"
+  "footerNote": "诗文录自社内原稿，署名悉依原作。",
+  "wechat": {
+    "name": "",
+    "intro": "",
+    "qr": "wechat-qr.jpg"
+  }
 }
