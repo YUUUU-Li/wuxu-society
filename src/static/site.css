@@ -209,12 +209,9 @@ footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}
 .foot a,.foot p{color:var(--ink-soft);font-size:14.5px;text-decoration:none}
 .foot a:hover{color:var(--seal)}
 .foot p{margin:0;max-width:38em}
-.demo-note{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--dim);font-size:13px}
-
-.demo-note + .legal-note{margin-top:10px}
-.legal-note{font-size:12.5px;line-height:1.7;color:var(--dim,#6e6a5e)}
-.legal-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-.legal-note a:hover{color:var(--seal,#9c3f30)}
+.foot-note{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--dim,#6e6a5e);font-size:12.5px;line-height:1.9;text-align:center}
+.foot-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.foot-note a:hover{color:var(--seal,#9c3f30)}
 
 /* ---------- 入社表单(首页) ---------- */
 .join{background:var(--paper-deep);border-top:1px solid var(--line-soft)}
