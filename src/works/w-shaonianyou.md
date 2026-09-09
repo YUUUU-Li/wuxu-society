@@ -1,6 +1,6 @@
 ---
 title: "少年游"
-author: "cty"
+author: "cty（泊珩）"
 genre: "词"
 source: "公众号回忆文会《时间溯流》"
 imageries: ["秋", "离别相思"]

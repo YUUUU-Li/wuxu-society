@@ -129,7 +129,30 @@ exports.handler = async (event) => {
   }
   lastHit.set(ip, now);
 
-  const slug = "w-sub-" + ts() + "-" + rand2();
+  let slug = "w-sub-" + ts() + "-" + rand2();
+  const slugHint = String(input.slug || "").trim().toLowerCase().slice(0, 40);
+  if (slugHint) {
+    if (!/^[a-z][a-z0-9-]*$/.test(slugHint)) {
+      return respond(400, { ok: false, error: "文件标识只能用小写字母开头，含小写字母、数字、连字符。" });
+    }
+    try {
+      slug = "w-" + slugHint;
+      for (let i = 2; i <= 20; i++) {
+        let taken = true;
+        try {
+          await gh("/repos/" + OWNER + "/" + REPO + "/contents/src/works/" + slug + ".md");
+        } catch (e) {
+          if (!e.status || e.status !== 404) throw e;
+          taken = false; // 404 = 该名字未被占用
+        }
+        if (!taken) break;
+        slug = "w-" + slugHint + "-" + i;
+      }
+    } catch (err) {
+      console.error("slug check failed:", err && err.message ? err.message : err);
+      return respond(500, { ok: false, error: "投稿暂时失败，请稍后再试或联系社长代投。" });
+    }
+  }
   const branch = "submit/" + slug;
 
   const bodyHtml = bodyToHtml(body, genre);

@@ -1,6 +1,6 @@
 ---
 title: "清明雨"
-author: "cty"
+author: "cty（泊珩）"
 genre: "现代诗"
 source: "甲辰清明首聚（2024.4.4）"
 imageries: ["雨", "清明", "山水"]

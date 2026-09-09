@@ -42,6 +42,11 @@ footerNote: "投稿经编委审阅后才会发布。页面由婺需文学社站�
         </select>
       </div>
       <div class="field">
+        <label for="sub-slug">文件标识（选填）</label>
+        <input id="sub-slug" name="slug" type="text" maxlength="40" placeholder="例：zhuyingtai / qiuwang" autocomplete="off" spellcheck="false" />
+        <small style="color:var(--dim)">小写字母开头的拼音或英文，会成为作品网页地址（如 <code>w-zhuyingtai</code>）；留空则由系统自动生成。</small>
+      </div>
+      <div class="field">
         <label for="sub-imagery">意象（选填，逗号分隔）</label>
         <input id="sub-imagery" name="imageries" type="text" maxlength="200" placeholder="例：秋，雨，思乡归途" />
         <small style="color:var(--dim)">用于自动关联"同意象"作品；不确定可留空。</small>
@@ -80,11 +85,17 @@ footerNote: "投稿经编委审阅后才会发布。页面由婺需文学社站�
     if (!title) { msg.textContent = "请先写题名。"; msg.className = "form-msg err"; form.title.focus(); return; }
     if (!author) { msg.textContent = "请留下署名（缩写或缩写（笔名））。"; msg.className = "form-msg err"; form.author.focus(); return; }
     if (body.length < 10) { msg.textContent = "正文太短了，再写几句吧。"; msg.className = "form-msg err"; form.body.focus(); return; }
+    var slug = (form.slug.value || "").trim().toLowerCase();
+    if (slug && !/^[a-z][a-z0-9-]{0,38}$/.test(slug)) {
+      msg.textContent = "文件标识需以小写字母开头，只能含小写字母、数字、连字符（如 zhuyingtai）。";
+      msg.className = "form-msg err"; form.slug.focus(); return;
+    }
     var payload = {
       title: title,
       author: author,
       genre: genre,
       body: body,
+      slug: slug,
       imageries: form.imageries.value,
       source: form.source.value,
       website: form.website.value

@@ -25,10 +25,10 @@
       },
       {
         "id": "cty",
-        "name": "cty",
+        "name": "cty · 泊珩",
         "role": "社员",
         "branch": "金华总部",
-        "note": "暂无笔名。",
+        "note": "",
         "links": [
           {
             "href": "qingming-cty.html",
@@ -41,6 +41,10 @@
           {
             "href": "w-shaonianyou.html",
             "label": "作品：少年游"
+          },
+          {
+            "href": "w-zhuyingtai.html",
+            "label": "作品：祝英台近·观徐克梁祝有感"
           }
         ]
       },
