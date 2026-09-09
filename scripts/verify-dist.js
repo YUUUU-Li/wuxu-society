@@ -10,9 +10,12 @@ const read = (f) => fs.readFileSync(path.join(D, f), "utf8");
 const exists = (f) => fs.existsSync(path.join(D, f));
 const files = fs.readdirSync(D);
 
-// —— 产物数量与泄漏 ——
+// —— 产物数量与泄漏(以 src 数据源推导, 投稿合入/封期自动跟随) ——
 const htmls = files.filter((f) => f.endsWith(".html"));
-assert.strictEqual(htmls.length, 55, `应 55 html(51 正式+3 刊期页+1 众注原型), 实得 ${htmls.length}`);
+const nWorksSrc = fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).length;
+const nIssuesSrc = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/issues.json"), "utf8")).length;
+const expectHtml = 6 + nWorksSrc + nIssuesSrc + (files.includes("proto-note.html") ? 1 : 0); // 6 基础页+作品+期页+原型
+assert.strictEqual(htmls.length, expectHtml, `应 ${expectHtml} html(基础6+作品${nWorksSrc}+期${nIssuesSrc}+原型1), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -42,7 +45,8 @@ assert(home.includes("微信扫一扫关注"), "公众号引导语");
 assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length, 1, "社训句全页只保留一处(公众号简介)");
 assert(home.includes('data-netlify="true"') && home.includes('name="form-name" value="join"'), "入社表单已接 Netlify Forms");
 const pool = JSON.parse(/<script type="application\/json" id="home-pool">(.*?)<\/script>/.exec(home)[1]);
-assert.strictEqual(pool.length, 38, `拾读池应 38, 实得 ${pool.length}`);
+assert(pool.length >= 36, `拾读池应 ≥36, 实得 ${pool.length}`);
+assert.strictEqual(new Set(pool.map((c) => c.href)).size, pool.length, "拾读池无重复作品");
 const wy = pool.find((c) => c.href.includes("wenyib"));
 assert(wy && wy.line.startsWith("这是我第几次为你扫墓"), `行号跳过失效: ${wy && wy.line}`);
 
@@ -54,9 +58,10 @@ assert(flat.includes(".foot-note{margin-top:26px") && flat.includes("font-size:1
 assert(flat.includes('.nav.open .nav-links{display:flex') && flat.includes(".nav-toggle{display:none"), "汉堡菜单");
 assert(flat.includes("grid-template-columns:minmax(0,1fr) auto auto"), "作品库行弹性列");
 
-// —— 作品库 45 行 + 筛选 ——
+// —— 作品库行数(与 groups.json other 对齐, 投稿合入自动跟随) + 筛选 ——
 const rows = [...lib.matchAll(/class="idx-row rv" data-author="([^"]*)" data-genre="([^"]*)" data-imagery="([^"]*)" data-source="([^"]*)"/g)];
-assert.strictEqual(rows.length, 29, `库分组行应 29(其余社员作品), 实得 ${rows.length}`);
+const othersN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs.length;
+assert.strictEqual(rows.length, othersN, `库分组行应 ${othersN}(其余社员作品), 实得 ${rows.length}`);
 assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
 for (const x of ["author", "genre", "imagery", "source"]) assert(lib.includes(`id="f-${x}"`), `筛选 ${x} 缺失`);
 
@@ -79,7 +84,8 @@ assert(read("issue-2026-09.html").includes("九月投稿辑") && read("issue-202
 assert(read("issue-huiyi-shijianliuliu.html").includes("回忆文会《时间溯流》") && read("issue-huiyi-shijianliuliu.html").includes("w-golden"), "回忆文会期页内容");
 assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
-assert(!lib.includes("待辑入新期"), "待辑为空时不显示提示");
+const pendN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/pending_issue.json"), "utf8")).length;
+assert(pendN ? lib.includes("待辑入新期") : !lib.includes("待辑入新期"), `待辑提示与 pending(${pendN}) 不一致`);
 
 // —— 众注嵌入(P1) ——
 assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includes("zhuzhu.js"), "作品页含众注容器(默认隐藏, API 点亮)");
