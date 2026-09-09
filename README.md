@@ -17,13 +17,12 @@
 │  ├─ _includes/              # 全站唯一的 head / 导航 / 页脚 / 作品页模板
 │  └─ static/                 # site.css / site.js / 图标（原样复制进产物）
 ├─ dist/                      # 构建产物（git 忽略，Netlify 发布此目录）
-├─ docs/作品上传指南.md        # ★ 给社员的投稿图文教程（clone/Obsidian 写作/Git/上线）
-├─ docs/投稿功能方案.md        # ★ 网页投稿功能设计（表单→PR→预览审核→一键发布，代码已就绪）
-├─ docs/修改网站速查.md        # ★ 维护者 Git 速查（clone→分支→提交→合并→推送→反悔药）
-├─ docs/网站精进方案.md        # ★ 精进路线（关联轮换/筛选/评论系统/刊期概念化，P0-P2）
+├─ docs/作品上传指南.md        # ★ 给投稿人的网页投稿教程（附编委本地编辑）
+├─ docs/编委操作手册.md        # ★ 日常运维一篇就够（审稿 PR/封期/发布/测试/后台凭据/FAQ）
+├─ docs/网站精进方案.md        # ★ 现状与路线（P0-P2 落地情况 + 剩余待定：P1 评论/P2.3/域名）
 ├─ docs/域名接入指南.md        # ★ 自有域名接入（Spaceship 买 → Cloudflare → Netlify，含 IP 优选）
 ├─ docs/网站自定义指南.md      # ★ 全站可自定义点地图（内容/样式/结构/功能/部署，去哪改）
-├─ docs/刊期概念化方案.md      # ★ P2 草案: 投稿攒期 + 概念化关联（数据结构/三步落地/待拍板）
+├─ docs/刊期概念化方案.md      # ★ P2 方案: 期与概念数据结构/封期流程（P2.1/P2.2 已落地, P2.3 待做）
 ├─ netlify/functions/submit.js # 投稿接口: 表单→自动开 PR（需 GITHUB_TOKEN_SUBMIT 环境变量）
 ├─ scripts/migrate_extract.py # 一次性迁移脚本（旧站 → src/works），仅存档参考
 ├─ .eleventy.js / package.json
