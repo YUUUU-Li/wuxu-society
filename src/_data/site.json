@@ -1,8 +1,8 @@
 {
   "name": "婺需文学社",
   "slogan": "以诗会友，以文养心",
-  "apiEndpoint": "/.netlify/functions/submit",
-  "url": "https://wuxu-literary.netlify.app",
+  "apiEndpoint": "/submit",
+  "url": "https://wuxu-society.pages.dev",
   "footerNote": "诗文录自社内原稿，署名悉依原作。",
   "wechat": {
     "name": "婺需文学社",
