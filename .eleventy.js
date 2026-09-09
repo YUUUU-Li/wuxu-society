@@ -25,12 +25,14 @@ function branchOf(author) {
 }
 
 // 构建时把许可证复制进静态区, 随站发布(根目录显示为 /LICENSE.txt /LICENSE-CODE.txt)
+// 副本加 UTF-8 BOM, 浏览器不看响应头也能正确识别编码, 避免中文乱码
 for (const [src, dest] of [
   ["LICENSE", "src/static/LICENSE.txt"],
   ["LICENSE-CODE", "src/static/LICENSE-CODE.txt"],
 ]) {
   try {
-    fs.copyFileSync(path.join(__dirname, src), path.join(__dirname, dest));
+    const text = fs.readFileSync(path.join(__dirname, src), "utf8");
+    fs.writeFileSync(path.join(__dirname, dest), "\uFEFF" + text, "utf8");
   } catch (e) {
     console.warn("复制许可文件失败(跳过):", src, e.message);
   }

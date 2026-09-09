@@ -209,7 +209,7 @@ footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}
 .foot a,.foot p{color:var(--ink-soft);font-size:14.5px;text-decoration:none}
 .foot a:hover{color:var(--seal)}
 .foot p{margin:0;max-width:38em}
-.foot-note{margin-top:44px;padding-top:18px;border-top:1px solid var(--line-soft);color:var(--dim,#6e6a5e);font-size:12.5px;line-height:1.9;text-align:center}
+.foot-note{margin-top:26px;padding-top:14px;border-top:1px solid var(--line,#cfc6b4);color:var(--dim,#6e6a5e);font-size:12px;line-height:1.9;text-align:center}
 .foot-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .foot-note a:hover{color:var(--seal,#9c3f30)}
 
