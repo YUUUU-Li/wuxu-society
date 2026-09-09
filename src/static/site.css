@@ -185,11 +185,16 @@ a.plink:hover{color:var(--seal)}
 .lib-body .analysis{color:var(--ink-soft);font-size:15px;line-height:2.1;margin-top:22px;border-top:1px solid var(--line-soft);padding-top:16px}
 .lib-item{scroll-margin-top:96px}
 .idx-list{border-top:1px solid var(--line);margin-top:10px}
-.idx-row{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:baseline;padding:12px 4px;border-bottom:1px solid var(--line-soft);font-size:16px}
-.idx-row a{text-decoration:none;font-weight:700;letter-spacing:.02em}
+.idx-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:18px;align-items:baseline;padding:12px 4px;border-bottom:1px solid var(--line-soft);font-size:16px}
+.idx-row a{text-decoration:none;font-weight:700;letter-spacing:.02em;line-height:1.5}
 .idx-row a:hover{color:var(--seal)}
-.idx-row .g{color:var(--dim);font-size:13px}
+.idx-row .g{color:var(--dim);font-size:13px;white-space:nowrap}
 .idx-row .f{color:var(--dim);font-size:13px;white-space:nowrap}
+@media (max-width:640px){
+  .idx-row{grid-template-columns:1fr auto;gap:2px 12px;align-items:baseline}
+  .idx-row > span:first-child{grid-column:1 / -1}
+  .idx-row .f{grid-column:2;justify-self:end}
+}
 .idx-group{margin-top:46px}
 .idx-group:first-of-type{margin-top:26px}
 .kaiti{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
