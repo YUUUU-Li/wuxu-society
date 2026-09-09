@@ -1,0 +1,36 @@
+{% if site.zhuzhu and site.zhuzhu.enabled %}
+{# 众注容器: 默认 hidden, zhuzhu.js 在 API 可用后才点亮并填充 #}
+<section class="wrap zz" id="zhuzhu" data-work="{{ page.fileSlug }}" data-api="{{ site.zhuzhu.api }}" hidden>
+  <div class="zz-head">
+    <h3>众注</h3><span class="zz-rule">以诗会友，勿作恶语</span>
+  </div>
+
+  <div class="zz-tags">
+    <p class="zz-cap">标签（你认为的本作品亮点）· 点一下即赞同，可再点取消</p>
+    <div class="tag-line" id="zz-tags"></div>
+    <form class="tag-add" id="zz-tagform">
+      <span class="tag-wrap">
+        <input id="zz-taginput" type="text" maxlength="12" placeholder="输入标签：同名/相似即选中匹配；没有再新建" aria-label="输入标签" autocomplete="off" aria-expanded="false" />
+        <div class="sug" id="zz-sug" role="listbox" hidden></div>
+      </span>
+      <button class="btn ghost" type="submit">添加</button>
+      <span class="dim tag-tip" id="zz-tagmsg"></span>
+    </form>
+  </div>
+
+  <div class="zz-comments">
+    <p class="zz-cap">评论 · 楼式，笔名/昵称制（游客亦可评，随评随写）</p>
+    <ol class="z-list" id="zz-floors"></ol>
+    <form class="z-form" id="zz-form">
+      <input id="zz-name" type="text" maxlength="20" placeholder="笔名/昵称（必填）" aria-label="笔名或昵称" />
+      <textarea id="zz-text" rows="3" maxlength="500" placeholder="写几句感受、典故或呼应……（行首加 > 可引原句/他人评论；网址自动成链接）" aria-label="评论内容"></textarea>
+      <div class="z-acts">
+        <button class="btn ghost" type="submit">发表</button>
+        <span class="dim" id="zz-msg"></span>
+      </div>
+    </form>
+  </div>
+  <p class="zz-note">标签统计进入候选，由编委采纳为正式意象/相似标签——众注即为归纳之助。</p>
+</section>
+<script src="zhuzhu.js"></script>
+{% endif %}

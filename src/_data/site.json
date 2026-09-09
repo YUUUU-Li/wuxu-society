@@ -8,5 +8,9 @@
     "name": "婺需文学社",
     "intro": "以诗会友，以文养心。愿旧诗与新声都有人听。",
     "qr": "wechat-qr.jpg"
+  },
+  "zhuzhu": {
+    "enabled": true,
+    "api": "/api"
   }
 }

@@ -81,6 +81,10 @@ assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
 assert(!lib.includes("待辑入新期"), "待辑为空时不显示提示");
 
+// —— 众注嵌入(P1) ——
+assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includes("zhuzhu.js"), "作品页含众注容器(默认隐藏, API 点亮)");
+assert(!read("index.html").includes('id="zhuzhu"'), "首页不含众注容器");
+
 // —— 概念卡(P2.3) ——
 assert(exists("proto-note.html") && read("proto-note.html").includes("众注 · 版式演示"), "众注版式原型页(设计稿)");
 assert(exists("concepts/qingming.html") && exists("concepts/lishe.html"), "概念页生成");
