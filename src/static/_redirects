@@ -1,0 +1,4 @@
+# Cloudflare Pages 重定向表（301 永久跳转）
+# 作品改名时由 `npm run rename-work` 自动追加一行，形如：
+#   /w-20240404-01.html    /w-zhuyingtai.html    301
+# 手动指定亦可；# 开头的行是注释。改动后在 CF 后台 Retry deployment 即生效。

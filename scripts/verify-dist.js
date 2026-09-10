@@ -71,6 +71,7 @@ assert(css.includes("color-scheme:light") && css.includes("color-scheme:dark"), 
 assert(css.includes("select option") && css.includes("[data-theme=\"dark\"] select option"), "下拉选项配色兜底(浅底深字/深底浅字)");
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");
 assert(exists("logo.png"), "logo.png 随站发布");
+assert(exists("_redirects"), "随站发布 Cloudflare _redirects(改名 301 用)");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");
 assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length, 1, "社训句全页只保留一处(公众号简介)");
 // 旧托管平台(已弃用)的引用应彻底消失; 用拼接避免本文件自身命中关键词

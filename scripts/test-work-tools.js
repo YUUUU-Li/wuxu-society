@@ -41,6 +41,9 @@ assert.deepStrictEqual(readJson("src/_data/pending_issue.json"), ["w-qingmingyu"
 assert.deepStrictEqual(readJson("src/_data/issues.json")[0].slugs, ["w-qingmingyu"], "期册已更新");
 assert(read("src/works/w-yiqinehe.md").includes('to: "w-qingmingyu"'), "related 指向已更新");
 assert.strictEqual(readJson("src/_data/members.json")[0].members[0].links[0].href, "w-qingmingyu.html", "名册链接已更新");
+// 旧网址 301 重定向(合并后改名也不失效)
+const redir = read("src/static/_redirects");
+assert(redir.includes("/w-20240404-01.html") && redir.includes("/w-qingmingyu.html") && redir.includes("301"), "_redirects 生成 301: " + redir.trim());
 
 // 3) 非法/冲突
 assert.throws(() => renameWork("w-qingmingyu", "Bad Name", { root: tmp }), /新标识名/);

@@ -258,7 +258,7 @@ async function doSubmit(context) {
           "\n- 体裁：" + genre +
           "\n- 创作时间：" + created +
           (source ? "\n- 出处：" + source : "") +
-          "\n- 文件标识（自动生成）：`" + slug + "`——如想要雅名，合并前可跑 `npm run rename-work " + slug + " <新名>`" +
+          "\n- 文件标识（自动生成）：`" + slug + "`——如想要雅名，见《编委操作手册》「改名」一节（本地终端跑 `npm run rename-work`，合并前后皆可；已自动带 301 跳转，旧链接不失效）" +
           "\n\nCloudflare Pages 预览链接会自动出现在本 PR 中。审核通过请点 **Merge pull request**；需修改可在文件里直接改，或让作者在网页重新提交。",
       }),
     });
