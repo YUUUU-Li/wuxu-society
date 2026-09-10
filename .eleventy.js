@@ -167,7 +167,8 @@ module.exports = function (eleventyConfig) {
     authorItems.forEach((r) => taken.add(r.to));
 
     // (原"同意象"静态组已移除: 相似标签改由运行时余弦计算,
-    //  见 functions/api/related.js + 作品页 #rel-sim 动态填充; 冷启动=意象词按 1 票回退)
+    //  见 functions/api/related.js + 作品页 #rel-sim 动态填充;
+    //  2026-09 修订: 只用读者票, 不再拿作品 imageries 兜底, 共享下限降为 1)
 
     // 同时同源: 出处相同的其他作品 (全部列出, 无需轮换)
     const sourceItems = [];

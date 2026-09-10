@@ -1,10 +1,13 @@
 // 众注·相似标签(余弦归一) API —— Cloudflare Pages Functions + D1, ESM 自包含
 // GET /api/related?work=<slug> -> { ok, related:[{slug,title,shared:[...],sim}] }
-// 算法(方案定稿, 2026-09):
-//   每篇作品 = 标签票数向量(维度=标签词)。冷启动回退: 无票的词若在作品 imageries 里按 1 票计,
-//   已有点票的词用真实票数, 两者合并(意象词与票词维度共存)。
-//   候选须与本作共享 >=2 个词(下限2), 余弦相似度 = dot/(|A||B|) 降序, 平票随机由前端处理。
-// 作品元数据(title/imageries)读取构建产物 rel-meta.json(每页部署自带);
+// 算法(2026-09 修订):
+//   每篇作品 = **读者标签票数向量**(维度=标签词), 只用真实票数。
+//   **不再用 frontmatter 的 imageries 兜底** —— 意象是建站初期 AI 辅助标注的, 不是读者标签,
+//   拿它当票会造出"看着像相似其实没人认同"的假关联。无票的作品因此不参与相似计算,
+//   作品页那一组会自行隐藏, 等读者真的打了标再长出来。
+//   **共享下限 1**: 只要与本作共享至少 1 个标签词就有资格上榜(票少但同向的作品不再被埋)。
+//   余弦相似度 = dot/(|A||B|) 降序; 分数相同按 slug 排(前端再随机轮换 4 篇)。
+// 作品元数据(title)读取构建产物 rel-meta.json(每页部署自带);
 // 测试/自检时用 env.REL_META_JSON 传入, 避免依赖同源资源。
 const json = (status, body) =>
   new Response(JSON.stringify(body), {
@@ -45,18 +48,12 @@ export async function onRequest(context) {
       (votes[r.w] = votes[r.w] || {})[r.word] = r.c;
     }
 
-    // 每篇作品向量: 票数优先, imageries 词无票按 1 计
-    const vec = (slug) => {
-      const v = {};
-      for (const word of (meta[slug] && meta[slug].imageries) || []) v[word] = Math.max(v[word] || 0, 1);
-      for (const word of Object.keys(votes[slug] || {})) v[word] = Math.max(v[word] || 0, votes[slug][word]);
-      return v;
-    };
+    // 每篇作品向量 = 读者票数(没有票 = 空向量, 不参与; 不再拿 imageries 兜底)
+    const vec = (slug) => votes[slug] || {};
     const norm = (v) => Math.sqrt(Object.values(v).reduce((s, x) => s + x * x, 0));
 
     const selfV = vec(work);
-    const selfMeta = meta[work];
-    if (!selfMeta || !Object.keys(selfV).length) return json(200, { ok: true, related: [] });
+    if (!Object.keys(selfV).length) return json(200, { ok: true, related: [] });
     const selfN = norm(selfV);
     if (!selfN) return json(200, { ok: true, related: [] });
 
@@ -66,7 +63,7 @@ export async function onRequest(context) {
       const otherV = vec(slug);
       if (!Object.keys(otherV).length) continue;
       const shared = Object.keys(selfV).filter((w) => otherV[w] > 0);
-      if (shared.length < 2) continue; // 共享下限 2
+      if (!shared.length) continue; // 共享下限 1: 有一个共同标签就有资格上榜
       const dot = shared.reduce((s, w) => s + selfV[w] * otherV[w], 0);
       const sim = dot / (selfN * norm(otherV));
       if (!(sim > 0)) continue;
