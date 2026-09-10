@@ -5,6 +5,7 @@
    单主题(浅色纸面) / 单强调色(朱砂) / 全直角
    ========================================================= */
 :root{
+  color-scheme:light;      /* 原生控件跟随主题(下拉开列表/滚动条等) */
   --paper:#eef0e6;          /* 微青纸色 */
   --paper-deep:#e4e7d9;
   --ink:#26221a;            /* 墨色, 不用纯黑 */
@@ -427,6 +428,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* 深色时手写 logo(黑墨)反白, 否则不可辨 */
 [data-theme="dark"] .brand-logo{filter:invert(1) brightness(1.02)}
 [data-theme="dark"]{
+  color-scheme:dark;
   --paper:#171512;--paper-deep:#1f1c18;--ink:#e9e4d7;--ink-soft:#c8c1b1;
   --dim:#9c968a;--line:rgba(233,228,215,.20);--line-soft:rgba(233,228,215,.10);
   --seal:#c46552;--seal-ink:#171512;--nav-bg:rgba(31,28,24,.92);
@@ -509,9 +511,15 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   line-height:normal;color:var(--ink);background:var(--input-bg);border:1px solid var(--line);border-radius:0}
 .created-row select:focus,
 .created-row input[type="number"]:focus{outline:none;border-color:var(--seal)}
-.created-row #sub-created-year{flex:1 1 auto;min-width:0}
+.created-row #sub-created-year{flex:0 0 160px;width:160px}
 .created-row #sub-created-month{flex:0 0 110px;width:110px}
 .created-row input[type="number"]{flex:0 0 110px;width:110px}
 @media (max-width:640px){.created-row{flex-wrap:wrap}.created-row #sub-created-year{flex:1 1 100%}.created-row #sub-created-month{flex:1 1 45%}.created-row input[type="number"]{flex:1 1 45%}}
 /* 原生日期控件的图标在深色下默认是深色, 一并反白(以防将来再用 type=date/month) */
 [data-theme="dark"] input::-webkit-calendar-picker-indicator{filter:invert(1)}
+
+/* 下拉选项配色兜底: 原生 <select> 展开列表由浏览器绘制, 不声明会白底配浅字 */
+select option{background:var(--paper-deep);color:var(--ink)}
+select optgroup{background:var(--paper-deep);color:var(--ink)}
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup{background:#1f1c18;color:#e9e4d7}

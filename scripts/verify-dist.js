@@ -67,6 +67,8 @@ for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
 assert(read("submit.html").includes('id="sub-created-year"') && read("submit.html").includes('id="sub-created-month"') && !read("submit.html").includes('name="slug"'), "投稿页含中文年月下拉、已去掉手填标识名");
 assert(css.includes(".lib-body hr.rule") && css.includes(".lib-body blockquote.quote"), "正文分割线/引文块样式");
 assert(/\.created-row select,\s*\n?\.created-row input\[type="number"\]\{[^}]*height:46px/.test(css), "创作时间三控件统一高度");
+assert(css.includes("color-scheme:light") && css.includes("color-scheme:dark"), "声明 color-scheme(原生下拉/滚动条随主题)");
+assert(css.includes("select option") && css.includes("[data-theme=\"dark\"] select option"), "下拉选项配色兜底(浅底深字/深底浅字)");
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");
 assert(exists("logo.png"), "logo.png 随站发布");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");
