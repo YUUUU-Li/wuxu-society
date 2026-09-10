@@ -411,11 +411,11 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 @keyframes zflash{0%{background:rgba(156,63,48,.22)}100%{background:transparent}}
 
 /* ══ 深色模式(可切换) ══ */
-.theme-toggle{background:none;border:1px solid var(--line);color:var(--ink-soft);
-  display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;
-  border-radius:8px;cursor:pointer;flex:none;transition:border-color .2s,color .2s}
-.theme-toggle svg{display:block;width:15px;height:15px}
-.theme-toggle:hover,.theme-toggle:focus-visible,.theme-toggle.on{border-color:var(--seal);color:var(--seal);outline:none}
+.theme-toggle{background:none;border:0;color:var(--ink-soft);
+  display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;
+  border-radius:8px;cursor:pointer;flex:none;transition:color .2s}
+.theme-toggle svg{display:block;width:19px;height:19px}
+.theme-toggle:hover,.theme-toggle:focus-visible,.theme-toggle.on{color:var(--seal);outline:none}
 /* 手机端: 主题按钮排在汉堡按钮左边(靠右) */
 .theme-toggle{order:2;margin-left:auto}
 .nav-toggle{order:3}
