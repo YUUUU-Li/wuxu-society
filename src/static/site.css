@@ -453,3 +453,26 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .lib-body blockquote.quote{margin:22px 0;padding:2px 0 2px 16px;border-left:3px solid var(--seal);
   font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
   font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
+
+/* 投稿页: 左写右预览 + 示例 */
+.sub-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sub-sample{background:none;border:1px solid var(--line);color:var(--ink-soft);font:inherit;
+  font-size:13px;padding:3px 12px;border-radius:999px;cursor:pointer;transition:border-color .2s,color .2s}
+.sub-sample:hover,.sub-sample:focus-visible{border-color:var(--seal);color:var(--seal);outline:none}
+.sub-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.sub-split textarea{min-height:420px}
+.sub-pane{border:1px solid var(--line);background:rgba(255,255,255,.34);min-height:420px;
+  display:flex;flex-direction:column}
+.sub-pane-head{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--line-soft);font-size:13px;color:var(--dim);letter-spacing:.08em}
+.sub-preview-btn{background:none;border:1px solid var(--line);color:var(--ink-soft);font:inherit;
+  font-size:13px;padding:3px 12px;border-radius:999px;cursor:pointer;transition:border-color .2s,color .2s}
+.sub-preview-btn:hover,.sub-preview-btn:focus-visible{border-color:var(--seal);color:var(--seal);outline:none}
+.sub-pane-body{padding:18px 20px;overflow:auto;flex:1}
+.sub-pane-hint{color:var(--dim);font-size:13.5px;margin:0}
+@media (max-width:820px){
+  .sub-split{grid-template-columns:1fr}
+  .sub-split textarea{min-height:260px}
+  .sub-pane{min-height:200px}
+}
+[data-theme="dark"] .sub-pane{background:rgba(255,255,255,.04)}

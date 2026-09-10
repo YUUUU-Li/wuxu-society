@@ -66,8 +66,22 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
         <input id="sub-source" name="source" type="text" maxlength="100" placeholder="例：癸卯秋社课" />
       </div>
       <div class="field">
-        <label for="sub-body">正文</label>
-        <textarea id="sub-body" name="body" rows="16" placeholder="诗/词：每行一句，句间自然换行；&#10;散文/小说：自然分段，段与段之间空一行。&#10;行首标记：& 开头 = 楷体文段（前记/后记/序）；> 开头 = 引文块；单独一行 --- = 分割线。" required></textarea>
+        <div class="sub-head">
+          <label for="sub-body">正文</label>
+          <button type="button" class="sub-sample" id="sub-sample" title="填入一段包含全部排版功能的示例">示例</button>
+        </div>
+        <div class="sub-split">
+          <textarea id="sub-body" name="body" rows="18" placeholder="诗/词：每行一句，句间自然换行；&#10;散文/小说：自然分段，段与段之间空一行。&#10;行首标记：& 开头 = 楷体文段（前记/后记/序）；> 开头 = 引文块；单独一行 --- = 分割线。&#10;写好后点右侧「预览」看排版效果，或点上方「示例」看范例。" required></textarea>
+          <div class="sub-pane">
+            <div class="sub-pane-head">
+              <span>预览</span>
+              <button type="button" class="sub-preview-btn" id="sub-preview-btn">预览</button>
+            </div>
+            <div class="sub-pane-body lib-body" id="sub-preview">
+              <p class="sub-pane-hint">点右上角<b>「预览」</b>，此处按发布的真实版式渲染正文。</p>
+            </div>
+          </div>
+        </div>
         <small style="color:var(--dim)">空行 = 分段。诗词类每行成行；前记/后记等楷体文段，<b>段首加 &amp;</b>（如 <code>&amp;后记：芒种作。</code>）；引文块用 <b>&gt;</b> 开头；单独一行 <b>---</b> 表示分割线。「注：」「评：」开头按赏析块排版。</small>
       </div>
       <p style="position:absolute;left:-9999px" aria-hidden="true">
@@ -85,6 +99,62 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
   var msg = document.getElementById("sub-msg");
   var btn = document.getElementById("sub-btn");
   if (!form) return;
+
+  /* ---------- 正文: 示例 + 左写右预览 ---------- */
+  var bodyEl = document.getElementById("sub-body");
+  var previewEl = document.getElementById("sub-preview");
+  var previewBtn = document.getElementById("sub-preview-btn");
+  var sampleBtn = document.getElementById("sub-sample");
+  var PREVIEW_HINT = '<p class="sub-pane-hint">点右上角<b>「预览」</b>，此处按发布的真实版式渲染正文。</p>';
+  // 示例: 覆盖全部排版功能(诗句/空行分段/& 楷体稿/> 引文/--- 分割线/注·评赏析块)
+  var SAMPLE = [
+    "春水碧于天，画船听雨眠。",
+    "垆边人似月，皓腕凝霜雪。",
+    "",
+    "&前记：丙午年春分后三日，与社中诸子同游婺江，归而作此。",
+    "",
+    "舟行三十里，忽见江心孤屿，上有旧亭三间，苔痕满地。同行者曰：“此亭废已廿年。”",
+    "",
+    "> 昔我往矣，杨柳依依。",
+    "> 今我来思，雨雪霏霏。",
+    "",
+    "---",
+    "",
+    "&后记：是夜宿江馆，闻雨声不绝，遂录旧句于笺尾。",
+    "",
+    "注：上阕写景，下阕写人，两结皆以景收。",
+    "",
+    "评（hde）：丽而不腻，尾句尤有余味。",
+  ].join("\n");
+
+  function renderPreview() {
+    var body = bodyEl.value.trim();
+    if (!body) { previewEl.innerHTML = PREVIEW_HINT; return; }
+    previewBtn.disabled = true;
+    previewEl.innerHTML = '<p class="sub-pane-hint">正在排版…</p>';
+    fetch("{{ site.apiBase | default('/api') }}/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: body, genre: form.genre.value }),
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (j) {
+        previewEl.innerHTML = j && j.ok
+          ? j.html
+          : '<p class="sub-pane-hint">' + ((j && j.error) || "预览失败，请稍后再试。") + "</p>";
+      })
+      .catch(function () {
+        previewEl.innerHTML = '<p class="sub-pane-hint">网络不通，预览失败；投稿不受影响。</p>';
+      })
+      .then(function () { previewBtn.disabled = false; });
+  }
+  if (previewBtn) previewBtn.addEventListener("click", renderPreview);
+  if (sampleBtn) sampleBtn.addEventListener("click", function () {
+    if (bodyEl.value.trim() && !window.confirm("将用示例替换现有正文，继续？")) return;
+    bodyEl.value = SAMPLE;
+    bodyEl.focus();
+    renderPreview();
+  });
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
     msg.className = "form-msg";
