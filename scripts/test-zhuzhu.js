@@ -138,8 +138,8 @@ async function main() {
 
   // 编委 cleanup: 按归并表整理历史标签
   r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "cleanup" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
-  const cl = await r.json();
-  assert(cl.ok && Array.isArray(cl.merged), "cleanup 应返回合并清单");
+  const cln = await r.json();
+  assert(cln.ok && Array.isArray(cln.merged), "cleanup 应返回合并清单");
 
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));
