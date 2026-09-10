@@ -42,9 +42,16 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
         </select>
       </div>
       <div class="field">
-        <label for="sub-created">创作时间（必填）</label>
+        <label for="sub-created-year">创作时间（必填）</label>
         <div class="created-row">
-          <input id="sub-created" name="created" type="month" required />
+          <select id="sub-created-year" aria-label="创作年份" required>
+            <option value="">年</option>
+            {% for y in yearsList %}<option value="{{ y.v }}">{{ y.label }}</option>{% endfor %}
+          </select>
+          <select id="sub-created-month" aria-label="创作月份" required>
+            <option value="">月</option>
+            {% for m in monthsList %}<option value="{{ m.v }}">{{ m.label }}</option>{% endfor %}
+          </select>
           <input id="sub-created-day" type="number" min="1" max="31" placeholder="日（可选）" aria-label="创作日（可选）" />
         </div>
         <small style="color:var(--dim)">只记得年月就选到月即可；知道具体日子再填"日"。此时间用于作品排序与编委封期，不显示在页面上。</small>
@@ -185,10 +192,11 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     if (!title) { msg.textContent = "请先写题名。"; msg.className = "form-msg err"; form.title.focus(); return; }
     if (!author) { msg.textContent = "请留下署名（缩写或缩写（笔名））。"; msg.className = "form-msg err"; form.author.focus(); return; }
     if (body.length < 10) { msg.textContent = "正文太短了，再写几句吧。"; msg.className = "form-msg err"; form.body.focus(); return; }
-    var createdMonth = form.created.value; // YYYY-MM
-    if (!createdMonth) {
-      msg.textContent = "请选择创作时间（年月）。";
-      msg.className = "form-msg err"; form.created.focus(); return;
+    var createdYear = document.getElementById("sub-created-year").value;
+    var createdMonth = document.getElementById("sub-created-month").value;
+    if (!createdYear || !createdMonth) {
+      msg.textContent = "请选择创作时间（年、月）。";
+      msg.className = "form-msg err"; return;
     }
     var dayRaw = (document.getElementById("sub-created-day").value || "").trim();
     var day = dayRaw ? ("0" + dayRaw).slice(-2) : "";
@@ -196,7 +204,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       msg.textContent = "\"日\" 请填 1–31 之间的数字（不填也可以）。";
       msg.className = "form-msg err"; return;
     }
-    var created = createdMonth + (day ? "-" + day : "");
+    var created = createdYear + "-" + createdMonth + (day ? "-" + day : "");
     var payload = {
       title: title,
       author: author,

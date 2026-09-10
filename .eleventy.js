@@ -112,6 +112,16 @@ module.exports = function (eleventyConfig) {
   });
   // 静态资源版本号: 每次构建变化, 让浏览器拿到最新 CSS/JS(避免新 HTML 配旧缓存)
   eleventyConfig.addGlobalData("assetVer", () => String(Date.now()));
+  // 创作时间下拉选项(用中文"年/月"下拉, 避开原生 date/month 控件的英文界面与图标配色问题)
+  eleventyConfig.addGlobalData("yearsList", () => {
+    const now = new Date().getFullYear() + 1;
+    const out = [];
+    for (let y = now; y >= 1990; y--) out.push({ v: String(y), label: y + " 年" });
+    return out;
+  });
+  eleventyConfig.addGlobalData("monthsList", () =>
+    Array.from({ length: 12 }, (_, i) => ({ v: ("0" + (i + 1)).slice(-2), label: i + 1 + " 月" }))
+  );
   // 按创作时间排序后的全文库顺序(供作品库平铺池与全文库页使用)
   eleventyConfig.addGlobalData("fulltextSorted", () => FULLTEXT_SORTED);
 

@@ -64,7 +64,7 @@ for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
   assert.deepStrictEqual(actual, expected, "作品库顺序应按创作时间升序");
   assert(regOrder.some((s) => createdOf[s]), "至少应有作品填了 created(回填后排序才生效)");
 }
-assert(read("submit.html").includes('type="month"') && !read("submit.html").includes('name="slug"'), "投稿页含创作时间、已去掉手填标识名");
+assert(read("submit.html").includes('id="sub-created-year"') && read("submit.html").includes('id="sub-created-month"') && !read("submit.html").includes('name="slug"'), "投稿页含中文年月下拉、已去掉手填标识名");
 assert(css.includes(".lib-body hr.rule") && css.includes(".lib-body blockquote.quote"), "正文分割线/引文块样式");
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");
 assert(exists("logo.png"), "logo.png 随站发布");
@@ -181,7 +181,7 @@ assert(!read("w-feng.html").includes("本期概念"), "未入期作品无概念�
 
 // —— 投稿页字段 ——
 const sub = read("submit.html");
-for (const x of ['id="sub-created"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', '"/api/submit"']) {
+for (const x of ['id="sub-created-year"', 'id="sub-created-month"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', '"/api/submit"']) {
   assert(sub.includes(x), `投稿页缺 ${x}`);
 }
 
