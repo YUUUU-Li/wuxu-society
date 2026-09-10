@@ -4,8 +4,7 @@
 // 流程: 校验 -> 生成 slug -> 建分支 submit/<slug>
 //       -> 提交 src/works/<slug>.md + 更新 src/_data/groups.json + fulltext_order.json
 //       -> 待辑登记 pending_issue.json(best-effort) -> 开 PR
-// 注: 与 netlify/functions/submit.js(旧 Netlify 版)逻辑同源; Netlify 已停更仅留作回退,
-//     改投稿逻辑时以此文件为准。
+// 正文排版: 行首 & = 楷体文段(前记/后记/序), 行首 > = 引文块, 单独一行 --- = 分割线
 const OWNER = "YUUUU-Li";
 const REPO = "wuxu-society";
 const BASE = "main";
@@ -46,14 +45,13 @@ function b64decode(b64) {
   return new TextDecoder().decode(u);
 }
 
-const P_KAITI = /^(自序|小序|序言|前记|引言|后记|跋|附记|序)\s*[:：]?\s*/;
 const P_ANALYSIS = /^(注|注释|评注|评|赏析)\s*[:：]?\s*/;
 const RULE_RE = /^-{3,}$/;
-// 行首标记语法(投稿方可选):
+// 行首标记语法(投稿方写):
 //   & 开头   -> 楷体文段(前记/后记/序/跋 等)
 //   > 开头   -> 引文块(楷体 + 朱砂竖线)
 //   单独一行 ---> 分割线
-// 兼容原有自动识别: 段首「自序：」「后记：」等仍按楷体; 「评：」「注：」按赏析块。
+// 其余: 段首「注：」「评：」「赏析：」按赏析块; 诗词类每行成行, 散文类连排成段。
 function bodyToHtml(text, genre) {
   const poetic = POETIC.test(genre || "");
   const blocks = text
@@ -76,15 +74,9 @@ function bodyToHtml(text, genre) {
       let first = lines[0] || "";
       let mode = poetic ? "stanza" : "prose";
       const am = P_ANALYSIS.exec(first);
-      const km = !am && P_KAITI.exec(first);
       if (am) {
         mode = "analysis";
         const rest = first.slice(am[1].length);
-        if (/^[:：]/.test(rest)) first = rest.slice(1).trim();
-        else if (rest.trim() === "") first = "";
-      } else if (km) {
-        mode = "kaiti";
-        const rest = first.slice(km[1].length);
         if (/^[:：]/.test(rest)) first = rest.slice(1).trim();
         else if (rest.trim() === "") first = "";
       }

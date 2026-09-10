@@ -14,7 +14,7 @@ SPDX 标识：`CC-BY-NC-ND-4.0`
 - **不可**：用于商业用途；对作品进行改编、翻译、演绎后发布；
 - 每篇作品的著作权归其作者本人，本许可是文学社作为汇编者的整体授权；作者本人始终保留全部权利。
 
-## 二、代码、模板与样式（.eleventy.js、src/_includes、src/static/site.css、src/static/site.js、netlify/functions 等）
+## 二、代码、模板与样式（.eleventy.js、src/_includes、src/static/site.css、src/static/site.js、functions 等）
 
 **授权协议：MIT License**
 见仓库根目录 `LICENSE-CODE` 文件。

@@ -1,5 +1,5 @@
 // 婺需文学社 · Eleventy 配置
-// 构建: npm run build  (输出到 dist/, 即 Netlify 发布目录)
+// 构建: npm run build  (输出到 dist/, 即 Cloudflare Pages 发布目录)
 const fs = require("fs");
 const path = require("path");
 

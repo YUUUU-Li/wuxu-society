@@ -68,7 +68,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       <div class="field">
         <label for="sub-body">正文</label>
         <textarea id="sub-body" name="body" rows="16" placeholder="诗/词：每行一句，句间自然换行；&#10;散文/小说：自然分段，段与段之间空一行。&#10;行首标记：& 开头 = 楷体文段（前记/后记/序）；> 开头 = 引文块；单独一行 --- = 分割线。" required></textarea>
-        <small style="color:var(--dim)">空行 = 分段。诗词类每行成行；如需前记/后记等楷体文段，<b>段首加 &amp;</b>（如 <code>&amp;后记：芒种作。</code>）；引文块用 <b>&gt;</b> 开头；单独一行 <b>---</b> 表示分割线。段首写「自序：」「后记：」不写 &amp; 也会自动按楷体排版。</small>
+        <small style="color:var(--dim)">空行 = 分段。诗词类每行成行；前记/后记等楷体文段，<b>段首加 &amp;</b>（如 <code>&amp;后记：芒种作。</code>）；引文块用 <b>&gt;</b> 开头；单独一行 <b>---</b> 表示分割线。「注：」「评：」开头按赏析块排版。</small>
       </div>
       <p style="position:absolute;left:-9999px" aria-hidden="true">
         <label>网站<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
@@ -115,7 +115,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     btn.disabled = true;
     btn.textContent = "正在提交…";
     msg.textContent = "正在把稿件送进审稿队列，请稍候…";
-    fetch("{{ site.apiEndpoint | default('/.netlify/functions/submit') }}", {
+    fetch("{{ site.apiEndpoint | default('/api/submit') }}", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

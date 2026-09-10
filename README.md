@@ -30,15 +30,14 @@
 - **[编委操作手册](docs/编委操作手册.md)** —— 审稿、封期、发布、测试，日常运维一篇就够
 - **[作品上传指南](docs/作品上传指南.md)** —— 给投稿人：网页投稿为主，本地编辑附后
 - **[网站自定义指南](docs/网站自定义指南.md)** —— 全站可改之处的地图：改什么、去哪改
-- **[域名接入指南](docs/域名接入指南.md)** —— 接入自有域名（Spaceship → Cloudflare → Netlify）
-- **[迁往 Cloudflare Pages 方案](docs/迁往CloudflarePages方案.md)** —— 构建/托管搬离 Netlify 的路线（代码已双平台就绪）
+- **[域名接入指南](docs/域名接入指南.md)** —— 自有域名接入与 DNS 排查（Cloudflare）
 - **[众注系统方案](docs/众注系统方案.md)** —— P1 设计：标签/评论版式、余弦关联排序、D1 路线（原型见 `/proto-note.html`）
 - **[网站精进方案](docs/网站精进方案.md)** —— 现状与路线（评论系统、概念题解等俟诸后日）
 - **[刊期概念化方案](docs/刊期概念化方案.md)** —— "期"与"概念"之制，及其数据结构
 
 ## 一隅说明
 
-本站为 [Eleventy](https://www.11ty.dev) 所构之静态站：稿存 `src/works/*.md`，页由模板自数据而生，部署于 Netlify，代码存储于 [GitHub](https://github.com/YUUUU-Li/wuxu-society)。仓库结构、字段约定与改法，具见《网站自定义指南》，此处不赘。
+本站为 [Eleventy](https://www.11ty.dev) 所构之静态站：稿存 `src/works/*.md`，页由模板自数据而生，部署于 Cloudflare Pages，代码存储于 [GitHub](https://github.com/YUUUU-Li/wuxu-society)。仓库结构、字段约定与改法，具见《网站自定义指南》，此处不赘。
 
 ## 版权与许可
 

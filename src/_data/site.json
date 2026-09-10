@@ -12,5 +12,6 @@
   "zhuzhu": {
     "enabled": true,
     "api": "/api"
-  }
+  },
+  "apiBase": "/api"
 }

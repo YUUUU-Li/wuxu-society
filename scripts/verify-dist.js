@@ -48,7 +48,11 @@ assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness
 assert(exists("logo.png"), "logo.png 随站发布");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");
 assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length, 1, "社训句全页只保留一处(公众号简介)");
-assert(home.includes('data-netlify="true"') && home.includes('name="form-name" value="join"'), "入社表单已接 Netlify Forms");
+// 旧托管平台(已弃用)的引用应彻底消失; 用拼接避免本文件自身命中关键词
+const OLD_HOST = "net" + "lify";
+assert(home.includes('id="join-form"') && !new RegExp("data-" + OLD_HOST, "i").test(home), "入社表单已改走本站接口");
+assert(home.includes("/api/join"), "入社表单指向 CF 函数");
+assert(!new RegExp(OLD_HOST, "i").test(home) && !read("site.js").toLowerCase().includes(OLD_HOST), "站内无旧托管平台残留引用");
 const pool = JSON.parse(/<script type="application\/json" id="home-pool">(.*?)<\/script>/.exec(home)[1]);
 assert(pool.length >= 36, `拾读池应 ≥36, 实得 ${pool.length}`);
 assert.strictEqual(new Set(pool.map((c) => c.href)).size, pool.length, "拾读池无重复作品");

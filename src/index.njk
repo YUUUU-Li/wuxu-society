@@ -216,10 +216,9 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
         </ul>
       </div>
 
-      <form class="fm rv" id="join-form" name="join" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate aria-label="入社申请">
-        <input type="hidden" name="form-name" value="join" />
+      <form class="fm rv" id="join-form" novalidate aria-label="入社申请">
         <p style="position:absolute;left:-9999px" aria-hidden="true">
-          <label>请勿填写<input type="text" name="bot-field" tabindex="-1" autocomplete="off" /></label>
+          <label>请勿填写<input type="text" name="botField" id="botField" tabindex="-1" autocomplete="off" /></label>
         </p>
         <div class="field">
           <label for="penname">笔名或称呼</label>
@@ -246,6 +245,43 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
         <button class="btn" type="submit" style="width:100%">申请入社</button>
         <p class="form-msg" id="form-msg" aria-live="polite"></p>
       </form>
+      <script>
+      (function () {
+        var f = document.getElementById("join-form");
+        if (!f) return;
+        var msg = document.getElementById("form-msg");
+        var btn = f.querySelector('button[type="submit"]');
+        f.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var data = {
+            penname: f.penname.value.trim(),
+            mail: f.mail.value.trim(),
+            kind: f.kind.value,
+            note: f.note.value.trim(),
+            botField: f.botField.value,
+          };
+          if (!data.penname || !data.mail) { msg.textContent = "请填写笔名与邮箱。"; return; }
+          btn.disabled = true;
+          msg.textContent = "正在递送…";
+          fetch("{{ site.apiBase | default('/api') }}/join", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (j) {
+              if (j && j.ok) {
+                f.reset();
+                msg.textContent = "申请已递送，编委稍后与你联系。";
+              } else {
+                msg.textContent = (j && j.error) || "提交失败，请稍后再试或联系社长。";
+              }
+            })
+            .catch(function () { msg.textContent = "网络不通，请稍后再试。"; })
+            .then(function () { btn.disabled = false; });
+        });
+      })();
+      </script>
     </div>
   </section>
 
