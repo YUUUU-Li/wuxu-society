@@ -127,9 +127,19 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     "评（hde）：丽而不腻，尾句尤有余味。",
   ].join("\n");
 
+  var paneEl = document.querySelector(".sub-pane");
+  // 两栏高度同步: 以内容较长者为准(手机上堆叠时不处理)
+  function syncHeights() {
+    if (window.innerWidth <= 820) { bodyEl.style.height = ""; if (paneEl) paneEl.style.height = ""; return; }
+    bodyEl.style.height = "auto";
+    var need = Math.max(bodyEl.scrollHeight, previewEl.scrollHeight + 40, 420);
+    bodyEl.style.height = need + "px";
+    if (paneEl) paneEl.style.height = need + "px";
+  }
+
   function renderPreview() {
     var body = bodyEl.value.trim();
-    if (!body) { previewEl.innerHTML = PREVIEW_HINT; return; }
+    if (!body) { previewEl.innerHTML = PREVIEW_HINT; syncHeights(); return; }
     previewBtn.disabled = true;
     previewEl.innerHTML = '<p class="sub-pane-hint">正在排版…</p>';
     fetch("{{ site.apiBase | default('/api') }}/preview", {
@@ -146,7 +156,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       .catch(function () {
         previewEl.innerHTML = '<p class="sub-pane-hint">网络不通，预览失败；投稿不受影响。</p>';
       })
-      .then(function () { previewBtn.disabled = false; });
+      .then(function () { previewBtn.disabled = false; syncHeights(); });
   }
   if (previewBtn) previewBtn.addEventListener("click", renderPreview);
   if (sampleBtn) sampleBtn.addEventListener("click", function () {
@@ -155,6 +165,13 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     bodyEl.focus();
     renderPreview();
   });
+  // 手动编辑时也保持两栏等高(防抖)
+  var syncT = null;
+  bodyEl.addEventListener("input", function () {
+    if (syncT) clearTimeout(syncT);
+    syncT = setTimeout(syncHeights, 400);
+  });
+  window.addEventListener("resize", syncHeights);
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
     msg.className = "form-msg";
