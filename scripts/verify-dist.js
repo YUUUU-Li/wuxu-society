@@ -53,6 +53,7 @@ assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length,
 // 旧托管平台(已弃用)的引用应彻底消失; 用拼接避免本文件自身命中关键词
 const OLD_HOST = "net" + "lify";
 assert(home.includes('id="join-form"') && !new RegExp("data-" + OLD_HOST, "i").test(home), "入社表单已改走本站接口");
+assert(home.includes('name="region"') && home.includes("branch-list"), "入社表单含地区字段(带分部候选)");
 assert(home.includes("/api/join"), "入社表单指向 CF 函数");
 assert(!new RegExp(OLD_HOST, "i").test(home) && !read("site.js").toLowerCase().includes(OLD_HOST), "站内无旧托管平台残留引用");
 const pool = JSON.parse(/<script type="application\/json" id="home-pool">(.*?)<\/script>/.exec(home)[1]);
