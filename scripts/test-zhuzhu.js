@@ -92,7 +92,7 @@ async function main() {
   // comments GET: 已删楼也返回(带 deleted 标记, 内容不回传), 供前端显示「该楼已删」占位
   r = await comments.onRequest(ctx(get("/api/comments?work=w-feng"), {}, {
     rows: [
-      { id: 1, name: "泊珩", body: "好句。", reply_to: null, created_at: "2026-09-10 10:00:00", likes: 2, liked: 0, deleted_at: null },
+      { id: 1, name: "泊珩", body: "好句。", reply_to: null, created_at: "2026-09-09 17:13:00", likes: 2, liked: 0, deleted_at: null },
       { id: 2, name: "蓦流", body: "被删的楼", reply_to: null, created_at: "2026-09-10 10:05:00", likes: 0, liked: 0, deleted_at: "2026-09-10 11:00:00" },
       { id: 3, name: "新酒", body: "回第二楼", reply_to: 2, created_at: "2026-09-10 10:09:00", likes: 0, liked: 0, deleted_at: null },
     ],
@@ -102,6 +102,8 @@ async function main() {
   assert.strictEqual(gf.floors[1].deleted, true, "已删楼带 deleted 标记");
   assert.strictEqual(gf.floors[1].body, "", "已删楼内容不回传");
   assert.strictEqual(gf.floors[0].deleted, false, "正常楼不带标记");
+  // 时区: 库里存 UTC, 返回北京时间(UTC+8)
+  assert.strictEqual(gf.floors[0].created_at, "2026-09-10T01:13:00+08:00", "UTC 17:13 -> 北京 次日 01:13");
 
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));

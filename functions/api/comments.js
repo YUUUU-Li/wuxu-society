@@ -14,6 +14,18 @@ function ipOf(req) {
 function clean(s, n) {
   return String(s == null ? "" : s).trim().replace(/[\r\t]/g, "").slice(0, n);
 }
+// D1 的 datetime('now') 是 UTC; 转为北京时间(+08:00)返回, 免得读者看到早 8 小时的时间
+function bjISO(s) {
+  if (!s) return s;
+  const d = new Date(String(s).replace(" ", "T") + "Z");
+  if (isNaN(d.getTime())) return s;
+  const t = new Date(d.getTime() + 8 * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return (
+    t.getUTCFullYear() + "-" + p(t.getUTCMonth() + 1) + "-" + p(t.getUTCDate()) +
+    "T" + p(t.getUTCHours()) + ":" + p(t.getUTCMinutes()) + ":" + p(t.getUTCSeconds()) + "+08:00"
+  );
+}
 function fmt(row) {
   const dead = !!row.deleted_at;
   return {
@@ -21,7 +33,7 @@ function fmt(row) {
     name: row.name,
     body: dead ? "" : row.body,        // 已删楼: 内容不回传
     reply_to: row.reply_to,
-    created_at: row.created_at,
+    created_at: bjISO(row.created_at), // UTC -> 北京时间
     likes: row.likes || 0,
     liked: !!row.liked,
     deleted: dead,                      // 供前端显示「该楼已删」占位
