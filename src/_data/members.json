@@ -95,12 +95,7 @@
         "role": "社员",
         "branch": "杭州分部",
         "note": "",
-        "notes": [
-          {
-            "href": "w-guixiang.html",
-            "label": "作品库（zk 篇目）"
-          }
-        ]
+        "notes": ""
       },
       {
         "id": "txy",
