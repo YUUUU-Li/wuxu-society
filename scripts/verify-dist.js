@@ -183,6 +183,12 @@ const memCards = [...mem.matchAll(/<div class="member"[^>]*>([\s\S]*?)<\/div>/g)
 assert(memCards.length >= 10, `社员卡片应 ≥10, 实得 ${memCards.length}`);
 assert.strictEqual(memCards.filter((c) => (c.match(/>作品：/g) || []).length > 3).length, 0, "每张卡片最多列 3 首作品");
 assert(mem.includes("查看更多作品") && /library\.html\?author=[^"]+/.test(mem), "含「查看更多作品」跳作品库作者筛选页");
+assert(mem.includes("评注：扬州慢赏析"), "编委手写交叉链接(notes)照常显示");
+{
+  const mj = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/members.json"), "utf8"));
+  const bad = mj.flatMap((s) => s.members).filter((m) => m.links || (m.notes || []).some((l) => /^作品[:：]/.test(l.label)));
+  assert.strictEqual(bad.length, 0, "名册不再登记作品链接(links 已清除): " + bad.map((m) => m.id).join(","));
+}
 const moreLinks = [...mem.matchAll(/href="library\.html\?author=([^"]+)"/g)].map((m) => m[1]);
 assert(moreLinks.length === new Set(moreLinks).size, "查看更多链接不重复");
 // 作品改为"每次打开随机抽 3 首": 页面带作品池 + 占位容器, JS 填充

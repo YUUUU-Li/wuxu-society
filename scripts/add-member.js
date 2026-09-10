@@ -2,7 +2,7 @@
 //   --branch 金华总部   (默认 金华总部; 不存在则新建该分部)
 //   --role 社员         (默认 社员)
 //   --note "一句话"     (可选, 名册里的简介)
-//   --link w-xxx.html:作品：xxx   (可多次, 关联作品链接)
+//   --note-link w-xxx.html:评注：xxx   (可多次, 编委写的交叉链接; 作品链接由作品池自动生成, 无需登记)
 // 作用: 把新社友写进 src/_data/members.json, 社员页(members.html)随之更新。
 const fs = require("fs");
 const path = require("path");
@@ -24,7 +24,7 @@ function addMember(file, opts) {
   const branch = String(opts.branch || "金华总部").trim();
   const role = String(opts.role || "社员").trim();
   const note = String(opts.note || "").trim();
-  const links = (opts.links || []).map((l) => {
+  const notes = (opts.notes || []).map((l) => {
     const i = String(l).indexOf(":");
     return i === -1 ? { href: l, label: l } : { href: l.slice(0, i), label: l.slice(i + 1) };
   });
@@ -45,21 +45,21 @@ function addMember(file, opts) {
     role,
     branch,
     note,
-    links,
+    ...(notes.length ? { notes } : {}),   // 编委手写交叉链接; 作品链接由作品池自动生成
   });
   writeJson(file, data);
-  return { id, name: penname, branch, role, links: links.length };
+  return { id, name: penname, branch, role, notes: notes.length };
 }
 
 function parseArgs(argv) {
-  const out = { links: [] };
+  const out = { notes: [] };
   const rest = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--branch") out.branch = argv[++i];
     else if (a === "--role") out.role = argv[++i];
     else if (a === "--note") out.note = argv[++i];
-    else if (a === "--link") out.links.push(argv[++i]);
+    else if (a === "--note-link") out.notes.push(argv[++i]);
     else rest.push(a);
   }
   out.id = rest[0];
@@ -70,7 +70,7 @@ function parseArgs(argv) {
 if (require.main === module) {
   const opts = parseArgs(process.argv.slice(2));
   if (!opts.id || !opts.penname) {
-    console.log("用法: npm run add-member -- <缩写> <笔名> [--branch 金华总部] [--role 社员] [--note \"简介\"] [--link w-xxx.html:作品：xxx]");
+    console.log("用法: npm run add-member -- <缩写> <笔名> [--branch 金华总部] [--role 社员] [--note \"简介\"] [--note-link w-xxx.html:评注：xxx]");
     process.exit(1);
   }
   try {

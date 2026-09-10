@@ -88,7 +88,9 @@ function renameWork(oldSlug, newSlug, opts = {}) {
       if (!dry) {
         const data = JSON.parse(raw);
         for (const sec of data) for (const m of sec.members) {
-          for (const l of m.links || []) if (l.href === `${oldSlug}.html`) l.href = `${newSlug}.html`;
+          for (const l of (m.notes || []).concat(m.links || [])) {
+            if (l.href === `${oldSlug}.html`) l.href = `${newSlug}.html`;
+          }
         }
         writeJson(mp, data);
       }

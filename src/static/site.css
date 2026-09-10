@@ -534,3 +534,7 @@ select optgroup{background:var(--paper-deep);color:var(--ink)}
 [data-theme="dark"] .sug button:hover,
 [data-theme="dark"] .sug button:focus{background:rgba(196,101,82,.16)}
 [data-theme="dark"] .sug-c{background:rgba(255,255,255,.10);color:var(--ink-soft)}
+
+/* 名册: 编委手写交叉链接(评注/专题等), 与作品链接区分 */
+.member a.plink.note{color:var(--dim);font-size:13px}
+.member a.plink.note:hover{color:var(--seal)}

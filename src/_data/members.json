@@ -7,109 +7,49 @@
         "name": "jwl · 蓦流",
         "role": "社长",
         "branch": "金华总部",
-        "note": "清明会序与首聚发起人。",
-        "links": [
-          {
-            "href": "qingming-xu.html",
-            "label": "作品：清明会序"
-          },
-          {
-            "href": "qingming-jwl.html",
-            "label": "作品：联句两则"
-          },
-          {
-            "href": "w-xiaochongshan.html",
-            "label": "作品：小重山·秋漫红砖一寸深"
-          }
-        ]
+        "note": "清明会序与首聚发起人。"
       },
       {
         "id": "cty",
         "name": "cty · 泊珩",
         "role": "社员",
         "branch": "金华总部",
-        "note": "",
-        "links": [
-          {
-            "href": "qingming-cty.html",
-            "label": "作品：清明雨"
-          },
-          {
-            "href": "w-changxiangsi.html",
-            "label": "作品：长相思·思乡"
-          },
-          {
-            "href": "w-shaonianyou.html",
-            "label": "作品：少年游"
-          },
-          {
-            "href": "w-zhuyingtai.html",
-            "label": "作品：祝英台近·观徐克梁祝有感"
-          }
-        ]
+        "note": ""
       },
       {
         "id": "cyk",
         "name": "cyk · 昱白",
         "role": "社员",
         "branch": "金华总部",
-        "note": "",
-        "links": [
-          {
-            "href": "qingming-cyk.html",
-            "label": "作品：七百里浙南"
-          },
-          {
-            "href": "w-huanxisha.html",
-            "label": "作品：浣溪沙·昨夜秋风入心关"
-          },
-          {
-            "href": "w-huishou1.html",
-            "label": "作品：当时只道是寻常"
-          }
-        ]
+        "note": ""
       },
       {
         "id": "cyly",
         "name": "cyly",
         "role": "社员",
         "branch": "金华总部",
-        "note": "",
-        "links": [
-          {
-            "href": "qingming-cyly.html",
-            "label": "作品：夜坐听风，昼眠听雨"
-          }
-        ]
+        "note": ""
       },
       {
         "id": "wxh",
         "name": "wxh",
         "role": "技术顾问",
         "branch": "金华总部",
-        "note": "打理社务中的技术与线上事务。",
-        "links": []
+        "note": "打理社务中的技术与线上事务。"
       },
       {
         "id": "lrz",
         "name": "lrz",
         "role": "特邀书法指导",
         "branch": "金华总部",
-        "note": "社内书法的特邀指导。",
-        "links": []
+        "note": "社内书法的特邀指导。"
       },
       {
         "id": "hhy",
         "name": "hhy · 渔歌",
         "role": "社员",
         "branch": "金华总部",
-        "note": "",
-        "links": [
-          {
-            "href": "w-rumengling.html",
-            "label": "作品：如梦令·稀星朦胧雨骤"
-          }
-        ]
+        "note": ""
       }
     ]
   },
@@ -122,42 +62,10 @@
         "role": "社员",
         "branch": "杭州分部",
         "note": "",
-        "links": [
-          {
-            "href": "qingming-lfk.html",
-            "label": "作品：清明偷潜深春"
-          },
-          {
-            "href": "w-mei.html",
-            "label": "作品：梅"
-          },
-          {
-            "href": "w-qiubomei.html",
-            "label": "作品：秋波媚"
-          },
-          {
-            "href": "w-furongwang.html",
-            "label": "作品：芙蓉王诗"
-          },
-          {
-            "href": "w-xiaohuikuan.html",
-            "label": "作品：晓·回宽《初九》"
-          },
-          {
-            "href": "w-liuxia.html",
-            "label": "作品：留夏（四季组诗）"
-          },
+        "notes": [
           {
             "href": "w-yangzhouman.html",
             "label": "评注：扬州慢赏析（hde 词）"
-          },
-          {
-            "href": "w-yiqinehe.html",
-            "label": "作品：忆秦娥·和答蓦流《小重山》"
-          },
-          {
-            "href": "w-yiqinepa.html",
-            "label": "作品：忆秦娥·怕秋语"
           }
         ]
       },
@@ -166,21 +74,7 @@
         "name": "ylj · 济枫",
         "role": "社员",
         "branch": "杭州分部",
-        "note": "",
-        "links": [
-          {
-            "href": "w-feng.html",
-            "label": "作品：风"
-          },
-          {
-            "href": "w-luochun.html",
-            "label": "作品：落春（四季组诗）"
-          },
-          {
-            "href": "w-huishou2.html",
-            "label": "作品：回忆"
-          }
-        ]
+        "note": ""
       },
       {
         "id": "hde",
@@ -188,26 +82,10 @@
         "role": "社员",
         "branch": "杭州分部",
         "note": "",
-        "links": [
-          {
-            "href": "qingming-hde.html",
-            "label": "作品：棋逢对手诗逢友"
-          },
-          {
-            "href": "w-yangzhouman.html",
-            "label": "作品：扬州慢"
-          },
-          {
-            "href": "w-wangdong.html",
-            "label": "作品：望冬（四季组诗）"
-          },
+        "notes": [
           {
             "href": "w-furongwang.html",
             "label": "评注：芙蓉王诗评"
-          },
-          {
-            "href": "w-golden.html",
-            "label": "作品：完美的黄金回旋"
           }
         ]
       },
@@ -217,7 +95,7 @@
         "role": "社员",
         "branch": "杭州分部",
         "note": "",
-        "links": [
+        "notes": [
           {
             "href": "w-guixiang.html",
             "label": "作品库（zk 篇目）"
@@ -229,17 +107,7 @@
         "name": "txy · 飞鸟",
         "role": "社员",
         "branch": "杭州分部",
-        "note": "",
-        "links": [
-          {
-            "href": "w-ershiyuan.html",
-            "label": "作品：我想去二次元"
-          },
-          {
-            "href": "w-wenyib.html",
-            "label": "作品：文艺b与地雷女"
-          }
-        ]
+        "note": ""
       }
     ]
   },
@@ -251,17 +119,7 @@
         "name": "lys",
         "role": "社员",
         "branch": "北京分部",
-        "note": "暂无笔名。",
-        "links": [
-          {
-            "href": "w-liqiu.html",
-            "label": "作品：离秋（四季组诗）"
-          },
-          {
-            "href": "w-wuti.html",
-            "label": "作品：无题"
-          }
-        ]
+        "note": "暂无笔名。"
       }
     ]
   },
@@ -273,8 +131,7 @@
         "name": "wzx",
         "role": "财务总监",
         "branch": "温州分部",
-        "note": "打理社内账目与经费。",
-        "links": []
+        "note": "打理社内账目与经费。"
       }
     ]
   }

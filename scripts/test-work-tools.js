@@ -23,7 +23,7 @@ mk("src/_data/groups.json", JSON.stringify([{ key: "other", h2: "其余社员作
 mk("src/_data/fulltext_order.json", JSON.stringify(["w-20240404-01", "w-yiqinehe"], null, 2));
 mk("src/_data/pending_issue.json", JSON.stringify(["w-20240404-01"], null, 2));
 mk("src/_data/issues.json", JSON.stringify([{ id: "issue-x", slugs: ["w-20240404-01"] }], null, 2));
-mk("src/_data/members.json", JSON.stringify([{ branch: "金华总部", members: [{ id: "cty", links: [{ href: "w-20240404-01.html", label: "作品：清明雨" }] }] }], null, 2));
+mk("src/_data/members.json", JSON.stringify([{ branch: "金华总部", members: [{ id: "cty", notes: [{ href: "w-20240404-01.html", label: "评注：清明雨（诗评）" }] }] }], null, 2));
 
 // 1) 干跑不改动
 const dry = renameWork("w-20240404-01", "w-qingmingyu", { root: tmp, dryRun: true });
@@ -40,7 +40,7 @@ assert.deepStrictEqual(readJson("src/_data/fulltext_order.json"), ["w-qingmingyu
 assert.deepStrictEqual(readJson("src/_data/pending_issue.json"), ["w-qingmingyu"], "待辑登记已更新");
 assert.deepStrictEqual(readJson("src/_data/issues.json")[0].slugs, ["w-qingmingyu"], "期册已更新");
 assert(read("src/works/w-yiqinehe.md").includes('to: "w-qingmingyu"'), "related 指向已更新");
-assert.strictEqual(readJson("src/_data/members.json")[0].members[0].links[0].href, "w-qingmingyu.html", "名册链接已更新");
+assert.strictEqual(readJson("src/_data/members.json")[0].members[0].notes[0].href, "w-qingmingyu.html", "名册编委链接已随改名更新");
 // 旧网址 301 重定向(合并后改名也不失效)
 const redir = read("src/static/_redirects");
 assert(redir.includes("/w-20240404-01.html") && redir.includes("/w-qingmingyu.html") && redir.includes("301"), "_redirects 生成 301: " + redir.trim());

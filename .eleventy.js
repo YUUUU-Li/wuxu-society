@@ -89,7 +89,6 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addFilter("jsonify", (o) => JSON.stringify(o));
   eleventyConfig.addFilter("jsonarr", (o) => JSON.stringify(Array.isArray(o) ? o : []));
   // 名册页: 判断是否"作品"链接(其余如"评注：""作品库"不占 3 篇额度)
-  eleventyConfig.addFilter("isWorkLink", (l) => /^作品[:：]/.test((l && l.label) || ""));
   // 名册页: 作者索引(id -> {author, count, items:[{t,h}]}) —— 
   //   items 供"每次打开随机抽 3 首"与"查看更多作品"跳作品库作者筛选页
   eleventyConfig.addGlobalData("authorIndex", () => {

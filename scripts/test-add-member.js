@@ -23,15 +23,15 @@ assert.strictEqual(after, before + 1, "名册多一人");
 const added = data.find((s) => s.branch === firstBranch).members.find((m) => m.id === "zhenyue");
 assert.strictEqual(added.name, "zhenyue · 枕月");
 assert.strictEqual(added.role, "社员");
-assert.deepStrictEqual(added.links, []);
+assert.strictEqual(added.notes, undefined, "无手写链接时不落空字段");
 
-// 2) 作品链接 + 新分部 + 自定义角色
-addMember(tmp, { id: "moliu2", penname: "蓦流", branch: "兰溪分部", role: "编委", links: ["w-feng.html:作品：风"] });
+// 2) 编委交叉链接 + 新分部 + 自定义角色
+addMember(tmp, { id: "moliu2", penname: "蓦流", branch: "兰溪分部", role: "编委", notes: ["w-feng.html:评注：风（诗评）"] });
 data = JSON.parse(fs.readFileSync(tmp, "utf8"));
 const newSec = data.find((s) => s.branch === "兰溪分部");
 assert(newSec, "新分部自动建立");
-assert.strictEqual(newSec.members[0].links[0].href, "w-feng.html");
-assert.strictEqual(newSec.members[0].links[0].label, "作品：风");
+assert.strictEqual(newSec.members[0].notes[0].href, "w-feng.html");
+assert.strictEqual(newSec.members[0].notes[0].label, "评注：风（诗评）");
 
 // 3) 笔名与缩写相同 -> 不重复
 addMember(tmp, { id: "anon", penname: "anon" });
@@ -44,4 +44,4 @@ assert.throws(() => addMember(tmp, { id: "zhenyue", penname: "枕月" }), /已�
 assert.throws(() => addMember(tmp, { id: "someone" }), /请给出笔名/);
 
 fs.unlinkSync(tmp);
-console.log("✅ test-add-member.js 全部通过 (入册/新分部/链接/去重/非法输入)");
+console.log("✅ test-add-member.js 全部通过 (入册/新分部/编委链接/去重/非法输入)");
