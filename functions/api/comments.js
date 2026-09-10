@@ -15,14 +15,16 @@ function clean(s, n) {
   return String(s == null ? "" : s).trim().replace(/[\r\t]/g, "").slice(0, n);
 }
 function fmt(row) {
+  const dead = !!row.deleted_at;
   return {
     id: row.id,
     name: row.name,
-    body: row.body,
+    body: dead ? "" : row.body,        // 已删楼: 内容不回传
     reply_to: row.reply_to,
     created_at: row.created_at,
     likes: row.likes || 0,
     liked: !!row.liked,
+    deleted: dead,                      // 供前端显示「该楼已删」占位
   };
 }
 
@@ -37,12 +39,13 @@ export async function onRequest(context) {
       if (!work) return json(400, { ok: false, error: "缺少作品标识。" });
       try {
         const rows = (await db.prepare(
-          `SELECT c.id, c.name, c.body, c.reply_to, c.created_at,
+          `SELECT c.id, c.name, c.body, c.reply_to, c.created_at, c.deleted_at,
                   (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id) AS likes,
                   EXISTS(SELECT 1 FROM comment_likes cl2 WHERE cl2.comment_id = c.id AND cl2.liker_key = ?2) AS liked
-           FROM comments c WHERE c.work_id = ?1 AND c.deleted_at IS NULL
+           FROM comments c WHERE c.work_id = ?1
            ORDER BY c.id ASC`
         ).bind(work, ipOf(req)).all()).results;
+        // 已删楼也返回(带 deleted 标记): 前端不渲染其内容, 但被回复时显示「该楼已删」占位
         return json(200, { ok: true, floors: rows.map(fmt) });
       } catch (e) {
         return json(500, { ok: false, error: "评论读取失败。" });

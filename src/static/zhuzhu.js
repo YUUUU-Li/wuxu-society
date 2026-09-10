@@ -152,17 +152,27 @@
   function renderFloors(floors) {
     floorsData = floors;
     floorsEl.innerHTML = "";
-    floors.forEach(function (f, i) {
+    var alive = floors.filter(function (f) { return !f.deleted; });
+    var noOf = {};
+    alive.forEach(function (f, i) { noOf[f.id] = i + 1; });
+    alive.forEach(function (f, i) {
       var li = document.createElement("li");
       li.className = "z-item";
       var no = i + 1;
       li.id = "z-" + no;
       var ref = "";
       if (f.reply_to) {
-        var ti = floors.findIndex(function (x) { return x.id === f.reply_to; });
-        var tn = ti >= 0 ? ti + 1 : "#" + f.reply_to;
-        var nm = ti >= 0 ? esc(floors[ti].name) : "";
-        ref = '<span class="z-right"><a class="z-ref" href="#z-' + tn + '" data-target="' + tn + '" data-origin="' + no + '">回复 ' + nm + "（#" + tn + "）</a></span>";
+        var target = null;
+        for (var k = 0; k < floors.length; k++) { if (floors[k].id === f.reply_to) { target = floors[k]; break; } }
+        if (target && target.deleted) {
+          // 被回复的楼已被编委删除 -> 占位, 不可跳转
+          ref = '<span class="z-right"><span class="z-ref dead">回复 ' + esc(target.name) + "（该楼已删）</span></span>";
+        } else if (target) {
+          var tn = noOf[target.id];
+          ref = '<span class="z-right"><a class="z-ref" href="#z-' + tn + '" data-target="' + tn + '" data-origin="' + no + '">回复 ' + esc(target.name) + "（#" + tn + "）</a></span>";
+        } else {
+          ref = '<span class="z-right"><span class="z-ref dead">回复（该楼已删）</span></span>';
+        }
       }
       li.innerHTML = '<span class="z-no">' + no + '</span><div class="z-body"><div class="z-mrow"><span class="z-meta">' +
         esc(f.name) + " · " + fmtTime(f.created_at) + "</span>" + ref + "</div>" +

@@ -5,7 +5,7 @@ const assert = require("assert");
 const path = require("path");
 
 function FakeDB(opts = {}) {
-  const db = { calls: [], existsOverride: !!opts.existsOverride };
+  const db = { calls: [], existsOverride: !!opts.existsOverride, rows: opts.rows || null };
   db.prepare = (sql) => ({
     bind(...args) {
       db.calls.push({ sql, args });
@@ -21,6 +21,7 @@ function FakeDB(opts = {}) {
     },
     async all() {
       const last = db.calls[db.calls.length - 1].sql;
+      if (db.rows && /FROM comments c/.test(last)) return { results: db.rows };
       return { results: /COUNT/.test(last) ? [{ n: 1 }] : [] };
     },
     async run() {
@@ -88,11 +89,25 @@ async function main() {
   const cd = await r.json();
   assert(cd.ok && cd.deleted === 1, "编委删除成功");
 
+  // comments GET: 已删楼也返回(带 deleted 标记, 内容不回传), 供前端显示「该楼已删」占位
+  r = await comments.onRequest(ctx(get("/api/comments?work=w-feng"), {}, {
+    rows: [
+      { id: 1, name: "泊珩", body: "好句。", reply_to: null, created_at: "2026-09-10 10:00:00", likes: 2, liked: 0, deleted_at: null },
+      { id: 2, name: "蓦流", body: "被删的楼", reply_to: null, created_at: "2026-09-10 10:05:00", likes: 0, liked: 0, deleted_at: "2026-09-10 11:00:00" },
+      { id: 3, name: "新酒", body: "回第二楼", reply_to: 2, created_at: "2026-09-10 10:09:00", likes: 0, liked: 0, deleted_at: null },
+    ],
+  }));
+  const gf = await r.json();
+  assert.strictEqual(gf.floors.length, 3, "已删楼仍返回(供占位)");
+  assert.strictEqual(gf.floors[1].deleted, true, "已删楼带 deleted 标记");
+  assert.strictEqual(gf.floors[1].body, "", "已删楼内容不回传");
+  assert.strictEqual(gf.floors[0].deleted, false, "正常楼不带标记");
+
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));
   assert.strictEqual(r.status, 405, "DELETE 应 405");
 
-  console.log("✅ test-zhuzhu.js 全部通过 (tags 读取/点赞/候选/取消, comments 发表/回帖/同感/编委删除/校验)");
+  console.log("✅ test-zhuzhu.js 全部通过 (tags 读取/点赞/候选/取消, comments 发表/回帖/同感/编委删除/已删占位/校验)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });
