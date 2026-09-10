@@ -48,12 +48,31 @@ function b64decode(b64) {
 
 const P_KAITI = /^(自序|小序|序言|前记|引言|后记|跋|附记|序)\s*[:：]?\s*/;
 const P_ANALYSIS = /^(注|注释|评注|评|赏析)\s*[:：]?\s*/;
+const RULE_RE = /^-{3,}$/;
+// 行首标记语法(投稿方可选):
+//   & 开头   -> 楷体文段(前记/后记/序/跋 等)
+//   > 开头   -> 引文块(楷体 + 朱砂竖线)
+//   单独一行 ---> 分割线
+// 兼容原有自动识别: 段首「自序：」「后记：」等仍按楷体; 「评：」「注：」按赏析块。
 function bodyToHtml(text, genre) {
   const poetic = POETIC.test(genre || "");
-  const paras = text.replace(/\r/g, "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-  return paras
-    .map((p) => {
-      const lines = p.split("\n").map((l) => l.trim()).filter(Boolean);
+  const blocks = text
+    .replace(/\r/g, "")
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return blocks
+    .map((block) => {
+      const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 1 && RULE_RE.test(lines[0])) return '<hr class="rule" />';
+      if (/^&/.test(lines[0])) {
+        const body = [lines[0].replace(/^&\s*/, ""), ...lines.slice(1)].filter(Boolean).map(esc);
+        return '<p class="stanza kaiti">' + body.join("") + "</p>";
+      }
+      if (/^>/.test(lines[0])) {
+        const body = lines.map((l) => l.replace(/^>\s?/, "")).filter((l) => l !== "").map(esc);
+        return '<blockquote class="quote">' + body.join("<br />") + "</blockquote>";
+      }
       let first = lines[0] || "";
       let mode = poetic ? "stanza" : "prose";
       const am = P_ANALYSIS.exec(first);
@@ -258,3 +277,4 @@ export async function onRequestPost(context) {
 export async function onRequest(context) {
   return json(405, { ok: false, error: "只接受 POST" });
 }
+export { bodyToHtml };

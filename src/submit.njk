@@ -67,8 +67,8 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       </div>
       <div class="field">
         <label for="sub-body">正文</label>
-        <textarea id="sub-body" name="body" rows="16" placeholder="诗/词：每行一句，句间自然换行；&#10;散文/小说：自然分段，段与段之间空一行；&#10;两句之间不要空行（空行会被当作新段落）。" required></textarea>
-        <small style="color:var(--dim)">空行 = 分段。诗句类体裁默认每行成行（句间请换行）；若含散文性段落，段首标「自序：」「后记：」会按楷体序文排版，标「评：」「注：」按赏析排版。</small>
+        <textarea id="sub-body" name="body" rows="16" placeholder="诗/词：每行一句，句间自然换行；&#10;散文/小说：自然分段，段与段之间空一行。&#10;行首标记：& 开头 = 楷体文段（前记/后记/序）；> 开头 = 引文块；单独一行 --- = 分割线。" required></textarea>
+        <small style="color:var(--dim)">空行 = 分段。诗词类每行成行；如需前记/后记等楷体文段，<b>段首加 &amp;</b>（如 <code>&amp;后记：芒种作。</code>）；引文块用 <b>&gt;</b> 开头；单独一行 <b>---</b> 表示分割线。段首写「自序：」「后记：」不写 &amp; 也会自动按楷体排版。</small>
       </div>
       <p style="position:absolute;left:-9999px" aria-hidden="true">
         <label>网站<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>

@@ -42,6 +42,8 @@ assert(home.includes('id="wechat"') && home.includes("wechat-qr.jpg") && home.in
 assert(home.includes('class="brand-logo"') && home.includes('src="logo.png"'), "顶栏品牌 logo");
 assert(home.includes('id="theme-toggle"') && home.includes("prefers-color-scheme"), "深色模式开关与首屏主题初始化");
 assert(home.includes("M20.5 14.6A8.6") && home.includes("site.css?v="), "月亮图标按钮 + 静态资源版本号");
+assert(read("submit.html").includes("分割线") && read("submit.html").includes("楷体文段"), "投稿页格式提示含行首标记说明");
+assert(css.includes(".lib-body hr.rule") && css.includes(".lib-body blockquote.quote"), "正文分割线/引文块样式");
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");
 assert(exists("logo.png"), "logo.png 随站发布");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");

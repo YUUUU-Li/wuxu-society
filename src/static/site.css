@@ -447,3 +447,9 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 [data-theme="dark"] .z-r-text{background:rgba(255,255,255,.06)}
 [data-theme="dark"] .tagpill.on .tp-n{color:#171512}
 [data-theme="dark"] .wx-qr{background:#fff}
+
+/* 投稿行首标记语法(《作品上传指南》方案2): ------ 分割线 / > 引文块 */
+.lib-body hr.rule{border:0;border-top:1px solid var(--line);margin:34px auto;width:64%}
+.lib-body blockquote.quote{margin:22px 0;padding:2px 0 2px 16px;border-left:3px solid var(--seal);
+  font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+  font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
