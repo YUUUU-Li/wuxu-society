@@ -66,6 +66,8 @@ module.exports = function (eleventyConfig) {
   // rel-meta.json 用: JSON 安全序列化(未定义按空数组)
   eleventyConfig.addFilter("jsonify", (o) => JSON.stringify(o));
   eleventyConfig.addFilter("jsonarr", (o) => JSON.stringify(Array.isArray(o) ? o : []));
+  // 静态资源版本号: 每次构建变化, 让浏览器拿到最新 CSS/JS(避免新 HTML 配旧缓存)
+  eleventyConfig.addGlobalData("assetVer", () => String(Date.now()));
 
   // 关联作品自动推导: 强关联(手动related) -> 同作者 -> 同意象 -> 同时同源
   // 每篇作品只出现在最先命中的一类里; 组内按全文库顺序排列

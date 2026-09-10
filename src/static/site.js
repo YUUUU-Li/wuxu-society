@@ -108,8 +108,9 @@
   var root = document.documentElement;
   function sync() {
     var dark = root.getAttribute("data-theme") === "dark";
-    b.textContent = dark ? "昼" : "夜";
+    b.classList.toggle("on", dark);
     b.setAttribute("aria-pressed", dark ? "true" : "false");
+    b.title = dark ? "切换到浅色" : "切换到深色";
   }
   b.addEventListener("click", function () {
     var dark = root.getAttribute("data-theme") === "dark";

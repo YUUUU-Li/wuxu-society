@@ -14,6 +14,7 @@
   --line-soft:rgba(38,34,26,.09);
   --seal:#9c3f30;           /* 印泥朱砂 */
   --seal-ink:#eef0e6;
+  --nav-bg:rgba(238,240,230,.9);   /* 顶栏背景(深色模式另配) */
   --maxw:1120px;
 }
 *{box-sizing:border-box}
@@ -36,7 +37,7 @@ a{color:inherit}
 
 /* ---------- 导航 ---------- */
 header{position:sticky;top:0;z-index:50;
-  background:rgba(238,240,230,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  background:var(--nav-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line-soft)}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:18px;height:72px}
 .brand{font-size:19px;font-weight:700;letter-spacing:.12em;text-decoration:none;white-space:nowrap}
@@ -411,9 +412,10 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* ══ 深色模式(可切换) ══ */
 .theme-toggle{background:none;border:1px solid var(--line);color:var(--ink-soft);
-  font-family:inherit;font-size:13px;line-height:1;padding:6px 11px;border-radius:999px;
-  cursor:pointer;flex:none;transition:border-color .2s,color .2s}
-.theme-toggle:hover,.theme-toggle:focus-visible{border-color:var(--seal);color:var(--seal);outline:none}
+  display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;
+  border-radius:8px;cursor:pointer;flex:none;transition:border-color .2s,color .2s}
+.theme-toggle svg{display:block;width:15px;height:15px}
+.theme-toggle:hover,.theme-toggle:focus-visible,.theme-toggle.on{border-color:var(--seal);color:var(--seal);outline:none}
 /* 手机端: 主题按钮排在汉堡按钮左边(靠右) */
 .theme-toggle{order:2;margin-left:auto}
 .nav-toggle{order:3}
@@ -426,7 +428,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 [data-theme="dark"]{
   --paper:#171512;--paper-deep:#1f1c18;--ink:#e9e4d7;--ink-soft:#c8c1b1;
   --dim:#9c968a;--line:rgba(233,228,215,.20);--line-soft:rgba(233,228,215,.10);
-  --seal:#c46552;--seal-ink:#171512;
+  --seal:#c46552;--seal-ink:#171512;--nav-bg:rgba(31,28,24,.92);
 }
 [data-theme="dark"] .member,
 [data-theme="dark"] .zz{background:rgba(255,255,255,.04)}
