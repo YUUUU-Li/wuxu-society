@@ -153,6 +153,16 @@ async function main() {
   assert.strictEqual(r.status, 429, "已达上限再加应 429");
   assert(/最多赞同 3 个标签/.test((await r.json()).error), "限流文案含上限值");
 
+  // 限流只数「本设备」的票: 不能再把 IP 的票算进来——否则页面全灰却被告知已满, 加不了也取消不了
+  const dbLim = FakeDB({ tagCountN: 0 });
+  r = await tags.onRequest({ request: post("/api/tags", { work: "w-feng", word: "明月", device: "dev-lim" }), env: { DB: dbLim } });
+  assert.strictEqual(r.status, 200, "设备名下 0 票时应可以赞同");
+  const limCall = dbLim.calls.find((c) => /COUNT\(DISTINCT tag_id\)/.test(c.sql));
+  assert(limCall, "应有上限计数查询");
+  assert.strictEqual(limCall.args.length, 2, "上限计数只应绑定 (work, 设备号), 实得 " + JSON.stringify(limCall.args));
+  assert.strictEqual(limCall.args[1], "dev-lim", "上限计数应绑设备号, 实得 " + limCall.args[1]);
+  assert(!/OR voter_key/.test(limCall.sql), "上限计数不得再 OR 上 IP: " + limCall.sql);
+
   // 编委动作: 无钥匙 403 / 有钥匙 seed 与 adopt
   r = await tags.onRequest(ctx(post("/api/tags", { key: "wrong", action: "seed" })));
   assert.strictEqual(r.status, 403, "错钥匙应 403");

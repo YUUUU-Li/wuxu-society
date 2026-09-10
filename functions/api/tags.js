@@ -9,7 +9,9 @@
 // 计票口径：同一「设备」(前端 localStorage 的 zz_dev, 缺省回退 IP) 对 同一作品+同一标签 一票。
 //   ⚠️ 写入与查票必须同源：voter_key 一律用「设备号优先、无则 IP」(voteKey)，
 //      否则再点一下取消时会查不到自己那行 → 撞唯一约束、取消不掉。
-// 限流：同一设备(缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）
+// 限流：同一设备(缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）。
+//   计数口径必须与「我赞过的」高亮、取消完全一致(都只看 voteKey)，否则会出现
+//   "页面上没有一个红标签、却被告知已达上限"的死锁。
 import { TAG_OUTLINE, TAG_HINTS, TAG_NEAR, TAG_LEGACY } from "./tag-outline.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
@@ -198,11 +200,14 @@ export async function onRequest(context) {
       if (exist) {
         await db.prepare(`DELETE FROM tag_votes WHERE id = ?1`).bind(exist.id).run();
       } else {
-        // 每设备每篇最多 3 个标签(取消不算); 顺带把历史上按 IP 存的票也算进来
+        // 每设备每篇最多 3 个标签(取消不算)。
+        // 只数「本设备」的票: 与「我赞过的」高亮、取消三处同源。
+        // ⚠️ 别把 IP 的票一起数进来 —— 那会让"一个红标签都没有、却被告知已达上限"成为死锁
+        //    (历史 IP 票既不高亮、又占着名额, 用户既加不了也取消不了)。
         const mine = await q(
           db,
-          `SELECT COUNT(DISTINCT tag_id) AS n FROM tag_votes WHERE work_id = ?1 AND (voter_key = ?2 OR voter_key = ?3)`,
-          work, dev, ipOf(req)
+          `SELECT COUNT(DISTINCT tag_id) AS n FROM tag_votes WHERE work_id = ?1 AND voter_key = ?2`,
+          work, dev
         );
         const used = (mine[0] && mine[0].n) || 0;
         if (used >= MAX_TAGS_PER_DEVICE) {
