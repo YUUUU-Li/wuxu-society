@@ -146,7 +146,11 @@ a.plink:hover{color:var(--seal)}
 .member .m-role{display:inline-block;align-self:flex-start;font-size:12.5px;color:var(--seal);border:1px solid rgba(156,63,48,.5);padding:1px 10px;letter-spacing:.08em}
 .member .m-branch{color:var(--dim);font-size:13.5px}
 .member .m-note{font-size:14.5px;color:var(--ink-soft);margin-top:4px}
-.member a.plink{border-bottom:1px solid rgba(156,63,48,.4);align-self:flex-start;padding-bottom:1px;color:var(--ink-soft);font-size:14px}
+.member a.plink{color:var(--ink-soft);font-size:14px;align-self:flex-start;
+  /* 用 text-decoration 而非 border-bottom: 标题换行时下划线逐行贴着文字走, 不会拖出长横线 */
+  text-decoration:underline;text-decoration-color:rgba(156,63,48,.4);
+  text-decoration-thickness:1px;text-underline-offset:4px}
+.member a.plink:hover{text-decoration-color:var(--seal);color:var(--seal)}
 .branch-sec{margin-top:44px}
 .branch-sec h3{display:flex;align-items:baseline;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .branch-sec h3 small{color:var(--dim);font-weight:400;font-size:14px}
@@ -497,7 +501,8 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* 名册页: "查看更多作品"链接(作品库该作者筛选页) */
 .member .plink.more{color:var(--seal);font-size:13px;margin-top:2px}
-.member .plink.more:hover{text-decoration:underline}
+.member .plink.more{text-decoration:underline;text-decoration-color:rgba(156,63,48,.45);text-underline-offset:4px}
+.member .plink.more:hover{text-decoration-color:var(--seal)}
 
 /* 名册页: 作品区(占位), 实际由 site.js 随机抽 3 首; display:contents 保持原有纵向排布 */
 .m-works{display:contents}
