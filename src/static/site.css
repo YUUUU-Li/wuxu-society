@@ -502,9 +502,13 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .m-works{display:contents}
 
 /* 投稿页: 创作时间(年月 + 可选日) */
-.created-row{display:flex;gap:10px;align-items:center}
-.created-row select{font:inherit;color:var(--ink);background:var(--input-bg);border:1px solid var(--line);padding:11px 10px;border-radius:0}
-.created-row select:focus{outline:none;border-color:var(--seal)}
+.created-row{display:flex;gap:10px;align-items:stretch}
+/* 年月日三个控件统一高度/内距/盒模型, 避免原生控件默认尺寸不一 */
+.created-row select,
+.created-row input[type="number"]{box-sizing:border-box;height:46px;padding:0 12px;font:inherit;font-size:16px;
+  line-height:normal;color:var(--ink);background:var(--input-bg);border:1px solid var(--line);border-radius:0}
+.created-row select:focus,
+.created-row input[type="number"]:focus{outline:none;border-color:var(--seal)}
 .created-row #sub-created-year{flex:1 1 auto;min-width:0}
 .created-row #sub-created-month{flex:0 0 110px;width:110px}
 .created-row input[type="number"]{flex:0 0 110px;width:110px}
