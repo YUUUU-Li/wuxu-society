@@ -43,7 +43,7 @@ footerNote: "篇目分辑，录自社内原稿。"
 
 {% for g in groups %}
   <section class="wrap idx-group"><div class="sec-head rv"><h2>{{ g.h2 }}</h2><hr class="hair" /></div><div class="idx-list">
-  {% for slug in g.slugs %}{% set w = wm[slug] %}{% if w %}
+  {% for slug in g.slugs | byCreated %}{% set w = wm[slug] %}{% if w %}
   <div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
   {% endif %}{% endfor %}
   </div></section>

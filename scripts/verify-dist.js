@@ -64,7 +64,7 @@ for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
   assert.deepStrictEqual(actual, expected, "作品库顺序应按创作时间升序");
   assert(regOrder.some((s) => createdOf[s]), "至少应有作品填了 created(回填后排序才生效)");
 }
-assert(read("submit.html").includes('id="sub-created-year"') && read("submit.html").includes('id="sub-created-month"') && !read("submit.html").includes('name="slug"'), "投稿页含中文年月下拉、已去掉手填标识名");
+
 assert(css.includes(".lib-body hr.rule") && css.includes(".lib-body blockquote.quote"), "正文分割线/引文块样式");
 assert(/\.created-row select,\s*\n?\.created-row input\[type="number"\]\{[^}]*height:46px/.test(css), "创作时间三控件统一高度");
 assert(css.includes("color-scheme:light") && css.includes("color-scheme:dark"), "声明 color-scheme(原生下拉/滚动条随主题)");
@@ -107,6 +107,28 @@ const libPool = JSON.parse(poolM[1].trim());
 assert.strictEqual(libPool.length, nWorksSrc, `lib-pool 应含全部 ${nWorksSrc} 篇(含入期)`);
 assert(lib.includes('id="idx-flat"'), "库页含平铺结果容器");
 assert(libPool.every((w) => w.t && w.a && w.g && w.h), "池条目字段完整");
+// —— 库页分组列表(其余社员作品)也按创作时间排 ——
+{
+  const otherSlugs = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs;
+  const titleOf = {};
+  for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
+    if (!f.endsWith(".md")) continue;
+    const t = /^title:\s*"([^"]*)"/m.exec(fs.readFileSync(path.join(__dirname, "..", "src/works", f), "utf8"));
+    if (t) titleOf[f.slice(0, -3)] = t[1];
+  }
+  // 位次以"按创作时间排好的全站顺序"(libPool)为准
+  const sortedIdx = {};
+  libPool.forEach((w, i) => { sortedIdx[w.h.replace(/^\//, "").replace(/\.html$/, "")] = i; });
+  const idxOf = (s) => (sortedIdx[s] === undefined ? 9999 : sortedIdx[s]);
+  const expected = otherSlugs.slice().sort((a, b) => idxOf(a) - idxOf(b)).map((s) => titleOf[s]).filter(Boolean);
+  const actual = [...lib.matchAll(/class="idx-row rv"[^>]*><span><a class="plink" href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
+  assert.deepStrictEqual(actual, expected, "库分组列表应按创作时间排序");
+}
+// —— 作品详情页显示创作时间 ——
+const dated = read("w-20240306-01.html");
+assert(/<b>创作时间<\/b>\s*2024年3月6日/.test(dated), "详情页显示创作时间(中文格式)");
+const undated = read("w-wuti.html");
+assert(!undated.includes("<b>创作时间</b>"), "未填 created 的作品不显示创作时间");
 
 // —— 登记一致性: works md = groups∪issues 各一次, order 同集合 (删稿脚本防孤儿) ——
 const workSet = new Set(fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));

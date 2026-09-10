@@ -124,6 +124,16 @@ module.exports = function (eleventyConfig) {
   );
   // 按创作时间排序后的全文库顺序(供作品库平铺池与全文库页使用)
   eleventyConfig.addGlobalData("fulltextSorted", () => FULLTEXT_SORTED);
+  // 把任意 slug 列表按创作时间(created 升序, 未填者继承)重排 —— 作品库分组列表用
+  eleventyConfig.addFilter("byCreated", (slugs) =>
+    (slugs || []).slice().sort((a, b) => (orderIdx[a] ?? 9999) - (orderIdx[b] ?? 9999))
+  );
+  // 创作时间显示: "2024-03" -> 2024年3月; "2024-03-06" -> 2024年3月6日
+  eleventyConfig.addFilter("cnDate", (s) => {
+    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(String(s || "").trim());
+    if (!m) return s || "";
+    return m[1] + "年" + Number(m[2]) + "月" + (m[3] ? Number(m[3]) + "日" : "");
+  });
 
   // 关联作品自动推导: 强关联(手动related) -> 同作者 -> 同意象 -> 同时同源
   // 每篇作品只出现在最先命中的一类里; 组内按全文库顺序排列
