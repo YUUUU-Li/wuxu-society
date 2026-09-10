@@ -64,6 +64,32 @@ async function main() {
   const tp2 = await r.json();
   assert(tp2.ok && tp2.voted === false, "已赞应取消");
 
+  // 取消的身份一致性: 写入与查票都用「设备号优先」——曾因写入存设备号、查票用 IP 而取消不掉
+  const dbDev = FakeDB({ existsOverride: true });
+  r = await tags.onRequest({ request: post("/api/tags", { work: "w-feng", word: "离愁", device: "dev-abc" }), env: { DB: dbDev } });
+  assert((await r.json()).voted === false, "带设备号时应能取消自己的赞同");
+  const selDev = dbDev.calls.find((c) => /SELECT id FROM tag_votes/.test(c.sql));
+  assert(selDev && selDev.args[2] === "dev-abc", "查票身份应为设备号, 实得 " + (selDev && selDev.args[2]));
+  assert(dbDev.calls.some((c) => /DELETE FROM tag_votes WHERE id/.test(c.sql)), "取消应删掉自己那一行");
+
+  // 没带设备号时回退 IP(接口直调/老客户端)
+  const dbIp = FakeDB({ existsOverride: true });
+  r = await tags.onRequest({ request: post("/api/tags", { work: "w-feng", word: "离愁" }), env: { DB: dbIp } });
+  const selIp = dbIp.calls.find((c) => /SELECT id FROM tag_votes/.test(c.sql));
+  assert(selIp && selIp.args[2] === "1.2.3.4", "无设备号应回退 IP, 实得 " + (selIp && selIp.args[2]));
+
+  // 新赞同: 写入用的也是设备号(与查票同源)
+  const dbNew = FakeDB({});
+  r = await tags.onRequest({ request: post("/api/tags", { work: "w-feng", word: "明月", device: "dev-xyz" }), env: { DB: dbNew } });
+  const insCall = dbNew.calls.find((c) => /INSERT INTO tag_votes/.test(c.sql));
+  assert(insCall && insCall.args[2] === "dev-xyz", "写入应用设备号, 实得 " + (insCall && insCall.args[2]));
+
+  // GET 的 voted 标记按 ?dev= 查(与写入同源), 页面才能高亮「我赞过的」
+  const dbGet = FakeDB();
+  r = await tags.onRequest({ request: get("/api/tags?work=w-feng&dev=dev-xyz"), env: { DB: dbGet } });
+  const getSel = dbGet.calls.find((c) => /SELECT tag_id FROM tag_votes/.test(c.sql));
+  assert(getSel && getSel.args[1] === "dev-xyz", "GET 应按 ?dev= 查 voted, 实得 " + (getSel && getSel.args[1]));
+
   // comments GET 缺 work -> 400
   r = await comments.onRequest(ctx(get("/api/comments")));
   assert.strictEqual(r.status, 400, "comments GET 缺 work 应 400");
@@ -154,7 +180,7 @@ async function main() {
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));
   assert.strictEqual(r.status, 405, "DELETE 应 405");
 
-  console.log("✅ test-zhuzhu.js 全部通过 (tags 读取/点赞/候选/取消, comments 发表/回帖/同感/编委删除/已删占位/校验)");
+  console.log("✅ test-zhuzhu.js 全部通过 (tags 读取/点赞/候选/取消(设备号同源)/限3, comments 发表/回帖/同感/编委删除/已删占位/校验)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

@@ -1,7 +1,10 @@
 -- 众注系统 D1 建表脚本(随 Cloudflare Pages + D1 上线执行)
 -- 执行方式(推荐): Cloudflare D1 控制台(数据库页 -> Console)整段粘贴本文件内容
 -- 或命令行: npx wrangler d1 execute <库名> --remote --file=sql/zhuzhu.sql
--- 计票口径: 同一 IP 对同一作品+标签/评论 一票(voter_key/liker_key = 访问者 IP, 与函数代码一致)
+-- 计票口径:
+--   标签 tag_votes.voter_key = 访问者「设备号」(前端 localStorage 的 zz_dev), 无设备号时回退 IP —— 一人一票;
+--     写入/查票/取消三处必须同源, 否则再点一下取消不掉(tags.js 的 voteKey)。
+--   评论/同感 liker_key = 访问者 IP(与 comments.js 一致)。
 
 CREATE TABLE IF NOT EXISTS tags (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,7 +17,7 @@ CREATE TABLE IF NOT EXISTS tag_votes (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   work_id    TEXT NOT NULL,                  -- 作品 slug
   tag_id     INTEGER NOT NULL REFERENCES tags(id),
-  voter_key  TEXT NOT NULL DEFAULT '',       -- 访问者 IP(一人一票)
+  voter_key  TEXT NOT NULL DEFAULT '',       -- 设备号(无则 IP): 一人一票
   UNIQUE(work_id, tag_id, voter_key)
 );
 

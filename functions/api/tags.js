@@ -6,8 +6,10 @@
 //      adopt {word}                  候选转正 -> '已采纳'
 //      merge {from, to}              把 from 的票并入 to 后删除 from
 //      delete {word}                 删除标签及其票
-// 计票口径：同一 IP 对 同一作品+同一标签 一票（voter_key=cf-connecting-ip）
-// 限流：同一设备(device, 缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）
+// 计票口径：同一「设备」(前端 localStorage 的 zz_dev, 缺省回退 IP) 对 同一作品+同一标签 一票。
+//   ⚠️ 写入与查票必须同源：voter_key 一律用「设备号优先、无则 IP」(voteKey)，
+//      否则再点一下取消时会查不到自己那行 → 撞唯一约束、取消不掉。
+// 限流：同一设备(缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）
 import { TAG_OUTLINE, TAG_HINTS, TAG_NEAR, TAG_LEGACY } from "./tag-outline.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
@@ -20,6 +22,10 @@ function json(status, body) {
 }
 function ipOf(req) {
   return req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "0";
+}
+// 投票人身份: 设备号优先(前端传 device), 无则回退 IP。写入/查票/取消三处必须都用它。
+function voteKey(device, req) {
+  return clean(device, 40) || ipOf(req);
 }
 function clean(s, n) {
   return String(s == null ? "" : s).trim().replace(/[\r\t]/g, "").slice(0, n);
@@ -49,10 +55,12 @@ export async function onRequest(context) {
          ORDER BY c DESC, t.id ASC`,
         work
       );
+      // 与写入同源: 设备号优先(前端在 ?dev= 里带), 无则回退 IP —— 用于标记「我赞过的」
+      const voterKey = voteKey(u.searchParams.get("dev"), req);
       const votedRows = await q(
         db,
         `SELECT tag_id FROM tag_votes WHERE work_id = ?1 AND voter_key = ?2`,
-        work, ipOf(req)
+        work, voterKey
       );
       const voted = new Set(votedRows.map((r) => r.tag_id));
       // 联想池 = 库中非候选词 ∪ 大纲未落库的词（保证词表一上线即可用）
@@ -184,18 +192,17 @@ export async function onRequest(context) {
         tagId = r.meta.last_row_id;
         candidate = kind === "候选";
       }
-      const key = ipOf(req);
+      const dev = voteKey(body.device, req);   // 与写入时同一个身份, 否则取消找不到自己那行
       const exist = (await db.prepare(`SELECT id FROM tag_votes WHERE work_id = ?1 AND tag_id = ?2 AND voter_key = ?3`)
-        .bind(work, tagId, key).first());
+        .bind(work, tagId, dev).first());
       if (exist) {
         await db.prepare(`DELETE FROM tag_votes WHERE id = ?1`).bind(exist.id).run();
       } else {
-        // 每设备每篇最多 3 个标签(取消不算)
-        const dev = clean(body.device, 40) || key;
+        // 每设备每篇最多 3 个标签(取消不算); 顺带把历史上按 IP 存的票也算进来
         const mine = await q(
           db,
           `SELECT COUNT(DISTINCT tag_id) AS n FROM tag_votes WHERE work_id = ?1 AND (voter_key = ?2 OR voter_key = ?3)`,
-          work, dev, key
+          work, dev, ipOf(req)
         );
         const used = (mine[0] && mine[0].n) || 0;
         if (used >= MAX_TAGS_PER_DEVICE) {

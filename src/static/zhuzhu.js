@@ -156,6 +156,12 @@
           target.classList.toggle("on", !!j.voted);
           target.querySelector(".tp-n").textContent = j.count;
           tagState[word].voted = j.voted; tagState[word].count = j.count;
+          // 取消后没人赞了 -> 这个标签不再显示(仍可从输入框里重新赞同); 编委模式下连同小按钮一起收
+          if (!j.voted && !j.count) {
+            var wrap = target.closest ? target.closest(".tag-admin") : null;
+            (wrap || target).remove();
+            delete tagState[word];
+          }
         }
         speak(tmsg, j.voted ? "已赞同：" + word : "已取消赞同：" + word);
       } else {
@@ -471,7 +477,8 @@
   async function loadAll() {
     try {
       var [tr, cr] = await Promise.all([
-        fetch(api + "/tags?work=" + encodeURIComponent(work)).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+        // 带上设备号: 服务端据此标出「我赞过的」标签(与投票写入时同一身份, 才能再点一下取消)
+        fetch(api + "/tags?work=" + encodeURIComponent(work) + "&dev=" + encodeURIComponent(device)).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
         fetch(api + "/comments?work=" + encodeURIComponent(work)).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
       ]);
       if (!tr.ok || !cr.ok) throw 0;
