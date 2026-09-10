@@ -414,14 +414,14 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .theme-toggle{background:none;border:0;color:var(--ink-soft);
   display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;
   border-radius:8px;cursor:pointer;flex:none;transition:color .2s}
-.theme-toggle svg{display:block;width:19px;height:19px}
+.theme-toggle svg{display:block;width:20px;height:20px}
 .theme-toggle:hover,.theme-toggle:focus-visible,.theme-toggle.on{color:var(--seal);outline:none}
 /* 手机端: 主题按钮排在汉堡按钮左边(靠右) */
 .theme-toggle{order:2;margin-left:auto}
 .nav-toggle{order:3}
 @media (min-width:641px){
   .nav-links{order:2;margin-left:auto}
-  .theme-toggle{order:3;margin-left:22px}
+  .theme-toggle{order:3;margin-left:12px}
 }
 /* 深色时手写 logo(黑墨)反白, 否则不可辨 */
 [data-theme="dark"] .brand-logo{filter:invert(1) brightness(1.02)}
