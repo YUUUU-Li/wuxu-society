@@ -1,0 +1,40 @@
+---
+layout: "base.njk"
+permalink: "yaji.html"
+title: "雅集"
+seoTitle: "雅集 | 婺需文学社"
+desc: "婺需文学社历次雅集与学刊辑目：刊期档案、同题共写，逐期可读。"
+active: "yaji"
+footerNote: "雅集之文，录自社内原稿。"
+---
+
+<main>
+  <section class="wrap page-head">
+    <p class="crumb"><a href="index.html">首页</a> / 雅集</p>
+    <h1 class="p-title rv">雅集</h1>
+    <p class="lead rv" style="margin-top:16px">社中雅集，或同题共写，或各出旧作，事后辑为一期，录于社刊档。下列各期即历年雅集与学刊之目；点期名可读该期全帙，点篇名可读单篇全文。</p>
+  </section>
+
+  {% set wm = collections.works | worksMap %}
+  <section class="wrap archives">
+    <div class="sec-head rv"><h2>刊期档案</h2><hr class="hair" /></div>
+    {% if pending_issue and pending_issue.length %}<p class="pending-hint rv">另有 {{ pending_issue.length }} 篇来稿待辑入新期 · 编委封期后归档</p>{% endif %}
+    {% for iss in issues %}
+    <div class="archive-row rv">
+      <div class="vol"><a href="{{ iss.id }}.html">{{ iss.title }}</a><small>{{ iss.type }} · {{ iss.period }}</small></div>
+      <div class="toc">
+        {% for slug in iss.slugs %}{% set w = wm[slug] %}{% if w %}
+        <div><span class="t"><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="w">{{ w.data.fgenre or w.data.genre }}</span></div>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="wrap">
+    <p class="duo-acts rv">
+      <a class="btn ghost" href="library.html">浏览作品库 · 社内文稿总目</a>
+      <a class="btn ghost" href="submit.html">投稿 · 递一篇新作</a>
+    </p>
+  </section>
+</main>

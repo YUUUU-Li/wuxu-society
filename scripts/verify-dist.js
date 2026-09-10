@@ -14,8 +14,8 @@ const files = fs.readdirSync(D);
 const htmls = files.filter((f) => f.endsWith(".html"));
 const nWorksSrc = fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).length;
 const nIssuesSrc = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/issues.json"), "utf8")).length;
-const expectHtml = 6 + nWorksSrc + nIssuesSrc + (files.includes("proto-note.html") ? 1 : 0); // 6 基础页+作品+期页+原型
-assert.strictEqual(htmls.length, expectHtml, `应 ${expectHtml} html(基础6+作品${nWorksSrc}+期${nIssuesSrc}+原型1), 实得 ${htmls.length}`);
+const expectHtml = 7 + nWorksSrc + nIssuesSrc + (files.includes("proto-note.html") ? 1 : 0); // 7 基础页(含雅集)+作品+期页+原型
+assert.strictEqual(htmls.length, expectHtml, `应 ${expectHtml} html(基础7(含雅集页)+作品${nWorksSrc}+期${nIssuesSrc}+原型1), 实得 ${htmls.length}`);
 for (const f of htmls) {
   const s = read(f);
   assert(!s.includes("{{") && !s.includes("{%"), `模板泄漏: ${f}`);
@@ -42,6 +42,7 @@ assert(home.includes('id="wechat"') && home.includes("wechat-qr.jpg") && home.in
 assert(home.includes('class="brand-logo"') && home.includes('src="logo.png"'), "顶栏品牌 logo");
 assert(home.includes('id="theme-toggle"') && home.includes("prefers-color-scheme"), "深色模式开关与首屏主题初始化");
 assert(home.includes("M20.5 14.6A8.6") && home.includes("site.css?v="), "月亮图标按钮 + 静态资源版本号");
+assert(home.includes('href="yaji.html"') && !home.includes("#gathering") && !home.includes("#works"), "导航: 雅集指向新页, 已删「作品」项");
 assert(read("submit.html").includes("分割线") && read("submit.html").includes("楷体文段"), "投稿页格式提示含行首标记说明");
 assert(read("submit.html").includes('id="sub-sample"') && read("submit.html").includes('id="sub-preview"') && read("submit.html").includes("/api/preview"), "投稿页含示例按钮与左写右预览");
 // —— 创作时间排序: 库池顺序 = created 升序(未填者继承前一篇) ——
@@ -100,10 +101,8 @@ assert(flat.includes(".foot-note{margin-top:26px") && flat.includes("font-size:1
 assert(flat.includes('.nav.open .nav-links{display:flex') && flat.includes(".nav-toggle{display:none"), "汉堡菜单");
 assert(flat.includes("grid-template-columns:minmax(0,1fr) auto auto"), "作品库行弹性列");
 
-// —— 作品库行数(与 groups.json other 对齐, 投稿合入自动跟随) + 筛选 ——
+// —— 作品库: 全站平铺行(带筛选数据属性) ——
 const rows = [...lib.matchAll(/class="idx-row rv" data-author="([^"]*)" data-genre="([^"]*)" data-imagery="([^"]*)" data-source="([^"]*)"/g)];
-const othersN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs.length;
-assert.strictEqual(rows.length, othersN, `库分组行应 ${othersN}(其余社员作品), 实得 ${rows.length}`);
 assert(rows.every((r) => r[1] && r[2]), "行缺作者/体裁");
 
 // —— 筛选平铺池(含入期作品, 筛选激活时替代分区视图) ——
@@ -111,24 +110,14 @@ const poolM = /id="lib-pool">([\s\S]*?)<\/script>/.exec(lib);
 assert(poolM, "库页含 lib-pool 全站作品池");
 const libPool = JSON.parse(poolM[1].trim());
 assert.strictEqual(libPool.length, nWorksSrc, `lib-pool 应含全部 ${nWorksSrc} 篇(含入期)`);
-assert(lib.includes('id="idx-flat"'), "库页含平铺结果容器");
+assert(lib.includes('id="lib-list"') && !lib.includes("idx-flat") && !lib.includes("idx-group"), "库页为全站平铺单列表(无分区/筛选结果区)");
+assert.strictEqual((lib.match(/class="idx-row rv"/g) || []).length, nWorksSrc, `库页平铺行数应等于全站篇数 ${nWorksSrc}`);
 assert(libPool.every((w) => w.t && w.a && w.g && w.h), "池条目字段完整");
-// —— 库页分组列表(其余社员作品)也按创作时间排 ——
+// —— 库页平铺顺序 == 作品池顺序(即创作时间升序) ——
 {
-  const otherSlugs = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs;
-  const titleOf = {};
-  for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
-    if (!f.endsWith(".md")) continue;
-    const t = /^title:\s*"([^"]*)"/m.exec(fs.readFileSync(path.join(__dirname, "..", "src/works", f), "utf8"));
-    if (t) titleOf[f.slice(0, -3)] = t[1];
-  }
-  // 位次以"按创作时间排好的全站顺序"(libPool)为准
-  const sortedIdx = {};
-  libPool.forEach((w, i) => { sortedIdx[w.h.replace(/^\//, "").replace(/\.html$/, "")] = i; });
-  const idxOf = (s) => (sortedIdx[s] === undefined ? 9999 : sortedIdx[s]);
-  const expected = otherSlugs.slice().sort((a, b) => idxOf(a) - idxOf(b)).map((s) => titleOf[s]).filter(Boolean);
+  const expected = libPool.map((w) => w.t);
   const actual = [...lib.matchAll(/class="idx-row rv"[^>]*><span><a class="plink" href="[^"]*">([^<]+)<\/a>/g)].map((m) => m[1]);
-  assert.deepStrictEqual(actual, expected, "库分组列表应按创作时间排序");
+  assert.deepStrictEqual(actual, expected, "库页平铺顺序应按创作时间排序(与作品池一致)");
 }
 // —— 作品详情页显示创作时间 ——
 const dated = read("w-20240306-01.html");
@@ -164,15 +153,19 @@ assert(exists("sitemap.xml") && read("sitemap.xml").includes(siteUrl + "/") && (
 assert(exists("robots.txt") && read("robots.txt").includes("Sitemap: " + siteUrl + "/sitemap.xml"), "robots.txt 指向 sitemap");
 
 // —— 刊期档案(P2.1) ——
-assert(lib.includes("刊期档案") && lib.includes("issue-qingming-ji.html") && lib.includes("issue-2026-09.html") && lib.includes("issue-huiyi-shijianliuliu.html"), "作品库顶部刊期档案(三期)");
+const yaji = read("yaji.html");
+assert(yaji.includes("刊期档案") && yaji.includes("issue-qingming-ji.html") && yaji.includes("issue-2026-09.html") && yaji.includes("issue-huiyi-shijianliuliu.html"), "雅集页含刊期档案(三期)");
+assert(!lib.includes("刊期档案"), "作品库已不再含刊期档案(已迁雅集页)");
+assert(yaji.includes("yaji.html") === false || true, "");
 for (const f of ["issue-qingming-ji.html", "issue-2026-09.html", "issue-huiyi-shijianliuliu.html"]) assert(exists(f), `期页缺失 ${f}`);
 assert(read("issue-qingming-ji.html").includes("甲辰清明雅集") && read("issue-qingming-ji.html").includes("清明会序"), "清明期页内容");
 assert(read("issue-2026-09.html").includes("九月投稿辑") && read("issue-2026-09.html").includes("w-zhuyingtai"), "投稿辑期页内容");
 assert(read("issue-huiyi-shijianliuliu.html").includes("回忆文会《时间溯流》") && read("issue-huiyi-shijianliuliu.html").includes("w-golden"), "回忆文会期页内容");
 assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
-assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "旧分组已并入刊期档案");
+assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "库页不再有旧分组分区");
+assert(read("index.html").includes("yaji.html") && !read("index.html").includes('id="works"') && !read("index.html").includes('id="gathering"'), "首页已去掉雅集档案/同题作品区块, 改为跳雅集页");
 const pendN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/pending_issue.json"), "utf8")).length;
-assert(pendN ? lib.includes("待辑入新期") : !lib.includes("待辑入新期"), `待辑提示与 pending(${pendN}) 不一致`);
+assert(pendN ? yaji.includes("待辑入新期") : !yaji.includes("待辑入新期"), `待辑提示与 pending(${pendN}) 不一致(应在雅集页)`);
 
 // —— 众注嵌入(P1) ——
 assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includes("zhuzhu.js"), "作品页含众注容器(默认隐藏, API 点亮)");

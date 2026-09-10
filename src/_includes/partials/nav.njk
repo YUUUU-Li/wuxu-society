@@ -9,8 +9,7 @@
     </button>
     <nav class="nav-links" aria-label="主导航">
       <a class="txt" href="{% if home %}#origin{% else %}index.html#origin{% endif %}">缘起</a>
-      <a class="txt" href="{% if home %}#gathering{% else %}index.html#gathering{% endif %}">雅集</a>
-      <a class="txt" href="{% if home %}#works{% else %}index.html#works{% endif %}">作品</a>
+      <a class="txt{% if active == 'yaji' %} on{% endif %}" href="yaji.html">雅集</a>
       <a class="txt{% if active == 'members' %} on{% endif %}" href="members.html">社员</a>
       <a class="txt{% if active == 'library' %} on{% endif %}" href="library.html">作品库</a>
       <a class="txt" href="submit.html">投稿</a>

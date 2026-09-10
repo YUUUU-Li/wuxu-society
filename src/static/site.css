@@ -538,3 +538,6 @@ select optgroup{background:var(--paper-deep);color:var(--ink)}
 /* 名册: 编委手写交叉链接(评注/专题等), 与作品链接区分 */
 .member a.plink.note{color:var(--dim);font-size:13px}
 .member a.plink.note:hover{color:var(--seal)}
+
+/* 作品库: 全部作品平铺 + 筛选 */
+.idx-empty{color:var(--dim);font-size:14px;padding:8px 2px}

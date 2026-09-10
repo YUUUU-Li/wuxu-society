@@ -3,15 +3,15 @@ layout: "base.njk"
 permalink: "library.html"
 title: "作品库"
 seoTitle: "作品库 | 婺需文学社"
-desc: "婺需文学社原创作品总目：每一篇单独成页，附作者与关联作品。"
+desc: "婺需文学社原创作品总目：全站篇目按创作时间排列，可依作者、体裁、意象、出处筛选。"
 active: "library"
-footerNote: "篇目分辑，录自社内原稿。"
+footerNote: "篇目按创作时间排列，录自社内原稿。"
 ---
 <main>
   <section class="wrap page-head">
     <p class="crumb"><a href="index.html">首页</a> / 作品库</p>
     <h1 class="p-title rv">作品库</h1>
-    <p class="lead rv" style="margin-top:16px">每一篇都已单独成页：点击篇目进入该页，页内可查看作者（缩写 + 笔名）与相关联作品（本作关联 / 同作者 / 相似标签 / 同时同源）。署名以原稿为准。</p>
+    <p class="lead rv" style="margin-top:16px">社内文稿总目，按创作时间先后排列（早者在前）。上方可依作者、体裁、意象、出处筛选；点击篇名进入单篇，页内可读全文与相关联作品。雅集与刊期编目见<a class="plink" href="yaji.html">雅集</a>。</p>
   </section>
 
   <section class="wrap lib-filters">
@@ -26,40 +26,20 @@ footerNote: "篇目分辑，录自社内原稿。"
   </section>
 
 {% set wm = collections.works | worksMap %}
-  <section class="wrap archives">
-    <div class="sec-head rv"><h2>刊期档案</h2><hr class="hair" /></div>
-    {% if pending_issue and pending_issue.length %}<p class="pending-hint rv">另有 {{ pending_issue.length }} 篇来稿待辑入新期 · 编委封期后归档</p>{% endif %}
-    {% for iss in issues %}
-    <div class="archive-row rv">
-      <div class="vol"><a href="{{ iss.id }}.html">{{ iss.title }}</a><small>{{ iss.type }} · {{ iss.period }}</small></div>
-      <div class="toc">
-        {% for slug in iss.slugs %}{% set w = wm[slug] %}{% if w %}
-        <div><span class="t"><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="w">{{ w.data.fgenre or w.data.genre }}</span></div>
-        {% endif %}{% endfor %}
-      </div>
+  <section class="wrap">
+    <div class="idx-list" id="lib-list">
+      {% for slug in fulltextSorted %}{% set w = wm[slug] %}{% if w %}
+      <div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
+      {% endif %}{% endfor %}
     </div>
-    {% endfor %}
+    <p class="idx-empty" id="lib-empty" hidden>没有符合条件的作品。</p>
   </section>
 
-{% for g in groups %}
-  <section class="wrap idx-group"><div class="sec-head rv"><h2>{{ g.h2 }}</h2><hr class="hair" /></div><div class="idx-list">
-  {% for slug in g.slugs | byCreated %}{% set w = wm[slug] %}{% if w %}
-  <div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
-  {% endif %}{% endfor %}
-  </div></section>
-{% endfor %}
-
-{% if site.zhuzhu and site.zhuzhu.enabled %}
-  {# 筛选结果平铺区: 覆盖全站作品(含入期), 筛选激活时替代分区视图 #}
-  <section class="wrap idx-flat" id="idx-flat" hidden>
-    <div class="idx-list" id="idx-flat-list"></div>
-  </section>
   <script type="application/json" id="lib-pool">[
 {% for slug in fulltextSorted %}{% set w = wm[slug] %}{% if w %}
 {"t":{{ w.data.title | jsonify | safe }},"a":{{ w.data.author | jsonify | safe }},"g":{{ w.data.genre | jsonify | safe }},"i":{{ w.data.imageries | jsonarr | safe }},"s":{{ (w.data.source or "") | jsonify | safe }},"h":{{ w.url | jsonify | safe }}}{% if not loop.last %},{% endif %}{% endif %}
 {% endfor %}]
   </script>
-{% endif %}
 <script>
 (function () {
   "use strict";
@@ -70,13 +50,12 @@ footerNote: "篇目分辑，录自社内原稿。"
   var reset = document.getElementById("f-reset");
   var count = document.getElementById("f-count");
   var poolEl = document.getElementById("lib-pool");
-  if (!author || !poolEl) return;
-  var pool = JSON.parse(poolEl.textContent);           // 全站作品(含入期)
-  var archives = document.querySelector(".archives");  // 刊期档案区
-  var groups = Array.prototype.slice.call(document.querySelectorAll(".idx-group"));
-  var flatSec = document.getElementById("idx-flat");
-  var flatList = document.getElementById("idx-flat-list");
-  var total = pool.length;
+  var list = document.getElementById("lib-list");
+  var empty = document.getElementById("lib-empty");
+  if (!author || !poolEl || !list) return;
+  var pool = JSON.parse(poolEl.textContent);      // 全站作品(含入期), 已按创作时间排序
+  var rows = Array.prototype.slice.call(list.querySelectorAll(".idx-row"));
+  var total = rows.length;
 
   function fill(sel, values) {
     values.forEach(function (v) {
@@ -97,7 +76,7 @@ footerNote: "篇目分辑，录自社内原稿。"
   fill(imagery, Object.keys(imags).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
   fill(source, Object.keys(sources));
 
-  // URL 参数预选(如 library.html?author=xx), 兼作可分享筛选链接
+  // URL 参数预选(如 library.html?author=xx), 兼作可分享的筛选链接
   var qs = new URLSearchParams(location.search);
   var bind = { author: author, genre: genre, imagery: imagery, source: source };
   ["author", "genre", "imagery", "source"].forEach(function (k) {
@@ -105,38 +84,21 @@ footerNote: "篇目分辑，录自社内原稿。"
     if (v && bind[k]) bind[k].value = v;
   });
 
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
   function apply() {
     var fa = author.value, fg = genre.value, fi = imagery.value, fs = source.value;
     var any = fa || fg || fi || fs;
-    var hits = pool.filter(function (w) {
-      return (!fa || w.a === fa) &&
-        (!fg || w.g === fg) &&
-        (!fi || (w.i || []).indexOf(fi) !== -1) &&
-        (!fs || (w.s || "(无出处)") === fs);
+    var shown = 0;
+    rows.forEach(function (row) {
+      var ok = (!fa || row.dataset.author === fa) &&
+        (!fg || row.dataset.genre === fg) &&
+        (!fi || (row.dataset.imagery || "").split("|").indexOf(fi) !== -1) &&
+        (!fs || (row.dataset.source || "(无出处)") === fs);
+      row.style.display = ok ? "" : "none";
+      if (ok) shown++;
     });
-    if (count) count.textContent = "显示 " + hits.length + " / " + total + " 篇";
+    if (count) count.textContent = "显示 " + shown + " / " + total + " 篇";
     if (reset) reset.hidden = !any;
-    if (!any) {
-      // 无筛选: 分区浏览(刊期档案 + 分组)
-      if (archives) archives.style.display = "";
-      groups.forEach(function (g) { g.style.display = ""; });
-      if (flatSec) flatSec.hidden = true;
-      return;
-    }
-    // 有筛选: 只平铺列出命中的作品
-    if (archives) archives.style.display = "none";
-    groups.forEach(function (g) { g.style.display = "none"; });
-    if (flatSec) {
-      flatSec.hidden = false;
-      flatList.innerHTML = hits.map(function (w) {
-        // 不带 rv: 行是筛选后动态插入的, site.js 的滚动显现监听不会扫到(会保持透明)
-        return '<div class="idx-row"><span><a class="plink" href="' + esc(w.h) + '">' + esc(w.t) + "</a></span>" +
-          '<span class="g">' + esc(w.a) + "</span><span class=\"f\">" + esc(w.g) + "</span></div>";
-      }).join("");
-    }
+    if (empty) empty.hidden = shown !== 0;
   }
   [author, genre, imagery, source].forEach(function (s) {
     s.addEventListener("change", apply);
