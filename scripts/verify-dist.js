@@ -133,6 +133,12 @@ assert.strictEqual(memCards.filter((c) => (c.match(/>作品：/g) || []).length 
 assert(mem.includes("查看更多作品") && /library\.html\?author=[^"]+/.test(mem), "含「查看更多作品」跳作品库作者筛选页");
 const moreLinks = [...mem.matchAll(/href="library\.html\?author=([^"]+)"/g)].map((m) => m[1]);
 assert(moreLinks.length === new Set(moreLinks).size, "查看更多链接不重复");
+// 作品改为"每次打开随机抽 3 首": 页面带作品池 + 占位容器, JS 填充
+const pools = JSON.parse("[" + /id="member-pools">([\s\S]*?)<\/script>/.exec(mem)[1].trim().replace(/,$/, "") + "]");
+assert(pools.length >= 10, `作品池成员应 ≥10, 实得 ${pools.length}`);
+assert(pools.every((p) => p.id && Array.isArray(p.items) && p.items.length >= 1), "作品池条目形状");
+assert.strictEqual((mem.match(/class="m-works"/g) || []).length, memCards.length, "每张卡片都有作品占位容器");
+assert(read("site.js").includes("member-pools") && read("site.js").includes(".m-works"), "site.js 负责随机填充名册作品");
 // 相似标签(余弦)动态组 + 元数据资产
 assert(read("w-guixiang.html").includes('id="rel-sim"'), "作品页含相似标签动态容器(有真实分组时)");
 assert(read("w-guixiang.html").includes('id="zz-admin-btn"'), "众注含编委模式入口");

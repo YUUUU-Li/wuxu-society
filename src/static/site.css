@@ -497,3 +497,6 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* 名册页: "查看更多作品"链接(作品库该作者筛选页) */
 .member .plink.more{color:var(--seal);font-size:13px;margin-top:2px}
 .member .plink.more:hover{text-decoration:underline}
+
+/* 名册页: 作品区(占位), 实际由 site.js 随机抽 3 首; display:contents 保持原有纵向排布 */
+.m-works{display:contents}

@@ -120,3 +120,29 @@
   });
   sync();
 })();
+
+/* 名册页: 每人随机抽 3 首作品(每次打开不同; 无"换一批") */
+(function () {
+  var el = document.getElementById("member-pools");
+  if (!el) return;
+  var pools = {};
+  try {
+    var raw = el.textContent.trim().replace(/,\s*$/, "");
+    JSON.parse("[" + raw + "]").forEach(function (p) { pools[p.id] = p.items; });
+  } catch (e) { return; }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function pick(arr, n) {
+    var a = arr.slice(), out = [];
+    for (var i = 0; i < n && a.length; i++) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
+    return out;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".m-works"), function (box) {
+    var items = pools[box.getAttribute("data-id")];
+    if (!items || !items.length) return;
+    box.innerHTML = pick(items, 3).map(function (w) {
+      return '<a class="plink" href="' + esc(w.h) + '">作品：' + esc(w.t) + "</a>";
+    }).join("");
+  });
+})();

@@ -26,15 +26,17 @@ footerNote: "名册依 2026 年所录；本名、笔名、分部如有变动，�
           <span class="m-branch">{{ m.branch }}</span>
           {% if m.note %}<p class="m-note">{{ m.note }}</p>{% endif %}
           {% set wk = 0 %}
-          {% for l in m.links %}
-          {% if l | isWorkLink %}{% set wk = wk + 1 %}{% if wk <= 3 %}
+          {# 作品链接: 静态先列前 3 首(无 JS / SEO 回退), 页面加载后由 site.js 随机抽 3 首 #}
+          <span class="m-works" data-id="{{ m.id }}">
+          {% for l in m.links %}{% if l | isWorkLink %}{% set wk = wk + 1 %}{% if wk <= 3 %}
           <a class="plink" href="{{ l.href }}">{{ l.label }}</a>
-          {% endif %}{% else %}
+          {% endif %}{% endif %}{% endfor %}
+          </span>
+          {% for l in m.links %}{% if not (l | isWorkLink) %}
           <a class="plink" href="{{ l.href }}">{{ l.label }}</a>
-          {% endif %}
-          {% endfor %}
+          {% endif %}{% endfor %}
           {% set au = authorIndex[m.id] %}
-          {% if au and au.count > (wk if wk < 3 else 3) %}
+          {% if au and au.count > 3 %}
           <a class="plink more" href="library.html?author={{ au.author | urlencode }}">查看更多作品（共 {{ au.count }} 篇）→</a>
           {% endif %}
         </div>
@@ -44,3 +46,7 @@ footerNote: "名册依 2026 年所录；本名、笔名、分部如有变动，�
   {% endfor %}
   </section>
 </main>
+{# 名册作品池: 页面加载后由 site.js 为每人随机抽 3 首(无"换一批") #}
+<script type="application/json" id="member-pools">
+{%- for sec in members %}{% for m in sec.members %}{% set au = authorIndex[m.id] %}{% if au and au.count %}{"id":"{{ m.id }}","items":{{ au.items | jsonify | safe }}},{% endif %}{% endfor %}{% endfor %}
+</script>
