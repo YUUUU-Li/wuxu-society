@@ -2,6 +2,7 @@
 title: "夜坐听风，昼眠听雨"
 author: "cyly"
 genre: "现代短诗"
+created: "2024-04-04"
 source: "甲辰清明首聚（2024.4.4）"
 imageries: ["雨", "清明"]
 ---

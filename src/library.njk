@@ -55,7 +55,7 @@ footerNote: "篇目分辑，录自社内原稿。"
     <div class="idx-list" id="idx-flat-list"></div>
   </section>
   <script type="application/json" id="lib-pool">[
-{% for slug in fulltext_order %}{% set w = wm[slug] %}{% if w %}
+{% for slug in fulltextSorted %}{% set w = wm[slug] %}{% if w %}
 {"t":{{ w.data.title | jsonify | safe }},"a":{{ w.data.author | jsonify | safe }},"g":{{ w.data.genre | jsonify | safe }},"i":{{ w.data.imageries | jsonarr | safe }},"s":{{ (w.data.source or "") | jsonify | safe }},"h":{{ w.url | jsonify | safe }}}{% if not loop.last %},{% endif %}{% endif %}
 {% endfor %}]
   </script>

@@ -2,6 +2,7 @@
 title: "清明会序"
 author: "jwl（蓦流）"
 genre: "序"
+created: "2024-04-04"
 source: "甲辰清明首聚（2024.4.4）"
 imageries: ["雨", "清明"]
 ---

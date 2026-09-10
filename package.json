@@ -6,11 +6,13 @@
   "scripts": {
     "build": "eleventy",
     "serve": "eleventy --serve",
-    "test": "npm run build && node scripts/test-submit.js && node scripts/test-submit-format.js && node scripts/test-preview.js && node scripts/test-join.js && node scripts/test-add-member.js && node scripts/test-zhuzhu.js && node scripts/test-related.js && node scripts/verify-dist.js",
+    "test": "npm run build && node scripts/test-submit.js && node scripts/test-submit-format.js && node scripts/test-preview.js && node scripts/test-join.js && node scripts/test-add-member.js && node scripts/test-zhuzhu.js && node scripts/test-related.js && node scripts/test-work-tools.js && node scripts/verify-dist.js",
     "preview": "python scripts/preview_server.py",
     "seal-issue": "node scripts/seal-issue.js",
     "remove-work": "node scripts/remove-work.js",
-    "add-member": "node scripts/add-member.js"
+    "add-member": "node scripts/add-member.js",
+    "rename-work": "node scripts/rename-work.js",
+    "set-created": "node scripts/set-created.js"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1"

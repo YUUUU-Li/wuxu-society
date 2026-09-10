@@ -1,8 +1,8 @@
 // 投稿接口(Cloudflare Pages Functions 原生实现, ESM 自包含): 网页表单 -> 自动开 PR (审稿单)
 // 需 Pages 环境变量(secret): GITHUB_TOKEN_SUBMIT
 //   (GitHub fine-grained token, 仅本仓库 Contents/Pull requests 读写)
-// 流程: 校验 -> 生成 slug -> 建分支 submit/<slug>
-//       -> 提交 src/works/<slug>.md + 更新 src/_data/groups.json + fulltext_order.json
+// 流程: 校验 -> 自动生成标识名(w-<创作日期>-序号) -> 建分支 submit/<slug>
+//       -> 提交 src/works/<slug>.md(含 created 创作时间) + 更新 src/_data/groups.json + fulltext_order.json
 //       -> 待辑登记 pending_issue.json(best-effort) -> 开 PR
 // 正文排版: 行首 & = 楷体文段(前记/后记/序), 行首 > = 引文块, 单独一行 --- = 分割线
 const OWNER = "YUUUU-Li";
@@ -138,6 +138,14 @@ async function doSubmit(context) {
   if (/[<>]/.test(title + author + genre + source + excerpt)) {
     return json(400, { ok: false, error: "题名/署名/摘句里不能包含 < > 字符。" });
   }
+  const created = String(input.created || "").trim();
+  if (!/^\d{4}-\d{2}(-\d{2})?$/.test(created)) {
+    return json(400, { ok: false, error: "请填写创作时间（年月，如 2024-04）。" });
+  }
+  const [cy, cm, cd] = created.split("-");
+  if (+cy < 1900 || +cy > 2100 || +cm < 1 || +cm > 12 || (cd && (+cd < 1 || +cd > 31))) {
+    return json(400, { ok: false, error: "创作时间不合法。" });
+  }
   const imageries = imageriesRaw
     ? imageriesRaw.split(/[,，、;；]/).map((s) => s.trim()).filter(Boolean).slice(0, 12)
     : [];
@@ -152,28 +160,25 @@ async function doSubmit(context) {
   }
   lastHit.set(ip, nowT);
 
-  let slug = "w-sub-" + ts() + "-" + rand2();
-  const slugHint = String(input.slug || "").trim().toLowerCase().slice(0, 40);
-  if (slugHint) {
-    if (!/^[a-z][a-z0-9-]*$/.test(slugHint)) {
-      return json(400, { ok: false, error: "文件标识只能用小写字母开头，含小写字母、数字、连字符。" });
-    }
-    try {
-      slug = "w-" + slugHint;
-      for (let i = 2; i <= 20; i++) {
-        let taken = true;
-        try {
-          await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/src/works/" + slug + ".md");
-        } catch (e) {
-          if (!e.status || e.status !== 404) throw e;
-          taken = false;
-        }
-        if (!taken) break;
-        slug = "w-" + slugHint + "-" + i;
+  // 标识名 = w-<创作日期>-<当日序号>（如 w-2024-0404-01）; 同日多篇依次 01,02...
+  // 说明: 投稿者不再自填标识名; 编委若想要雅名, 可在合并前跑 npm run rename-work 改名(未发布无外链)
+  const stamp = created.replace(/-/g, "");
+  let slug = "";
+  try {
+    for (let n = 1; n <= 99; n++) {
+      const cand = "w-" + stamp + "-" + pad(n);
+      let taken = true;
+      try {
+        await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/src/works/" + cand + ".md");
+      } catch (e) {
+        if (!e.status || e.status !== 404) throw e;
+        taken = false;
       }
-    } catch (err) {
-      return json(500, { ok: false, error: "投稿暂时失败，请稍后再试或联系社长代投。" });
+      if (!taken) { slug = cand; break; }
     }
+    if (!slug) return json(500, { ok: false, error: "同日作品过多，请稍后再试或联系社长。" });
+  } catch (err) {
+    return json(500, { ok: false, error: "投稿暂时失败，请稍后再试或联系社长代投。" });
   }
   const branch = "submit/" + slug;
 
@@ -184,6 +189,7 @@ async function doSubmit(context) {
     'title: "' + q(title) + '"',
     'author: "' + q(author) + '"',
     'genre: "' + q(genre) + '"',
+    'created: "' + created + '"',
   ];
   if (source) fm.push('source: "' + q(source) + '"');
   if (excerpt) fm.push('excerpt: "' + q(excerpt) + '"');
@@ -250,7 +256,9 @@ async function doSubmit(context) {
           noteBody + "## 投稿：" + title +
           "\n- 作者：" + author +
           "\n- 体裁：" + genre +
+          "\n- 创作时间：" + created +
           (source ? "\n- 出处：" + source : "") +
+          "\n- 文件标识（自动生成）：`" + slug + "`——如想要雅名，合并前可跑 `npm run rename-work " + slug + " <新名>`" +
           "\n\nCloudflare Pages 预览链接会自动出现在本 PR 中。审核通过请点 **Merge pull request**；需修改可在文件里直接改，或让作者在网页重新提交。",
       }),
     });

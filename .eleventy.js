@@ -11,8 +11,30 @@ const FULLTEXT_ORDER = JSON.parse(
 );
 const memberById = {};
 for (const sec of MEMBERS) for (const m of sec.members) memberById[m.id] = m;
+
+// 创作时间排序: 作品 front matter 的 created(YYYY-MM 或 YYYY-MM-DD) 升序;
+// 未填者"继承"前一篇已填作品的时点(即保持现有编排位置, 补填后自动归位)。
+const createdOf = {};
+for (const f of fs.readdirSync(path.join(__dirname, "src", "works"))) {
+  if (!f.endsWith(".md")) continue;
+  const s = fs.readFileSync(path.join(__dirname, "src", "works", f), "utf8");
+  const m = /^created:\s*"([^"]*)"/m.exec(s);
+  if (m) createdOf[f.slice(0, -3)] = m[1];
+}
+const effKey = {};
+{
+  let carry = "";
+  for (const s of FULLTEXT_ORDER) {
+    if (createdOf[s]) carry = createdOf[s];
+    effKey[s] = carry;
+  }
+}
+const FULLTEXT_SORTED = FULLTEXT_ORDER
+  .map((s, i) => ({ s, i }))
+  .sort((a, b) => String(effKey[a.s] || "").localeCompare(String(effKey[b.s] || "")) || a.i - b.i)
+  .map((x) => x.s);
 const orderIdx = {};
-FULLTEXT_ORDER.forEach((s, i) => (orderIdx[s] = i));
+FULLTEXT_SORTED.forEach((s, i) => (orderIdx[s] = i));
 
 // "jwl（蓦流）" -> "jwl"; "cty" -> "cty"
 function akOf(author) {
@@ -90,6 +112,8 @@ module.exports = function (eleventyConfig) {
   });
   // 静态资源版本号: 每次构建变化, 让浏览器拿到最新 CSS/JS(避免新 HTML 配旧缓存)
   eleventyConfig.addGlobalData("assetVer", () => String(Date.now()));
+  // 按创作时间排序后的全文库顺序(供作品库平铺池与全文库页使用)
+  eleventyConfig.addGlobalData("fulltextSorted", () => FULLTEXT_SORTED);
 
   // 关联作品自动推导: 强关联(手动related) -> 同作者 -> 同意象 -> 同时同源
   // 每篇作品只出现在最先命中的一类里; 组内按全文库顺序排列

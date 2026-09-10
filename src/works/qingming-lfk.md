@@ -2,6 +2,7 @@
 title: "清明偷潜深春"
 author: "lfk（谰予）"
 genre: "现代短章"
+created: "2024-04-04"
 source: "甲辰清明首聚（2024.4.4）"
 imageries: ["雨", "清明"]
 ---

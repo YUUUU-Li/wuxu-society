@@ -500,3 +500,9 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* 名册页: 作品区(占位), 实际由 site.js 随机抽 3 首; display:contents 保持原有纵向排布 */
 .m-works{display:contents}
+
+/* 投稿页: 创作时间(年月 + 可选日) */
+.created-row{display:flex;gap:10px;align-items:center}
+.created-row input[type="month"]{flex:1 1 auto;min-width:0}
+.created-row input[type="number"]{flex:0 0 120px;width:120px}
+@media (max-width:640px){.created-row{flex-direction:column;align-items:stretch}.created-row input[type="number"]{flex:none;width:100%}}

@@ -42,9 +42,12 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
         </select>
       </div>
       <div class="field">
-        <label for="sub-slug">文件标识（选填）</label>
-        <input id="sub-slug" name="slug" type="text" maxlength="40" placeholder="例：zhuyingtai / qiuwang" autocomplete="off" spellcheck="false" />
-        <small style="color:var(--dim)">小写字母开头的拼音或英文，会成为作品网页地址（如 <code>w-zhuyingtai</code>）；留空则由系统自动生成。</small>
+        <label for="sub-created">创作时间（必填）</label>
+        <div class="created-row">
+          <input id="sub-created" name="created" type="month" required />
+          <input id="sub-created-day" type="number" min="1" max="31" placeholder="日（可选）" aria-label="创作日（可选）" />
+        </div>
+        <small style="color:var(--dim)">只记得年月就选到月即可；知道具体日子再填"日"。此时间用于作品排序与编委封期，不显示在页面上。</small>
       </div>
       <div class="field">
         <label for="sub-excerpt">摘句（选填，缩略显示）</label>
@@ -182,17 +185,24 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     if (!title) { msg.textContent = "请先写题名。"; msg.className = "form-msg err"; form.title.focus(); return; }
     if (!author) { msg.textContent = "请留下署名（缩写或缩写（笔名））。"; msg.className = "form-msg err"; form.author.focus(); return; }
     if (body.length < 10) { msg.textContent = "正文太短了，再写几句吧。"; msg.className = "form-msg err"; form.body.focus(); return; }
-    var slug = (form.slug.value || "").trim().toLowerCase();
-    if (slug && !/^[a-z][a-z0-9-]{0,38}$/.test(slug)) {
-      msg.textContent = "文件标识需以小写字母开头，只能含小写字母、数字、连字符（如 zhuyingtai）。";
-      msg.className = "form-msg err"; form.slug.focus(); return;
+    var createdMonth = form.created.value; // YYYY-MM
+    if (!createdMonth) {
+      msg.textContent = "请选择创作时间（年月）。";
+      msg.className = "form-msg err"; form.created.focus(); return;
     }
+    var dayRaw = (document.getElementById("sub-created-day").value || "").trim();
+    var day = dayRaw ? ("0" + dayRaw).slice(-2) : "";
+    if (dayRaw && (+dayRaw < 1 || +dayRaw > 31)) {
+      msg.textContent = "\"日\" 请填 1–31 之间的数字（不填也可以）。";
+      msg.className = "form-msg err"; return;
+    }
+    var created = createdMonth + (day ? "-" + day : "");
     var payload = {
       title: title,
       author: author,
       genre: genre,
+      created: created,
       body: body,
-      slug: slug,
       excerpt: form.excerpt.value.trim(),
       editorNote: form.editorNote.value.trim(),
       imageries: form.imageries.value,
