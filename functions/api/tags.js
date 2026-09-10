@@ -89,7 +89,8 @@ export async function onRequest(context) {
         if (body.action === "seed") {
           let n = 0;
           for (const o of TAG_OUTLINE) {
-            const found = await db.prepare(`SELECT id FROM tags WHERE word = ?1`).bind(o.w).first();
+            // 注意: 必须把 kind 一起取回来, 否则 found.kind 恒为 undefined, 下面的「候选转正」永远不生效
+            const found = await db.prepare(`SELECT id, kind FROM tags WHERE word = ?1`).bind(o.w).first();
             if (!found) {
               await db.prepare(`INSERT INTO tags(word, kind) VALUES (?1, '预设')`).bind(o.w).run();
               n++;

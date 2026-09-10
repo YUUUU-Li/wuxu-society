@@ -5,7 +5,7 @@ const assert = require("assert");
 const path = require("path");
 
 function FakeDB(opts = {}) {
-  const db = { calls: [], existsOverride: !!opts.existsOverride, rows: opts.rows || null, tagCountN: opts.tagCountN || 0 };
+  const db = { calls: [], existsOverride: !!opts.existsOverride, rows: opts.rows || null, tagCountN: opts.tagCountN || 0, tagKind: opts.tagKind || "预设" };
   db.prepare = (sql) => ({
     bind(...args) {
       db.calls.push({ sql, args });
@@ -13,7 +13,7 @@ function FakeDB(opts = {}) {
     },
     async first() {
       const last = db.calls[db.calls.length - 1].sql;
-      if (/WHERE word =/.test(last)) return db.existsOverride ? { id: 7 } : null;
+      if (/WHERE word =/.test(last)) return db.existsOverride ? { id: 7, kind: db.tagKind } : null;
       if (/WHERE work_id = .*AND tag_id/.test(last)) return db.existsOverride ? { id: 99 } : null;
       if (/WHERE comment_id = .*AND liker_key/.test(last)) return db.existsOverride ? { id: 88 } : null;
       if (/AS n FROM comment_likes/.test(last)) return { n: 3 };
@@ -133,6 +133,12 @@ async function main() {
   r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "seed" }), { ZHUI_ADMIN_KEY: "k" }));
   const seedJ = await r.json();
   assert(seedJ.ok && seedJ.total === 94 && seedJ.added === 94, "seed 应落库全部大纲词");
+  // seed 的「候选转正」分支: 必须 SELECT id, kind 才拿得到 kind(曾因只取 id 而永远不生效)
+  const dbSeed = FakeDB({ existsOverride: true, tagKind: "候选" });
+  r = await tags.onRequest({ request: post("/api/tags", { key: "k", action: "seed" }), env: { DB: dbSeed, ZHUI_ADMIN_KEY: "k" } });
+  assert((await r.json()).ok, "seed 应成功");
+  assert(dbSeed.calls.some((c) => /SELECT id, kind FROM tags/.test(c.sql)), "seed 应把 kind 一起查出来");
+  assert(dbSeed.calls.some((c) => /UPDATE tags SET kind/.test(c.sql)), "seed 应把「候选」的大纲词转正");
   r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "adopt", word: "离愁" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
   assert((await r.json()).action === "adopt", "adopt 应成功");
 
