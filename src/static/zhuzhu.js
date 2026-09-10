@@ -165,9 +165,10 @@
         }
         speak(tmsg, j.voted ? "已赞同：" + word : "已取消赞同：" + word);
       } else {
-        // 新词: 大纲内为预设(直接转正), 表外为候选(待编委采纳)
-        tagState[word] = { id: j.id, word: word, count: j.count, voted: true, hint: j.hint || "", cand: !!j.candidate };
-        tagLine.appendChild(pillFor(word, j.count, true, !!j.candidate));
+        // 新词: 大纲内为预设(直接转正), 表外为候选(待编委采纳)。
+        // 颜色一律听服务端的 voted(不再本地写死"点了就红"), 否则换页面/刷新会与库里不一致。
+        tagState[word] = { id: j.id, word: word, count: j.count, voted: !!j.voted, hint: j.hint || "", cand: !!j.candidate };
+        tagLine.appendChild(pillFor(word, j.count, !!j.voted, !!j.candidate));
         speak(tmsg, j.candidate ? "已新建候选标签：" + word + "（待编委采纳转正）" : "已赞同：" + word);
       }
       tagInput.value = "";
@@ -455,7 +456,7 @@
     relSim = document.getElementById("rel-sim"); // DOM 就绪后容器必在
     if (!relSim) return;
     try {
-      var r = await fetch(api + "/related?work=" + encodeURIComponent(work));
+      var r = await fetch(api + "/related?work=" + encodeURIComponent(work), { cache: "no-store" });
       if (!r.ok) throw 0;
       var j = await r.json();
       if (!j.ok) throw 0;
@@ -477,9 +478,10 @@
   async function loadAll() {
     try {
       var [tr, cr] = await Promise.all([
-        // 带上设备号: 服务端据此标出「我赞过的」标签(与投票写入时同一身份, 才能再点一下取消)
-        fetch(api + "/tags?work=" + encodeURIComponent(work) + "&dev=" + encodeURIComponent(device)).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
-        fetch(api + "/comments?work=" + encodeURIComponent(work)).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+        // 带上设备号: 服务端据此标出「我赞过的」标签(与投票写入时同一身份, 才能再点一下取消);
+        // no-store: 每次打开都按库里的真实票况着色, 不拿缓存里的旧状态
+        fetch(api + "/tags?work=" + encodeURIComponent(work) + "&dev=" + encodeURIComponent(device), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+        fetch(api + "/comments?work=" + encodeURIComponent(work), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
       ]);
       if (!tr.ok || !cr.ok) throw 0;
       renderTags(tr.tags || []);
