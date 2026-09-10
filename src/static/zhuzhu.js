@@ -254,6 +254,19 @@
           }).catch(function (e) { speak(msg, "落库失败：" + e.message); });
         });
         adminState.appendChild(a);
+        var a2 = document.createElement("a");
+        a2.href = "#";
+        a2.className = "zz-seed";
+        a2.textContent = "整理历史标签";
+        a2.title = "把库里旧写法（思念/明月/夜…）按归并表并入大纲词，只做一次";
+        a2.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          if (!window.confirm("把历史标签按归并表并入大纲词？（此操作会合并票数，幂等，可反复执行）")) return;
+          adminTag("cleanup", {}).then(function (j) {
+            speak(msg, "已整理 " + (j.merged || []).length + " 项：" + (j.merged || []).join("、"));
+          }).catch(function (e) { speak(msg, "整理失败：" + e.message); });
+        });
+        adminState.appendChild(a2);
       }
     }
   }

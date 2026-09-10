@@ -8,7 +8,7 @@
 //      delete {word}                 删除标签及其票
 // 计票口径：同一 IP 对 同一作品+同一标签 一票（voter_key=cf-connecting-ip）
 // 限流：同一设备(device, 缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）
-import { TAG_OUTLINE, TAG_HINTS, TAG_NEAR } from "./tag-outline.js";
+import { TAG_OUTLINE, TAG_HINTS, TAG_NEAR, TAG_LEGACY } from "./tag-outline.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
 const MAX_TAGS_PER_DEVICE = 3;
@@ -125,6 +125,34 @@ export async function onRequest(context) {
           const moved = await db.prepare(`UPDATE tag_votes SET tag_id = ?1 WHERE tag_id = ?2`).bind(b.id, a.id).run();
           await db.prepare(`DELETE FROM tags WHERE id = ?1`).bind(a.id).run();
           return json(200, { ok: true, action: "merge", from, to, moved: moved.meta.changes || 0 });
+        }
+        if (body.action === "cleanup") {
+          // 按 TAG_LEGACY 把库里历史写法并入大纲词(幂等: 词已不存在就跳过)
+          const done = [];
+          for (const from of Object.keys(TAG_LEGACY)) {
+            const to = TAG_LEGACY[from];
+            const a = await db.prepare(`SELECT id FROM tags WHERE word = ?1`).bind(from).first();
+            if (!a) continue;
+            if (!to) {                                  // 只下架: 删词(票随之删)
+              await db.prepare(`DELETE FROM tag_votes WHERE tag_id = ?1`).bind(a.id).run();
+              await db.prepare(`DELETE FROM tags WHERE id = ?1`).bind(a.id).run();
+              done.push(from + " → （弃用）");
+              continue;
+            }
+            let b = await db.prepare(`SELECT id FROM tags WHERE word = ?1`).bind(to).first();
+            if (!b) {
+              const ins = await db.prepare(`INSERT INTO tags(word, kind) VALUES (?1, '预设')`).bind(to).run();
+              b = { id: ins.meta.last_row_id };
+            }
+            await db.prepare(
+              `DELETE FROM tag_votes WHERE tag_id = ?1 AND EXISTS (
+                 SELECT 1 FROM tag_votes v2 WHERE v2.tag_id = ?2 AND v2.work_id = tag_votes.work_id AND v2.voter_key = tag_votes.voter_key)`
+            ).bind(a.id, b.id).run();
+            await db.prepare(`UPDATE tag_votes SET tag_id = ?1 WHERE tag_id = ?2`).bind(b.id, a.id).run();
+            await db.prepare(`DELETE FROM tags WHERE id = ?1`).bind(a.id).run();
+            done.push(from + " → " + to);
+          }
+          return json(200, { ok: true, action: "cleanup", merged: done });
         }
         if (body.action === "delete") {
           const w = clean(body.word, 12);

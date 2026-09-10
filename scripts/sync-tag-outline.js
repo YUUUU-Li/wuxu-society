@@ -18,6 +18,7 @@ function build() {
 export const TAG_OUTLINE = ${JSON.stringify(wordList(o), null, 0)};
 export const TAG_HINTS = ${JSON.stringify(o.hints, null, 0)};
 export const TAG_NEAR = ${JSON.stringify(o.near || [], null, 0)};
+export const TAG_LEGACY = ${JSON.stringify(o.legacy || {}, null, 0)};
 `;
   fs.writeFileSync(OUT, js, "utf8");
   return { count: words.length };

@@ -136,6 +136,11 @@ async function main() {
   r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "adopt", word: "离愁" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
   assert((await r.json()).action === "adopt", "adopt 应成功");
 
+  // 编委 cleanup: 按归并表整理历史标签
+  r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "cleanup" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
+  const cl = await r.json();
+  assert(cl.ok && Array.isArray(cl.merged), "cleanup 应返回合并清单");
+
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));
   assert.strictEqual(r.status, 405, "DELETE 应 405");
