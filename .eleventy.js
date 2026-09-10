@@ -2,6 +2,7 @@
 // 构建: npm run build  (输出到 dist/, 即 Cloudflare Pages 发布目录)
 const fs = require("fs");
 const path = require("path");
+const { sortByCreated, undatedSlugs } = require("./scripts/work-order.js");
 
 const MEMBERS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "src/_data/members.json"), "utf8")
@@ -12,8 +13,8 @@ const FULLTEXT_ORDER = JSON.parse(
 const memberById = {};
 for (const sec of MEMBERS) for (const m of sec.members) memberById[m.id] = m;
 
-// 创作时间排序: 作品 front matter 的 created(YYYY-MM 或 YYYY-MM-DD) 升序;
-// 未填者"继承"前一篇已填作品的时点(即保持现有编排位置, 补填后自动归位)。
+// 创作时间排序(口径见 scripts/work-order.js): created(YYYY-MM 或 YYYY-MM-DD) 升序;
+// 未填者不猜日期, 统一排在已填者之后(组内保持 fulltext_order.json 原次序), 作品库里另立「年份待考」一节。
 const createdOf = {};
 for (const f of fs.readdirSync(path.join(__dirname, "src", "works"))) {
   if (!f.endsWith(".md")) continue;
@@ -21,18 +22,8 @@ for (const f of fs.readdirSync(path.join(__dirname, "src", "works"))) {
   const m = /^created:\s*"([^"]*)"/m.exec(s);
   if (m) createdOf[f.slice(0, -3)] = m[1];
 }
-const effKey = {};
-{
-  let carry = "";
-  for (const s of FULLTEXT_ORDER) {
-    if (createdOf[s]) carry = createdOf[s];
-    effKey[s] = carry;
-  }
-}
-const FULLTEXT_SORTED = FULLTEXT_ORDER
-  .map((s, i) => ({ s, i }))
-  .sort((a, b) => String(effKey[a.s] || "").localeCompare(String(effKey[b.s] || "")) || a.i - b.i)
-  .map((x) => x.s);
+const FULLTEXT_SORTED = sortByCreated(FULLTEXT_ORDER, createdOf);
+const UNDATED = undatedSlugs(FULLTEXT_ORDER, createdOf);
 const orderIdx = {};
 FULLTEXT_SORTED.forEach((s, i) => (orderIdx[s] = i));
 
@@ -123,7 +114,9 @@ module.exports = function (eleventyConfig) {
   );
   // 按创作时间排序后的全文库顺序(供作品库平铺池与全文库页使用)
   eleventyConfig.addGlobalData("fulltextSorted", () => FULLTEXT_SORTED);
-  // 把任意 slug 列表按创作时间(created 升序, 未填者继承)重排 —— 作品库分组列表用
+  // 未填创作时间的标识(作品库「年份待考」一节用)
+  eleventyConfig.addGlobalData("undatedSlugs", () => UNDATED);
+  // 把任意 slug 列表按创作时间(created 升序, 未填者列于其后)重排 —— 作品库分组列表用
   eleventyConfig.addFilter("byCreated", (slugs) =>
     (slugs || []).slice().sort((a, b) => (orderIdx[a] ?? 9999) - (orderIdx[b] ?? 9999))
   );

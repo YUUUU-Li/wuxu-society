@@ -17,6 +17,9 @@ assert(O.categories.map((c) => c.key).join(",") === "imagery,emotion,technique,t
 assert(O.near.every((g) => g.length >= 2 && g.every((w) => words.indexOf(w) !== -1)), "近义组词都在大纲内");
 assert(JSON.stringify(O.categories.map((c) => c.words.length)) === JSON.stringify([35, 19, 29, 11]),
   `分类词数应为 35/19/29/11, 实得 ${O.categories.map((c) => c.words.length).join("/")}`);
+// 归并表不得含自映射(夜景->夜景 这类): 自映射会让「整理历史标签」把该大纲词连同票一起删掉
+assert(!Object.entries(O.legacy || {}).some(([k, v]) => k === v),
+  "legacy 不得含自映射: " + Object.entries(O.legacy || {}).filter(([k, v]) => k === v).map(([k]) => k).join(" "));
 
 // 2) 生成物与 JSON 同步(Worker 用的 modules)
 const genPath = path.join(ROOT, "functions", "api", "tag-outline.js");

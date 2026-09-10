@@ -206,6 +206,10 @@ a.plink:hover{color:var(--seal)}
 }
 .idx-group{margin-top:46px}
 .idx-group:first-of-type{margin-top:26px}
+/* 作品库「年份待考」小节标题(未填创作时间的篇目另列于后; 全被筛掉时 JS 把它 hidden 收起来) */
+.idx-undated{margin:36px 0 12px}
+.idx-undated .cnt{color:var(--dim);font-size:13px}
+.idx-undated[hidden]{display:none}
 .kaiti{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
 
 /* ---------- 页脚 ---------- */

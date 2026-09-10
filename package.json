@@ -6,7 +6,7 @@
   "scripts": {
     "build": "eleventy",
     "serve": "eleventy --serve",
-    "test": "npm run build && node scripts/test-submit.js && node scripts/test-submit-format.js && node scripts/test-preview.js && node scripts/test-join.js && node scripts/test-add-member.js && node scripts/test-zhuzhu.js && node scripts/test-tag-outline.js && node scripts/test-related.js && node scripts/test-work-tools.js && node scripts/verify-dist.js",
+    "test": "npm run build && node scripts/test-submit.js && node scripts/test-submit-format.js && node scripts/test-preview.js && node scripts/test-join.js && node scripts/test-add-member.js && node scripts/test-zhuzhu.js && node scripts/test-tag-outline.js && node scripts/test-tags-sql.js && node scripts/test-work-order.js && node scripts/test-related.js && node scripts/test-work-tools.js && node scripts/verify-dist.js",
     "preview": "python scripts/preview_server.py",
     "seal-issue": "node scripts/seal-issue.js",
     "remove-work": "node scripts/remove-work.js",

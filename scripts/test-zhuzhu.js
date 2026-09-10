@@ -140,6 +140,9 @@ async function main() {
   r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "cleanup" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
   const cln = await r.json();
   assert(cln.ok && Array.isArray(cln.merged), "cleanup 应返回合并清单");
+  // 自映射(from === to)必须跳过: 否则 from/to 指向同一行, 会把大纲词连同票一起删掉
+  assert(!cln.merged.some((m) => { const [a, b] = m.split(" → "); return a === b; }),
+    "cleanup 不得把词并到自己身上: " + cln.merged.filter((m) => m.split(" → ")[0] === m.split(" → ")[1]).join(" "));
 
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));

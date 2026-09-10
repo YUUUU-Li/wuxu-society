@@ -3,15 +3,18 @@ layout: "base.njk"
 permalink: "library.html"
 title: "作品库"
 seoTitle: "作品库 | 婺需文学社"
-desc: "婺需文学社原创作品总目：全站篇目按创作时间排列，可依作者、体裁、意象、出处筛选。"
+desc: "婺需文学社原创作品总目：全站篇目按创作时间排列，未考订创作时间者另列于后，可依作者、体裁、意象、出处筛选。"
 active: "library"
-footerNote: "篇目按创作时间排列，录自社内原稿。"
+footerNote: "篇目按创作时间排列，未填时间者另列于后；录自社内原稿。"
 ---
+
+{# 一行作品: 已填/未填创作时间共用同一套 DOM(未填者带 data-undated 供筛选后收合小节标题) #}
+{% macro libRow(w, undated) %}<div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"{% if undated %} data-undated="1"{% endif %}><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>{% endmacro %}
 <main>
   <section class="wrap page-head">
     <p class="crumb"><a href="index.html">首页</a> / 作品库</p>
     <h1 class="p-title rv">作品库</h1>
-    <p class="lead rv" style="margin-top:16px">社内文稿总目，按创作时间先后排列（早者在前）。上方可依作者、体裁、意象、出处筛选；点击篇名进入单篇，页内可读全文与相关联作品。雅集与刊期编目见<a class="plink" href="yaji.html">雅集</a>。</p>
+    <p class="lead rv" style="margin-top:16px">社内文稿总目，按创作时间先后排列（早者在前）；尚未考订创作时间的篇目另列于后一节的「年份待考」。上方可依作者、体裁、意象、出处筛选；点击篇名进入单篇，页内可读全文与相关联作品。雅集与刊期编目见<a class="plink" href="yaji.html">雅集</a>。</p>
   </section>
 
   <section class="wrap lib-filters">
@@ -28,9 +31,11 @@ footerNote: "篇目按创作时间排列，录自社内原稿。"
 {% set wm = collections.works | worksMap %}
   <section class="wrap">
     <div class="idx-list" id="lib-list">
-      {% for slug in fulltextSorted %}{% set w = wm[slug] %}{% if w %}
-      <div class="idx-row rv" data-author="{{ w.data.author }}" data-genre="{{ w.data.genre }}" data-imagery="{{ w.data.imageries | default([]) | join('|') }}" data-source="{{ w.data.source | default('') }}"><span><a class="plink" href="{{ w.url }}">{{ w.data.title }}</a></span><span class="g">{{ w.data.author }}</span><span class="f">{{ w.data.genre }}</span></div>
-      {% endif %}{% endfor %}
+      {% for slug in fulltextSorted %}{% set w = wm[slug] %}{% if w and w.data.created %}{{ libRow(w, false) }}{% endif %}{% endfor %}
+      {% if undatedSlugs | length %}
+      <div class="sec-head rv idx-undated" id="lib-undated-head"><h3>年份待考</h3><span class="cnt">共 {{ undatedSlugs | length }} 篇尚未考订创作时间，暂列于后</span><hr class="hair" /></div>
+      {% for slug in undatedSlugs %}{% set w = wm[slug] %}{% if w %}{{ libRow(w, true) }}{% endif %}{% endfor %}
+      {% endif %}
     </div>
     <p class="idx-empty" id="lib-empty" hidden>没有符合条件的作品。</p>
   </section>
@@ -52,6 +57,7 @@ footerNote: "篇目按创作时间排列，录自社内原稿。"
   var poolEl = document.getElementById("lib-pool");
   var list = document.getElementById("lib-list");
   var empty = document.getElementById("lib-empty");
+  var undatedHead = document.getElementById("lib-undated-head");
   if (!author || !poolEl || !list) return;
   var pool = JSON.parse(poolEl.textContent);      // 全站作品(含入期), 已按创作时间排序
   var rows = Array.prototype.slice.call(list.querySelectorAll(".idx-row"));
@@ -87,15 +93,16 @@ footerNote: "篇目按创作时间排列，录自社内原稿。"
   function apply() {
     var fa = author.value, fg = genre.value, fi = imagery.value, fs = source.value;
     var any = fa || fg || fi || fs;
-    var shown = 0;
+    var shown = 0, shownUndated = 0;
     rows.forEach(function (row) {
       var ok = (!fa || row.dataset.author === fa) &&
         (!fg || row.dataset.genre === fg) &&
         (!fi || (row.dataset.imagery || "").split("|").indexOf(fi) !== -1) &&
         (!fs || (row.dataset.source || "(无出处)") === fs);
       row.style.display = ok ? "" : "none";
-      if (ok) shown++;
+      if (ok) { shown++; if (row.dataset.undated) shownUndated++; }
     });
+    if (undatedHead) undatedHead.hidden = shownUndated === 0;   // 该节全被筛掉时连标题一起收
     if (count) count.textContent = "显示 " + shown + " / " + total + " 篇";
     if (reset) reset.hidden = !any;
     if (empty) empty.hidden = shown !== 0;

@@ -133,6 +133,7 @@ export async function onRequest(context) {
             const to = TAG_LEGACY[from];
             const a = await db.prepare(`SELECT id FROM tags WHERE word = ?1`).bind(from).first();
             if (!a) continue;
+            if (from === to) continue;                  // 自映射 = 无事可做; 若硬做, from/to 同一行会把该词连同票一起删掉
             if (!to) {                                  // 只下架: 删词(票随之删)
               await db.prepare(`DELETE FROM tag_votes WHERE tag_id = ?1`).bind(a.id).run();
               await db.prepare(`DELETE FROM tags WHERE id = ?1`).bind(a.id).run();

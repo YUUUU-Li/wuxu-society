@@ -62,4 +62,33 @@ assert.throws(() => setCreated("w-yiqinehe", "2025-13", { root: tmp }), /日期�
 assert.throws(() => setCreated("w-nope", "2025-06", { root: tmp }), /找不到作品文件/);
 
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log("✅ test-work-tools.js 全部通过 (改名五处登记+引用+名册链接 / 干跑 / 创作时间增改 / 非法输入)");
+
+// 5) 作品时间收集表(读真仓库, 只校验口径自洽, 不依赖"还缺多少篇"这种会变的数)
+const { build } = require("./work-dates-report.js");
+const ROOT = path.join(__dirname, "..");
+const sheet = build();
+const mdCount = fs.readdirSync(path.join(ROOT, "src", "works")).filter((f) => f.endsWith(".md")).length;
+assert.strictEqual(sheet.total, mdCount, `收集表应覆盖全部作品(${mdCount} 篇), 实得 ${sheet.total}`);
+assert.strictEqual(sheet.dated + sheet.missing, sheet.total, "已填 + 待填 = 总数");
+for (const head of ["## 一、怎么补填", "## 二、已填创作时间", "## 三、待填创作时间", "## 四、当前排序实际落点"]) {
+  assert(sheet.md.includes(head), "收集表缺小节: " + head);
+}
+// 表里每一行都要对应真作品, 且"待填"的确实没有 created 字段(反之亦然)
+const parts = sheet.md.split(/\n## /);
+const datedSec = parts.find((p) => p.startsWith("二、已填创作时间")) || "";
+const missingSec = parts.find((p) => p.startsWith("三、待填创作时间")) || "";
+assert(datedSec && missingSec, "收集表应含已填/待填两节");
+const inRepo = new Set();
+for (const f of fs.readdirSync(path.join(ROOT, "src", "works"))) {
+  if (!f.endsWith(".md")) continue;
+  const slug = f.slice(0, -3);
+  inRepo.add(slug);
+  const row = "| `" + slug + "` |";
+  const hasCreated = /^created:\s*"/m.test(fs.readFileSync(path.join(ROOT, "src", "works", f), "utf8"));
+  assert(datedSec.includes(row) || missingSec.includes(row), `收集表漏了 ${slug}`);
+  if (datedSec.includes(row)) assert(hasCreated, `${slug} 列在"已填"但文件里没有 created`);
+  if (missingSec.includes(row)) assert(!hasCreated, `${slug} 列在"待填"但文件里已有 created`);
+}
+assert(inRepo.size === sheet.total, "作品数对不上");
+
+console.log("✅ test-work-tools.js 全部通过 (改名五处登记+引用+名册链接 / 干跑 / 创作时间增改 / 非法输入 / 收集表口径自洽)");
