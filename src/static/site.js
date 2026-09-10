@@ -100,3 +100,22 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", relShuffle);
   else relShuffle();
 })();
+
+/* 深色模式切换: 按钮在导航(电脑端在"申请入社"右, 手机端在汉堡左) */
+(function () {
+  var b = document.getElementById("theme-toggle");
+  if (!b) return;
+  var root = document.documentElement;
+  function sync() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    b.textContent = dark ? "昼" : "夜";
+    b.setAttribute("aria-pressed", dark ? "true" : "false");
+  }
+  b.addEventListener("click", function () {
+    var dark = root.getAttribute("data-theme") === "dark";
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+    try { localStorage.setItem("theme", dark ? "light" : "dark"); } catch (e) {}
+    sync();
+  });
+  sync();
+})();

@@ -40,6 +40,8 @@ assert(home.includes("hero-qingming.jpg") && !/<img[^>]+src="https?:\/\/picsum/.
 assert(home.includes('id="home-picks"') && home.includes('id="home-pool"'), "随机拾读区");
 assert(home.includes('id="wechat"') && home.includes("wechat-qr.jpg") && home.includes("婺需文学社"), "公众号名片区(二维码+名称)");
 assert(home.includes('class="brand-logo"') && home.includes('src="logo.png"'), "顶栏品牌 logo");
+assert(home.includes('id="theme-toggle"') && home.includes("prefers-color-scheme"), "深色模式开关与首屏主题初始化");
+assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)"), "深色变量与 logo 反白");
 assert(exists("logo.png"), "logo.png 随站发布");
 assert(home.includes("微信扫一扫关注"), "公众号引导语");
 assert.strictEqual((home.match(/愿旧诗与新声都有人听/g) || []).length, 1, "社训句全页只保留一处(公众号简介)");

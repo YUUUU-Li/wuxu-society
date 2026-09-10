@@ -408,3 +408,40 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .z-ref:hover,.z-back:hover{border-bottom-style:solid}
 .z-flash{animation:zflash 1.4s ease 1}
 @keyframes zflash{0%{background:rgba(156,63,48,.22)}100%{background:transparent}}
+
+/* ══ 深色模式(可切换) ══ */
+.theme-toggle{background:none;border:1px solid var(--line);color:var(--ink-soft);
+  font-family:inherit;font-size:13px;line-height:1;padding:6px 11px;border-radius:999px;
+  cursor:pointer;flex:none;transition:border-color .2s,color .2s}
+.theme-toggle:hover,.theme-toggle:focus-visible{border-color:var(--seal);color:var(--seal);outline:none}
+/* 手机端: 主题按钮排在汉堡按钮左边(靠右) */
+.theme-toggle{order:2;margin-left:auto}
+.nav-toggle{order:3}
+@media (min-width:641px){
+  .nav-links{order:2;margin-left:auto}
+  .theme-toggle{order:3;margin-left:22px}
+}
+/* 深色时手写 logo(黑墨)反白, 否则不可辨 */
+[data-theme="dark"] .brand-logo{filter:invert(1) brightness(1.02)}
+[data-theme="dark"]{
+  --paper:#171512;--paper-deep:#1f1c18;--ink:#e9e4d7;--ink-soft:#c8c1b1;
+  --dim:#9c968a;--line:rgba(233,228,215,.20);--line-soft:rgba(233,228,215,.10);
+  --seal:#c46552;--seal-ink:#171512;
+}
+[data-theme="dark"] .member,
+[data-theme="dark"] .zz{background:rgba(255,255,255,.04)}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea{background:rgba(255,255,255,.06);color:var(--ink);border-color:var(--line)}
+[data-theme="dark"] .tagpill,
+[data-theme="dark"] .sug,
+[data-theme="dark"] .field input,
+[data-theme="dark"] .field select,
+[data-theme="dark"] .field textarea,
+[data-theme="dark"] .tag-wrap input,
+[data-theme="dark"] .z-form input,
+[data-theme="dark"] .z-form textarea,
+[data-theme="dark"] .z-r-name,
+[data-theme="dark"] .z-r-text{background:rgba(255,255,255,.06)}
+[data-theme="dark"] .tagpill.on .tp-n{color:#171512}
+[data-theme="dark"] .wx-qr{background:#fff}
