@@ -25,9 +25,18 @@ footerNote: "名册依 2026 年所录；本名、笔名、分部如有变动，�
           <span class="m-role">{{ m.role }}</span>
           <span class="m-branch">{{ m.branch }}</span>
           {% if m.note %}<p class="m-note">{{ m.note }}</p>{% endif %}
+          {% set wk = 0 %}
           {% for l in m.links %}
+          {% if l | isWorkLink %}{% set wk = wk + 1 %}{% if wk <= 3 %}
           <a class="plink" href="{{ l.href }}">{{ l.label }}</a>
+          {% endif %}{% else %}
+          <a class="plink" href="{{ l.href }}">{{ l.label }}</a>
+          {% endif %}
           {% endfor %}
+          {% set au = authorIndex[m.id] %}
+          {% if au and au.count > (wk if wk < 3 else 3) %}
+          <a class="plink more" href="library.html?author={{ au.author | urlencode }}">查看更多作品（共 {{ au.count }} 篇）→</a>
+          {% endif %}
         </div>
       {% endfor %}
       </div>

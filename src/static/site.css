@@ -493,3 +493,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* 被回复的楼已被删除: 占位标记(不可点击) */
 .z-ref.dead{color:var(--dim);opacity:.72;text-decoration:none;cursor:default}
+
+/* 名册页: "查看更多作品"链接(作品库该作者筛选页) */
+.member .plink.more{color:var(--seal);font-size:13px;margin-top:2px}
+.member .plink.more:hover{text-decoration:underline}

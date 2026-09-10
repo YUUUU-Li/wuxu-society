@@ -66,6 +66,25 @@ module.exports = function (eleventyConfig) {
   // rel-meta.json 用: JSON 安全序列化(未定义按空数组)
   eleventyConfig.addFilter("jsonify", (o) => JSON.stringify(o));
   eleventyConfig.addFilter("jsonarr", (o) => JSON.stringify(Array.isArray(o) ? o : []));
+  // 名册页: 判断是否"作品"链接(其余如"评注：""作品库"不占 3 篇额度)
+  eleventyConfig.addFilter("isWorkLink", (l) => /^作品[:：]/.test((l && l.label) || ""));
+  // 名册页: 作者索引(id -> {author, count}) —— 供"查看更多作品"跳到作品库该作者筛选页
+  eleventyConfig.addGlobalData("authorIndex", () => {
+    const dir = path.join(__dirname, "src", "works");
+    const map = {};
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith(".md")) continue;
+      const s = fs.readFileSync(path.join(dir, f), "utf8");
+      const m = /^author:\s*"([^"]*)"/m.exec(s);
+      if (!m) continue;
+      const author = m[1];
+      const id = (author.match(/^[a-z0-9]+/i) || [""])[0].toLowerCase();
+      if (!id) continue;
+      if (!map[id]) map[id] = { author, count: 0 };
+      map[id].count += 1;
+    }
+    return map;
+  });
   // 静态资源版本号: 每次构建变化, 让浏览器拿到最新 CSS/JS(避免新 HTML 配旧缓存)
   eleventyConfig.addGlobalData("assetVer", () => String(Date.now()));
 

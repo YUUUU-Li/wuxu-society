@@ -125,6 +125,14 @@ assert(pendN ? lib.includes("待辑入新期") : !lib.includes("待辑入新期"
 // —— 众注嵌入(P1) ——
 assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includes("zhuzhu.js"), "作品页含众注容器(默认隐藏, API 点亮)");
 assert(!read("index.html").includes('id="zhuzhu"'), "首页不含众注容器");
+// —— 社员大全: 每人最多 3 首作品 + 查看更多跳作品库作者筛选 ——
+const mem = read("members.html");
+const memCards = [...mem.matchAll(/<div class="member"[^>]*>([\s\S]*?)<\/div>/g)].map((m) => m[1]);
+assert(memCards.length >= 10, `社员卡片应 ≥10, 实得 ${memCards.length}`);
+assert.strictEqual(memCards.filter((c) => (c.match(/>作品：/g) || []).length > 3).length, 0, "每张卡片最多列 3 首作品");
+assert(mem.includes("查看更多作品") && /library\.html\?author=[^"]+/.test(mem), "含「查看更多作品」跳作品库作者筛选页");
+const moreLinks = [...mem.matchAll(/href="library\.html\?author=([^"]+)"/g)].map((m) => m[1]);
+assert(moreLinks.length === new Set(moreLinks).size, "查看更多链接不重复");
 // 相似标签(余弦)动态组 + 元数据资产
 assert(read("w-guixiang.html").includes('id="rel-sim"'), "作品页含相似标签动态容器(有真实分组时)");
 assert(read("w-guixiang.html").includes('id="zz-admin-btn"'), "众注含编委模式入口");
