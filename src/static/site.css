@@ -541,3 +541,13 @@ select optgroup{background:var(--paper-deep);color:var(--ink)}
 
 /* 作品库: 全部作品平铺 + 筛选 */
 .idx-empty{color:var(--dim);font-size:14px;padding:8px 2px}
+
+/* 标签: 联想下拉释义 + 编委动作 */
+.sug-w{display:flex;flex-direction:column;gap:1px;text-align:left;min-width:0}
+.sug-h{font-style:normal;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sug button:hover .sug-h,.sug button:focus .sug-h{color:var(--seal)}
+.tag-admin{display:inline-flex;align-items:center;gap:2px}
+.tag-cog{background:none;border:0;color:var(--dim);font-size:12px;line-height:1;cursor:pointer;padding:0 2px}
+.tag-cog:hover{color:var(--seal)}
+.zz-seed{color:var(--seal);text-decoration:underline;text-decoration-color:rgba(156,63,48,.45);text-underline-offset:3px;cursor:pointer}
+[data-theme="dark"] .tag-cog{color:var(--ink-soft)}

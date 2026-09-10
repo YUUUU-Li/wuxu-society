@@ -3,7 +3,7 @@ title: "小重山·秋漫红砖一寸深"
 author: "jwl（蓦流）"
 genre: "词"
 source: "公众号回忆文会《时间溯流》"
-imageries: ["秋", "雨", "离别相思"]
+imageries: ["秋景", "雨", "离愁"]
 related:
   - to: "w-yiqinehe"
     label: "唱和 · 谰予和答此作"

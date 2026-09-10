@@ -2,7 +2,7 @@
 title: "风"
 author: "ylj（济枫）"
 genre: "七言古风"
-imageries: ["山水", "风物"]
+imageries: ["山", "水"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

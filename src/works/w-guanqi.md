@@ -2,7 +2,7 @@
 title: "观棋"
 author: "zk（道格）"
 genre: "七律"
-imageries: ["棋局"]
+imageries: ["棋"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

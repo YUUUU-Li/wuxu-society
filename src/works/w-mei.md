@@ -2,7 +2,7 @@
 title: "梅"
 author: "lfk（谰予）"
 genre: "七言古风"
-imageries: ["梅", "离别相思"]
+imageries: ["花", "离愁"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

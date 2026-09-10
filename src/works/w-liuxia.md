@@ -3,7 +3,7 @@ title: "留夏"
 author: "lfk（谰予）"
 genre: "七言古风"
 source: "四季组诗"
-imageries: ["夏", "雨", "离别相思"]
+imageries: ["夏景", "雨", "离愁"]
 related:
   - to: "w-luochun"
     label: "四季组诗 · 四人分题"

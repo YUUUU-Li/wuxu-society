@@ -3,7 +3,7 @@ title: "元宵独观烟花"
 author: "zk（道格）"
 genre: "七律"
 source: "元宵"
-imageries: ["月星", "离别相思"]
+imageries: ["月", "星", "离愁"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

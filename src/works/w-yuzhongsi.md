@@ -2,7 +2,7 @@
 title: "雨中思"
 author: "zk（道格）"
 genre: "七绝"
-imageries: ["雨", "离别相思"]
+imageries: ["雨", "离愁"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

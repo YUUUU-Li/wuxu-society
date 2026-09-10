@@ -3,7 +3,7 @@ title: "沁园春·重阳"
 author: "zk（道格）"
 genre: "词"
 source: "重阳"
-imageries: ["思乡归途"]
+imageries: ["思乡"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

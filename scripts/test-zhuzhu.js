@@ -5,7 +5,7 @@ const assert = require("assert");
 const path = require("path");
 
 function FakeDB(opts = {}) {
-  const db = { calls: [], existsOverride: !!opts.existsOverride, rows: opts.rows || null };
+  const db = { calls: [], existsOverride: !!opts.existsOverride, rows: opts.rows || null, tagCountN: opts.tagCountN || 0 };
   db.prepare = (sql) => ({
     bind(...args) {
       db.calls.push({ sql, args });
@@ -17,11 +17,13 @@ function FakeDB(opts = {}) {
       if (/WHERE work_id = .*AND tag_id/.test(last)) return db.existsOverride ? { id: 99 } : null;
       if (/WHERE comment_id = .*AND liker_key/.test(last)) return db.existsOverride ? { id: 88 } : null;
       if (/AS n FROM comment_likes/.test(last)) return { n: 3 };
+      if (/COUNT\(DISTINCT tag_id\)/.test(last)) return { n: db.tagCountN || 0 };
       return null;
     },
     async all() {
       const last = db.calls[db.calls.length - 1].sql;
       if (db.rows && /FROM comments c/.test(last)) return { results: db.rows };
+      if (/COUNT\(DISTINCT tag_id\)/.test(last)) return { results: [{ n: db.tagCountN || 0 }] };
       return { results: /COUNT/.test(last) ? [{ n: 1 }] : [] };
     },
     async run() {
@@ -104,6 +106,35 @@ async function main() {
   assert.strictEqual(gf.floors[0].deleted, false, "正常楼不带标记");
   // 时区: 库里存 UTC, 返回北京时间(UTC+8)
   assert.strictEqual(gf.floors[0].created_at, "2026-09-10T01:13:00+08:00", "UTC 17:13 -> 北京 次日 01:13");
+
+  // 大纲内词 -> 预设(非候选)
+  r = await tags.onRequest(ctx(post("/api/tags", { work: "w-feng", word: "离愁", device: "dev-1" }), {}, {}));
+  const tPre = await r.json();
+  assert(tPre.ok && tPre.candidate === false && tPre.hint, "大纲词应直接预设并带释义");
+
+  // 表外词 -> 候选
+  r = await tags.onRequest(ctx(post("/api/tags", { work: "w-feng", word: "幽篁" })));
+  assert((await r.json()).candidate === true, "表外词应建候选");
+
+  // 联想池含全部大纲词(即使库里还没有)
+  r = await tags.onRequest(ctx(get("/api/tags?work=w-feng")));
+  const tg2 = await r.json();
+  assert(tg2.pool.length >= 94 && typeof tg2.pool[0] === "object" && tg2.pool[0].hint, "联想池=大纲词并带释义");
+  assert(Array.isArray(tg2.near) && tg2.near.length >= 5 && tg2.maxPerDevice === 3, "返回近义组与每设备上限");
+
+  // 每设备每篇最多 3 个标签
+  r = await tags.onRequest(ctx(post("/api/tags", { work: "w-feng", word: "明月", device: "dev-x" }), {}, { tagCountN: 3 }));
+  assert.strictEqual(r.status, 429, "已达上限再加应 429");
+  assert(/最多赞同 3 个标签/.test((await r.json()).error), "限流文案含上限值");
+
+  // 编委动作: 无钥匙 403 / 有钥匙 seed 与 adopt
+  r = await tags.onRequest(ctx(post("/api/tags", { key: "wrong", action: "seed" })));
+  assert.strictEqual(r.status, 403, "错钥匙应 403");
+  r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "seed" }), { ZHUI_ADMIN_KEY: "k" }));
+  const seedJ = await r.json();
+  assert(seedJ.ok && seedJ.total === 94 && seedJ.added === 94, "seed 应落库全部大纲词");
+  r = await tags.onRequest(ctx(post("/api/tags", { key: "k", action: "adopt", word: "离愁" }), { ZHUI_ADMIN_KEY: "k" }, { existsOverride: true }));
+  assert((await r.json()).action === "adopt", "adopt 应成功");
 
   // 方法限制
   r = await tags.onRequest(ctx(new Request("https://x.test/api/tags", { method: "DELETE" })));

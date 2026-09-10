@@ -2,7 +2,7 @@
 title: "无题"
 author: "lys"
 genre: "五言古风"
-imageries: ["月星", "修身"]
+imageries: ["月", "星", "自省"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

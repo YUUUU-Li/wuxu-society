@@ -2,7 +2,7 @@
 title: "秋波媚"
 author: "lfk（谰予）"
 genre: "词"
-imageries: ["离别相思", "秋"]
+imageries: ["离愁", "秋景"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

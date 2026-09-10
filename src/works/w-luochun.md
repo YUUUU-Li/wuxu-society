@@ -3,7 +3,7 @@ title: "落春"
 author: "ylj（济枫）"
 genre: "七言古风"
 source: "四季组诗"
-imageries: ["春", "草木"]
+imageries: ["春景", "草木"]
 related:
   - to: "w-liuxia"
     label: "四季组诗 · 四人分题"

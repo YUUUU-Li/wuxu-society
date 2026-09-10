@@ -3,7 +3,7 @@ title: "回忆"
 author: "ylj（济枫）"
 genre: "散文"
 source: "公众号回忆文会《时间溯流》"
-imageries: ["月亮", "回忆"]
+imageries: ["月", "回忆"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

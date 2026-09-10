@@ -2,7 +2,7 @@
 title: "晓·回宽《初九》"
 author: "lfk（谰予）"
 genre: "七绝"
-imageries: ["春"]
+imageries: ["春景"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

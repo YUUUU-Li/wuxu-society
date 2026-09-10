@@ -3,7 +3,7 @@ title: "望冬"
 author: "hde（新酒）"
 genre: "七言古风"
 source: "四季组诗"
-imageries: ["冬", "梅", "月星"]
+imageries: ["冬景", "花", "月", "星"]
 related:
   - to: "w-luochun"
     label: "四季组诗 · 四人分题"

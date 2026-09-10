@@ -43,15 +43,38 @@
   var tagInput = gid("zz-taginput");
   var tagForm = gid("zz-tagform");
   var sug = gid("zz-sug");
-  var pool = [];
-  var tagState = {}; // word -> {id,count,voted,kind}
+  var pool = [];          // [{word,hint,cat}] 大纲/已采纳词 + 释义
+  var near = [];          // 易混近义词组 [[词...]]
+  var maxPerDevice = 3;   // 每设备每篇最多赞同标签数(服务端同时兜底)
+  var tagState = {};      // word -> {id,count,voted,kind,hint}
+  // 设备号(限流用; 无 localStorage 时回退 IP)
+  var device = "";
+  try {
+    device = localStorage.getItem("zz_dev") || "";
+    if (!device) {
+      device = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("zz_dev", device);
+    }
+  } catch (e) { device = ""; }
 
+  function hintOf(word) {
+    var st = tagState[word];
+    if (st && st.hint) return st.hint;
+    for (var i = 0; i < pool.length; i++) if (pool[i].word === word) return pool[i].hint || "";
+    return "";
+  }
   function pillFor(word, c, voted, cand) {
     var b = document.createElement("button");
     b.type = "button";
     b.className = "tagpill" + (voted ? " on" : "") + (cand ? " cand" : "");
     b.innerHTML = '<span class="tp-word">' + esc(word) + '</span><span class="tp-n">' + c + "</span>";
+    var h = hintOf(word);
+    if (h) { b.title = word + " · " + h; b.setAttribute("aria-label", word + "：" + h); }
     b.addEventListener("click", function () { vote(word); });
+    // 手机端无 hover: 长按 500ms 显示释义
+    var timer = null;
+    b.addEventListener("touchstart", function () { timer = setTimeout(function () { speak(tmsg, word + "：" + (hintOf(word) || "（无释义）")); }, 500); });
+    b.addEventListener("touchend", function () { clearTimeout(timer); });
     return b;
   }
   function renderTags(tags) {
@@ -59,7 +82,10 @@
     tagLine.innerHTML = "";
     tags.forEach(function (t) {
       tagState[t.word] = t;
-      tagLine.appendChild(pillFor(t.word, t.count, t.voted, false));
+      var cand = t.kind === "候选";
+      var pill = pillFor(t.word, t.count, t.voted, cand);
+      if (adminKey) tagLine.appendChild(adminWrap(pill, t.word));
+      else tagLine.appendChild(pill);
     });
   }
   function visibleWords() {
@@ -73,27 +99,49 @@
       var b = document.createElement("button");
       b.type = "button";
       var st = tagState[w] || {};
-      b.innerHTML = "<span>" + esc(w) + "</span>" + (st.count ? '<span class="sug-c">' + st.count + "</span>" : "");
+      var h = hintOf(w);
+      b.innerHTML = '<span class="sug-w">' + esc(w) + (h ? '<i class="sug-h">' + esc(h) + "</i>" : "") + "</span>" +
+        (st.count ? '<span class="sug-c">' + st.count + "</span>" : "");
       b.addEventListener("mousedown", function (ev) { ev.preventDefault(); vote(w); });
       sug.appendChild(b);
     });
     sug.hidden = list.length === 0;
   }
+  // 已选标签里是否有与该词易混的近义词
+  function nearClash(word) {
+    var chosen = Object.keys(tagState).filter(function (w) { return tagState[w].voted; });
+    for (var i = 0; i < near.length; i++) {
+      var g = near[i];
+      if (g.indexOf(word) === -1) continue;
+      var hit = g.filter(function (x) { return x !== word && chosen.indexOf(x) !== -1; });
+      if (hit.length) return hit[0];
+    }
+    return "";
+  }
   function hideSug() { sug.hidden = true; tagInput.setAttribute("aria-expanded", "false"); }
   function refreshSug() {
     var q = tagInput.value.trim();
     var vis = visibleWords();
-    var base = q ? pool.filter(function (w) { return w.indexOf(q) !== -1; }) : pool.slice();
-    var m = base.filter(function (w) { return !vis[w]; });
+    var base = q
+      ? pool.filter(function (p) { return p.word.indexOf(q) !== -1 || (p.hint || "").indexOf(q) !== -1; })
+      : pool.slice();
+    // 已选过的排前(便于取消), 其余按词表顺序
+    base = base.filter(function (p) { return !vis[p.word]; }).map(function (p) { return p.word; });
+    var m = base;
     if (m.length) { showSug(m.slice(0, 5)); tagInput.setAttribute("aria-expanded", "true"); }
     else hideSug();
   }
   async function vote(word) {
+    // 近义提醒: 与已选标签易混时先提示(不阻止, 用户确认即可)
+    if (tagState[word] && !tagState[word].voted) {
+      var clash = nearClash(word);
+      if (clash && !window.confirm("「" + word + "」与已选的「" + clash + "」容易混用，仍要赞同吗？")) return;
+    }
     try {
       var r = await fetch(api + "/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ work: work, word: word }),
+        body: JSON.stringify({ work: work, word: word, device: device }),
       });
       var j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "失败");
@@ -111,10 +159,10 @@
         }
         speak(tmsg, j.voted ? "已赞同：" + word : "已取消赞同：" + word);
       } else {
-        // 新候选
-        tagState[word] = { id: j.id, word: word, count: j.count, voted: true };
-        tagLine.appendChild(pillFor(word, j.count, true, true));
-        speak(tmsg, "已新建候选标签：" + word + "（待编委采纳转正）");
+        // 新词: 大纲内为预设(直接转正), 表外为候选(待编委采纳)
+        tagState[word] = { id: j.id, word: word, count: j.count, voted: true, hint: j.hint || "", cand: !!j.candidate };
+        tagLine.appendChild(pillFor(word, j.count, true, !!j.candidate));
+        speak(tmsg, j.candidate ? "已新建候选标签：" + word + "（待编委采纳转正）" : "已赞同：" + word);
       }
       tagInput.value = "";
     } catch (e) {
@@ -189,7 +237,74 @@
   function syncAdmin() {
     if (!adminBtn) return;
     adminBtn.textContent = adminKey ? "退出编委" : "编委";
-    if (adminState) adminState.textContent = adminKey ? "编委模式已开" : "";
+    if (adminState) {
+      adminState.textContent = adminKey ? "编委模式已开" : "";
+      adminState.innerHTML = "";
+      if (adminKey) {
+        adminState.appendChild(document.createTextNode("编委模式已开 · "));
+        var a = document.createElement("a");
+        a.href = "#";
+        a.className = "zz-seed";
+        a.textContent = "初始化/更新标签词表";
+        a.title = "把 src/_data/tag_outline.json 的 94 个词写入数据库（幂等，只增不改）";
+        a.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          adminTag("seed", {}).then(function (j) {
+            speak(msg, "标签词表已落库：新增 " + j.added + " 词，共 " + j.total + " 词。");
+          }).catch(function (e) { speak(msg, "落库失败：" + e.message); });
+        });
+        adminState.appendChild(a);
+      }
+    }
+  }
+  // 编委标签动作(采纳/合并/删除)
+  function adminTag(action, payload) {
+    return fetch(api + "/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(Object.assign({ key: adminKey, action: action }, payload || {})),
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.ok) throw new Error(j.error || "操作失败");
+        if (/无权/.test(j.error || "")) { adminKey = ""; try { sessionStorage.removeItem("zz_key"); } catch (e) {} syncAdmin(); }
+        return j;
+      });
+    });
+  }
+  // 标签 pill 旁的编委小按钮(采纳 / 合并 / 删除)
+  function adminWrap(pill, word) {
+    var wrap = document.createElement("span");
+    wrap.className = "tag-admin";
+    wrap.appendChild(pill);
+    var cog = document.createElement("button");
+    cog.type = "button";
+    cog.className = "tag-cog";
+    cog.textContent = "⋯";
+    cog.title = "编委：采纳 / 合并 / 删除";
+    cog.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var act = window.prompt("「" + word + "」编委操作：\n1 = 采纳转正\n2 = 合并到别的词\n3 = 删除\n（输入序号，取消即退出）", "1");
+      if (!act) return;
+      act = act.trim();
+      if (act === "1") {
+        adminTag("adopt", { word: word })
+          .then(function () { speak(tmsg, "已采纳：" + word + " → 进大纲"); return loadAll(); })
+          .catch(function (e) { speak(tmsg, "失败：" + e.message); });
+      } else if (act === "2") {
+        var to = window.prompt("合并「" + word + "」到哪个词？（票数并入目标词）", "");
+        if (!to || !to.trim()) return;
+        adminTag("merge", { from: word, to: to.trim() })
+          .then(function (j) { speak(tmsg, "已合并：「" + word + "」→「" + j.to + "」（迁 " + (j.moved || 0) + " 票）"); return loadAll(); })
+          .catch(function (e) { speak(tmsg, "失败：" + e.message); });
+      } else if (act === "3") {
+        if (!window.confirm("删除「" + word + "」及其全部票？")) return;
+        adminTag("delete", { word: word })
+          .then(function () { speak(tmsg, "已删除：" + word); return loadAll(); })
+          .catch(function (e) { speak(tmsg, "失败：" + e.message); });
+      }
+    });
+    wrap.appendChild(cog);
+    return wrap;
   }
   async function deleteFloor(id, no) {
     if (!window.confirm("确认删除 #" + no + " 楼？")) return;
@@ -348,7 +463,9 @@
       ]);
       if (!tr.ok || !cr.ok) throw 0;
       renderTags(tr.tags || []);
-      pool = tr.pool || [];
+      pool = (tr.pool || []).map(function (p) { return typeof p === "string" ? { word: p, hint: "" } : p; });
+      near = tr.near || [];
+      if (tr.maxPerDevice) maxPerDevice = tr.maxPerDevice;
       renderFloors(cr.floors || []);
       if (root.hidden) {
         root.hidden = false; // 后端可用, 亮出众注

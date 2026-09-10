@@ -3,7 +3,7 @@ title: "离秋"
 author: "lys"
 genre: "七言古风"
 source: "四季组诗"
-imageries: ["秋", "雨", "离别相思"]
+imageries: ["秋景", "雨", "离愁"]
 related:
   - to: "w-luochun"
     label: "四季组诗 · 四人分题"

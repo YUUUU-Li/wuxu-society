@@ -3,7 +3,7 @@ title: "少年游"
 author: "cty（泊珩）"
 genre: "词"
 source: "公众号回忆文会《时间溯流》"
-imageries: ["秋", "离别相思"]
+imageries: ["秋景", "离愁"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

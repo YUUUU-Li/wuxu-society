@@ -2,7 +2,7 @@
 title: "怜己"
 author: "zk（道格）"
 genre: "七绝"
-imageries: ["离别相思"]
+imageries: ["离愁"]
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

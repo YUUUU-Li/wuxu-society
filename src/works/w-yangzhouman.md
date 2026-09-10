@@ -2,7 +2,7 @@
 title: "扬州慢"
 author: "hde（新酒 · Hugo）"
 genre: "词"
-imageries: ["雨", "思乡归途"]
+imageries: ["雨", "思乡"]
 fgenre: "词 · 附赏析"
 ---
 
