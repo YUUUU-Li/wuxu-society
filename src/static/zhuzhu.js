@@ -6,6 +6,10 @@
   if (!root) return;
   var work = root.getAttribute("data-work");
   var api = root.getAttribute("data-api") || "/api";
+  var adminBtn = gid("zz-admin-btn");
+  var adminState = gid("zz-admin-state");
+  var adminKey = "";
+  try { adminKey = sessionStorage.getItem("zz_key") || ""; } catch (e) {}
   var msg = document.getElementById("zz-msg");
   var tmsg = document.getElementById("zz-tagmsg");
   var floorsData = []; // [{id,name,body,reply_to,likes,liked}]
@@ -164,9 +168,52 @@
         esc(f.name) + " · " + fmtTime(f.created_at) + "</span>" + ref + "</div>" +
         renderText(f.body) +
         '<div class="z-acts"><button class="z-like" type="button"><span>同感 ' + f.likes + "</span><i></i></button>" +
-        '<button class="z-reply" type="button" data-id="' + f.id + '">回复</button></div></div>';
+        '<button class="z-reply" type="button" data-id="' + f.id + '">回复</button>' +
+        (adminKey ? '<button class="z-del" type="button" data-id="' + f.id + '" data-no="' + no + '">删</button>' : "") +
+        "</div></div>";
       li.querySelector(".z-like").addEventListener("click", function () { like(f.id, li.querySelector(".z-like")); });
       floorsEl.appendChild(li);
+    });
+  }
+  /* ---------- 编委模式(删评): 钥匙只存内存/sessionStorage ---------- */
+  function syncAdmin() {
+    if (!adminBtn) return;
+    adminBtn.textContent = adminKey ? "退出编委" : "编委";
+    if (adminState) adminState.textContent = adminKey ? "编委模式已开" : "";
+  }
+  async function deleteFloor(id, no) {
+    if (!window.confirm("确认删除 #" + no + " 楼？")) return;
+    try {
+      var r = await fetch(api + "/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delete_id: id, key: adminKey }),
+      });
+      var j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || "删除失败");
+      speak(msg, "已删除 #" + no + " 楼。");
+      await loadAll();
+    } catch (e) {
+      speak(msg, "删除失败：" + e.message);
+      if (/无权/.test(e.message)) { adminKey = ""; try { sessionStorage.removeItem("zz_key"); } catch (e2) {} syncAdmin(); await loadAll(); }
+    }
+  }
+  if (adminBtn) {
+    adminBtn.addEventListener("click", async function () {
+      if (adminKey) {
+        adminKey = "";
+        try { sessionStorage.removeItem("zz_key"); } catch (e) {}
+        syncAdmin();
+        speak(msg, "已退出编委模式。");
+        await loadAll();
+        return;
+      }
+      var k = window.prompt("编委钥匙（仅本浏览器会话有效，不会存到网址里）");
+      if (!k) return;
+      adminKey = k.trim();
+      try { sessionStorage.setItem("zz_key", adminKey); } catch (e) {}
+      syncAdmin();
+      await loadAll();
     });
   }
   function openReplyBar(li, idDb) {
@@ -228,6 +275,8 @@
     }
     var rep = ev.target.closest(".z-reply");
     if (rep) openReplyBar(rep.closest(".z-item"), Number(rep.getAttribute("data-id")));
+    var del = ev.target.closest(".z-del");
+    if (del) deleteFloor(Number(del.getAttribute("data-id")), del.getAttribute("data-no"));
   });
   gid("zz-form").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -307,5 +356,6 @@
     else fn();
   }
   loadAll();
+  syncAdmin();
   whenReady(loadRel);
 })();

@@ -127,6 +127,8 @@ assert(read("w-feng.html").includes('id="zhuzhu"') && read("w-feng.html").includ
 assert(!read("index.html").includes('id="zhuzhu"'), "首页不含众注容器");
 // 相似标签(余弦)动态组 + 元数据资产
 assert(read("w-guixiang.html").includes('id="rel-sim"'), "作品页含相似标签动态容器(有真实分组时)");
+assert(read("w-guixiang.html").includes('id="zz-admin-btn"'), "众注含编委模式入口");
+assert(read("site.js").includes("zz_key") === false && read("zhuzhu.js").includes('id="zz-admin-btn"') === false && read("zhuzhu.js").includes("zz_key"), "编委钥匙仅存 sessionStorage");
 assert(read("w-guixiang.html").includes("相关联作品"), "关联区仍在");
 const relMeta = JSON.parse(read("rel-meta.json"));
 assert.strictEqual(Object.keys(relMeta).length, nWorksSrc, `rel-meta.json 应含 ${nWorksSrc} 篇`);
