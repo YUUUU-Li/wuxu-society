@@ -109,7 +109,8 @@
       var pill = pillFor(t.word, t.count, t.voted, cand);
       var vs = tagVoters[t.id];                    // 投票人名单: 仅编委可见(服务端按 site.json 策略下发)
       if (vs && vs.nicks && vs.nicks.length) {
-        pill.title = (pill.title ? pill.title + " · " : "") + "赞同者：" + vs.nicks.join("、");
+        var names = vs.nicks.slice(0, 12).join("、") + (vs.nicks.length > 12 ? " 等 " + vs.nicks.length + " 人" : "");
+        pill.title = (pill.title ? pill.title + " · " : "") + "赞同者：" + names;
       }
       if (adminOn()) tagLine.appendChild(adminWrap(pill, t.word));
       else tagLine.appendChild(pill);
@@ -200,6 +201,9 @@
         speak(tmsg, j.candidate ? "已新建候选标签：" + word + "（待编委采纳转正）" : "已赞同：" + word);
       }
       tagInput.value = "";
+      // 编委模式下: 投票人名单只在页面加载时取过一次, 刚投的票/刚建的词还没进名单 —— 重拉一次,
+      // 这样"hover 看赞同者"立刻就有自己(连同其他人的)名字, 不用手动刷新
+      if (adminOn()) await loadAll();
     } catch (e) {
       if (!authFailed(e)) speak(tmsg, "操作失败：" + e.message);
     }

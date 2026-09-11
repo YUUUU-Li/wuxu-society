@@ -69,6 +69,8 @@ assert(zhuzhu.includes("window.zzAuth") && zhuzhu.includes("zzAuth.ready") && zh
 assert(!/fetch\(api \+ "\/auth"/.test(zhuzhu), "众注区不该自己再拉一份 /auth(账号态只由 auth.js 负责)");
 assert(zhuzhu.includes("needLogin") && zhuzhu.includes("authFailed"), "未登录与过期会话都要有引导/兜底");
 assert(/f\.own[\s\S]{0,80}z-like own/.test(zhuzhu), "自己的评论应渲染成不可点的「同感」");
+assert(zhuzhu.includes("赞同者："), "编委 hover 标签应能看到赞同者名单");
+assert(/if \(adminOn\(\)\) await loadAll\(\)/.test(zhuzhu), "编委投完票应重拉一次, 让名单立刻含自己");
 assert(zhuzhu.includes("adminOn()"), "编委判定应走账号角色或旧钥匙");
 
 // 4) 样式: 导航账号态 + 弹窗 + 自己评论的同感
