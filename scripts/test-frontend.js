@@ -99,8 +99,9 @@ assert(/@media \(max-width:760px\)[\s\S]*?\.nav-auth\{/.test(css), "移动端菜
 // 登录/注册弹窗: 两栏等宽等高、字体随正文; 底部两按钮同宽同高、轴对称、颜色统一; 手机端竖排通栏
 assert(css.includes(".nav-auth .btn{"), "登录/注册入口应沿用页头按钮(.btn)的样式");
 assert(/\.zz-f\{display:grid;grid-template-columns:56px 1fr/.test(css), "昵称/口令两栏应等宽(grid 两列)");
-assert(/\.zz-f input\[type=text\],\.zz-f input\[type=password\]\{[^}]*height:42px/.test(css), "两栏输入框应等高(42px)");
-assert(/\.zz-f\{[^}]*font-size:15px/.test(css) && /\.zz-f input\[type=text\][^}]*font-size:15px/.test(css),
+// 注意: 昵称框没有 type 属性, 选择器必须是不带 type 的 .zz-f input(写 [type=text] 会漏掉昵称框)
+assert(/\.zz-f input\{[^}]*height:44px/.test(css), "两栏输入框应等高(44px)");
+assert(/\.zz-f\{[^}]*font-size:15px/.test(css) && /\.zz-f input\{[^}]*font:inherit/.test(css),
   "弹窗里的字体应与正文一致(15px, 不用输入框自带小字号)");
 assert(/\.zz-authacts \.btn\{[^}]*flex:1 1 0[^}]*height:46px/.test(css), "底部两按钮应同宽(flex:1 1 0)同高(46px)");
 assert(/@media \(max-width:640px\)\{\s*\.zz-authacts\{flex-direction:column/.test(css), "手机端两按钮应竖向通栏");

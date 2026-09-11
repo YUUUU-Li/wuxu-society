@@ -373,7 +373,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* 登录/注册弹窗 */
 .zz-authbox{position:fixed;inset:0;z-index:60;background:rgba(28,24,20,.42);display:flex;
   align-items:center;justify-content:center;padding:20px}
-.zz-authpanel{background:var(--paper,#faf7f0);border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
+.zz-authpanel{background:var(--paper,#faf7f0);border:1px solid var(--line,#cfc6b4);
   border-radius:4px;padding:20px 22px;width:min(400px,100%);box-shadow:0 18px 48px rgba(0,0,0,.22)}
 .zz-authhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .zz-authhd b{font-size:1.05rem}
@@ -382,9 +382,12 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* 昵称栏 / 口令栏: 两栏等宽等高, 字体与正文一致(不用输入框自带的小字号) */
 .zz-f{display:grid;grid-template-columns:56px 1fr;align-items:center;gap:10px;margin:10px 0;font-size:15px}
 .zz-f > span{color:var(--dim,#6e6a5e);font-size:15px;line-height:1.4}
-.zz-f input[type=text],.zz-f input[type=password]{width:100%;min-width:0;box-sizing:border-box;height:42px;
-  border:1px solid var(--line,#cfc6b4);border-radius:3px;padding:0 10px;font:inherit;font-size:15px;
-  background:#fff;color:var(--ink,#3a3630)}
+/* 注意: 昵称框没有 type 属性, 必须用 .zz-f input 兜住(写 [type=text] 会漏) */
+.zz-f input{width:100%;min-width:0;box-sizing:border-box;height:44px;
+  border:1px solid var(--line);border-radius:3px;padding:0 12px;font:inherit;font-size:15px;line-height:1.2;
+  background:var(--input-bg);color:var(--ink)}
+.zz-f input::placeholder{color:var(--dim);opacity:1}
+.zz-f input:focus{outline:none;border-color:var(--seal)}
 .zz-hint{margin:8px 0 0;font-size:12.5px;color:var(--dim,#6e6a5e);line-height:1.6}
 /* 底部两个按钮: 同宽同高、沿中轴对称; 颜色与页头按钮统一(都是 .btn); 手机端(≤640px)竖向通栏 */
 .zz-authacts{display:flex;justify-content:center;align-items:stretch;gap:10px;margin-top:16px}
@@ -394,6 +397,9 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .zz-authacts{flex-direction:column;align-items:stretch}
   .zz-authacts .btn{flex:none;width:100%}
 }
+/* 次按钮(没有账号，去注册 / 已有账号，去登录): 与页内「发表」同款描边, 避免两个朱砂实心抢眼 */
+#zz-a-switch{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+#zz-a-switch:hover{background:var(--ink);color:var(--paper)}
 .zz-msgline{margin:10px 0 0;font-size:12.5px;min-height:1.2em;color:var(--dim,#6e6a5e)}
 .zz-msgline.bad{color:var(--seal,#9c3f30)}
 .z-like.own{cursor:default;opacity:.72}

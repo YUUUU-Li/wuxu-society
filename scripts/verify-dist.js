@@ -76,6 +76,10 @@ assert(css.includes('[data-theme="dark"] .sug{background:#26221c'), "深色联�
   const blk = css.slice(i0, css.indexOf("}", i0));
   assert(blk.includes("text-decoration-color:rgba(156,63,48,.4)") && !blk.includes("1px solid"), "名册作品链接为贴字下划线(不再整行拖尾)");
 assert(css.includes(".sug-h") && css.includes(".tag-cog") && css.includes(".tag-admin"), "标签释义/编委动作样式");
+// 登录/注册弹窗: 输入框规则须"不看 type"(昵称框无 type 属性), 次按钮描边款, 面板无朱砂顶边
+assert(/\.zz-f input\{/.test(css) && !/\.zz-f input\[type=text\]/.test(css), "弹窗输入框规则用 .zz-f input(昵称框无 type 属性)");
+assert(css.includes("#zz-a-switch{background:transparent"), "弹窗次按钮为描边款(非朱砂实心)");
+assert(!/\.zz-authpanel\{[^}]*border-top/.test(css), "弹窗面板无额外朱砂顶边");
 }
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");
 assert(exists("logo.png"), "logo.png 随站发布");
