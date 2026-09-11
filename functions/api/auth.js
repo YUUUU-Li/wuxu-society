@@ -1,20 +1,18 @@
 // 众注·轻身份账号 API —— Cloudflare Pages Functions + D1, ESM 自包含
-// 见 docs/账号系统方案.md。设计要点:
-//   · 互动(打标签/评论/同感)一律要求登录; 浏览不需要。
-//   · 口令 PBKDF2-SHA256(盐, 15 万次) —— 不存明文; 会话 cookie 只存 sha256(token) 到库里。
-//   · 登录名 handle 与显示笔名 nick 都唯一(按归一化形式比对), 且保留社员缩写/笔名防抢注。
-//   · 注册页勾「我是社员」=> member_state='待确认', 由编委确认后才成为社员。
+// 见 docs/账号系统方案.md。**刻意做得很轻**(小私人项目):
+//   · 注册只要「昵称 + 口令」两样; 昵称唯一(否则无法登录、也说不清标签/评论的来源), 但不查社员名册、不审身份、没有待确认流程;
+//   · 口令 PBKDF2-SHA256(迭代数自适应云端上限) —— 不存明文; 会话 cookie 只存 sha256(token) 到库里;
+//   · 互动(打标签/评论/同感)一律要求登录, 目的只有一个: **知道每张票、每条评论来自谁**。
 // GET  /api/auth                                        -> { ok, user|null, showVoters }
-// POST /api/auth {action:"register", handle, nick, pass, member}
-// POST /api/auth {action:"login",    handle, pass}
+// POST /api/auth {action:"register", nick, pass}        注册即登录(返回一次性恢复码)
+// POST /api/auth {action:"login",    nick, pass}
 // POST /api/auth {action:"logout"}
-// POST /api/auth {action:"reset",    handle, code, pass}          用注册时给的恢复码重设口令
+// POST /api/auth {action:"reset",    nick, code, pass}  用注册时给的恢复码重设口令
 // 编委(role='编委' 或旧的 env.ZHUI_ADMIN_KEY, 过渡期两者都认):
-// POST /api/auth {action:"pending"}                               待确认社员列表
-// POST /api/auth {action:"confirm", user_id}                       确认社员(转 role='社员')
-// POST /api/auth {action:"role", user_id, role}                    改角色(读者|社员|编委)
-// POST /api/auth {action:"open", handle, nick, role}               编委开号(返回一次性口令)
-import { RESERVED_NAMES, RESERVED_LABEL, SHOW_VOTERS } from "./zhuzhu-config.js";
+// POST /api/auth {action:"role", user_id, role}         改角色(读者|社员|编委)
+// POST /api/auth {action:"open", nick, role}            编委直接开号(返回一次性口令)
+// POST /api/auth {action:"wipe", confirm}               一次性洗牌(清票/同感/评论/候选词, 词表保留)
+import { SHOW_VOTERS } from "./zhuzhu-config.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
 const COOKIE = "zz_sess";
@@ -27,7 +25,6 @@ const PBKDF2_CANDIDATES = [90000, 25000, 5000];   // 由强到弱(90000 是生�
 const PBKDF2_BUDGET_MS = 8;                       // 自留余量, 免得撞上运行时 CPU 限时
 const PBKDF2_MAX_ACCEPTED = 1000000;              // 校验时拒绝离谱的迭代数(防被伪造的哈希拖垮 CPU)
 let PBKDF2_ITER = 0;                              // 本进程选定/探测出的档位(缓存)
-const RESERVED = new Set(RESERVED_NAMES);
 
 function json(status, body, headers) {
   return new Response(JSON.stringify(body), { status, headers: Object.assign({}, JSON_HEADERS, headers || {}) });
@@ -160,7 +157,7 @@ export function isAdmin(context, user, key) {
   return !!(k && clean(key, 100) === k);
 }
 function publicUser(u) {
-  return u ? { id: u.id, handle: u.handle, nick: u.nick, role: u.role, member_state: u.member_state } : null;
+  return u ? { id: u.id, nick: u.nick, role: u.role } : null;
 }
 
 async function startSession(db, userId) {
@@ -254,57 +251,46 @@ export async function onRequest(context) {
   const me = await currentUser(context);
 
   try {
-    // ── 注册 ──
+    // ── 注册(只要昵称 + 口令) ──
     if (action === "register") {
-      const handle = clean(body.handle, 20);
       const nick = clean(body.nick, 20);
       const pass = String(body.pass || "");
-      const member = !!body.member;
-      if (handle.length < 2) return json(400, { ok: false, error: "登录名至少 2 个字符。" });
       if (nick.length < 2) return json(400, { ok: false, error: "昵称至少 2 个字符。" });
       if (pass.length < 8) return json(400, { ok: false, error: "口令至少 8 位。" });
       if (pass.length > 64) return json(400, { ok: false, error: "口令太长了。" });
-      const hk = normName(handle), nk = normName(nick);
-      if (!hk || !nk) return json(400, { ok: false, error: "登录名/昵称不能只有符号。" });
-      // 保留名单(社员缩写与笔名): 防抢注
-      for (const [k, label] of [[hk, handle], [nk, nick]]) {
-        if (RESERVED.has(k)) {
-          return json(409, { ok: false, reserved: true,
-            error: `「${label}」是社员 ${RESERVED_LABEL[k] || ""} 的缩写/笔名，本站已保留；若你就是本人，请联系编委开号。` });
-        }
-      }
-      // 唯一性(归一化后)
-      const dupH = await db.prepare(`SELECT id FROM users WHERE handle_key = ?1`).bind(hk).first();
-      if (dupH) return json(409, { ok: false, error: "该登录名已被占用，请修改。" });
+      const nk = normName(nick);
+      if (!nk) return json(400, { ok: false, error: "昵称不能只有符号。" });
+      // 唯一性: 登录靠昵称认人, 且标签/评论的来源要认得清 —— 只做这一条检查, 不查名册、不审身份
       const dupN = await db.prepare(`SELECT id FROM users WHERE nick_key = ?1`).bind(nk).first();
-      if (dupN) return json(409, { ok: false, error: "该昵称已被占用，请修改昵称。" });
+      if (dupN) return json(409, { ok: false, error: "这个昵称已经有人用了，换一个吧（可以加个后缀，如「蓦流2」）。" });
       const salt = randHex(16);
       const code = newRecoverCode();
+      // handle/handle_key 是早期"登录名+笔名"两栏时的遗留列: 现在昵称即登录名, 两列一起写免得撞旧约束
       const r = await db.prepare(
         `INSERT INTO users(handle, nick, handle_key, nick_key, role, member_state, pass_salt, pass_hash, recover_hash, last_seen)
-         VALUES (?1, ?2, ?3, ?4, '读者', ?5, ?6, ?7, ?8, datetime('now'))`
-      ).bind(handle, nick, hk, nk, member ? "待确认" : "", salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
+         VALUES (?1, ?1, ?2, ?2, '读者', '', ?3, ?4, ?5, datetime('now'))`
+      ).bind(nick, nk, salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
       const token = await startSession(db, r.meta.last_row_id);
-      const user = { id: r.meta.last_row_id, handle, nick, role: "读者", member_state: member ? "待确认" : "" };
       return json(200, {
-        ok: true, user,
+        ok: true,
+        user: { id: r.meta.last_row_id, nick, role: "读者" },
         recoverCode: code,
-        note: member ? "已提交社员身份，待编委确认；恢复码请自己保存好。" : "恢复码请自己保存好（换设备/忘记口令时用）。",
+        note: "恢复码请自己保存好（换设备或忘记口令时用它重设）。",
       }, { "Set-Cookie": sessionCookie(token, SESSION_DAYS * 86400) });
     }
 
-    // ── 登录 ──
+    // ── 登录(昵称 + 口令) ──
     if (action === "login") {
-      const handle = clean(body.handle, 20);
+      const nick = clean(body.nick, 20);
       const pass = String(body.pass || "");
-      if (cooling(req, handle)) return json(429, { ok: false, error: "尝试次数过多，请 15 分钟后再试。" });
-      const row = await db.prepare(`SELECT id, handle, nick, role, member_state, pass_salt, pass_hash FROM users WHERE handle_key = ?1`)
-        .bind(normName(handle)).first();
+      if (cooling(req, nick)) return json(429, { ok: false, error: "尝试次数过多，请 15 分钟后再试。" });
+      const row = await db.prepare(`SELECT id, nick, role, pass_salt, pass_hash FROM users WHERE nick_key = ?1`)
+        .bind(normName(nick)).first();
       if (!row || !(await verifyPassword(pass, row.pass_salt, row.pass_hash, context.env.ZHUI_PEPPER))) {
-        noteFail(req, handle);
-        return json(401, { ok: false, error: "登录名或口令不对。" });
+        noteFail(req, nick);
+        return json(401, { ok: false, error: "昵称或口令不对。" });
       }
-      clearFail(req, handle);
+      clearFail(req, nick);
       await db.prepare(`UPDATE users SET last_seen = datetime('now') WHERE id = ?1`).bind(row.id).run();
       const token = await startSession(db, row.id);
       return json(200, { ok: true, user: publicUser(row) }, { "Set-Cookie": sessionCookie(token, SESSION_DAYS * 86400) });
@@ -319,13 +305,13 @@ export async function onRequest(context) {
 
     // ── 用恢复码重设口令 ──
     if (action === "reset") {
-      const handle = clean(body.handle, 20);
+      const nick = clean(body.nick || body.handle, 20);
       const pass = String(body.pass || "");
       if (pass.length < 8) return json(400, { ok: false, error: "口令至少 8 位。" });
-      const row = await db.prepare(`SELECT id, recover_hash FROM users WHERE handle_key = ?1`).bind(normName(handle)).first();
+      const row = await db.prepare(`SELECT id, recover_hash FROM users WHERE nick_key = ?1`).bind(normName(nick)).first();
       const code = clean(body.code, 20);
       if (!row || !row.recover_hash || row.recover_hash !== (await recoverKey(code))) {
-        return json(401, { ok: false, error: "登录名或恢复码不对。" });
+        return json(401, { ok: false, error: "昵称或恢复码不对。" });
       }
       const salt = randHex(16);
       const code2 = newRecoverCode();
@@ -360,19 +346,8 @@ export async function onRequest(context) {
       });
     }
 
-    if (action === "pending") {
-      const rows = (await db.prepare(
-        `SELECT id, handle, nick, member_state, created_at FROM users WHERE member_state = '待确认' ORDER BY id`
-      ).all()).results || [];
-      return json(200, { ok: true, pending: rows });
-    }
-    if (action === "confirm") {
-      const id = Number(body.user_id);
-      const r = await db.prepare(`UPDATE users SET role = '社员', member_state = '已确认' WHERE id = ?1`).bind(id).run();
-      if (!r.meta.changes) return json(404, { ok: false, error: "没有这个账号。" });
-      return json(200, { ok: true, user_id: id, role: "社员" });
-    }
     if (action === "role") {
+      // 把自己的账号升成编委就靠这一条(或用 D1 控制台里一句 UPDATE)
       const id = Number(body.user_id);
       const role = clean(body.role, 10);
       if (!["读者", "社员", "编委"].includes(role)) return json(400, { ok: false, error: "角色只能是 读者/社员/编委。" });
@@ -381,22 +356,21 @@ export async function onRequest(context) {
       return json(200, { ok: true, user_id: id, role });
     }
     if (action === "open") {
-      // 编委替社员开号: 生成一次性口令, 由编委转告本人(首次登录后请自行改口令 → P2 提供改密)
-      const handle = clean(body.handle, 20);
-      const nick = clean(body.nick, 20) || handle;
-      if (handle.length < 2 || nick.length < 2) return json(400, { ok: false, error: "登录名/昵称至少 2 个字符。" });
+      // 编委直接开号(生成一次性口令, 由编委转告本人); 平时用不到 —— 社员自己注册就行
+      const nick = clean(body.nick, 20) || clean(body.handle, 20);
+      if (nick.length < 2) return json(400, { ok: false, error: "昵称至少 2 个字符。" });
       const role = ["读者", "社员", "编委"].includes(clean(body.role, 10)) ? clean(body.role, 10) : "社员";
-      const hk = normName(handle), nk = normName(nick);
-      const dup = await db.prepare(`SELECT id FROM users WHERE handle_key = ?1 OR nick_key = ?2`).bind(hk, nk).first();
-      if (dup) return json(409, { ok: false, error: "该登录名或昵称已被占用。" });
+      const nk = normName(nick);
+      const dup = await db.prepare(`SELECT id FROM users WHERE nick_key = ?1`).bind(nk).first();
+      if (dup) return json(409, { ok: false, error: "这个昵称已经有人用了。" });
       const pass = newRecoverCode().replace(/-/g, "");
       const salt = randHex(16);
       const code = newRecoverCode();
       const r = await db.prepare(
         `INSERT INTO users(handle, nick, handle_key, nick_key, role, member_state, pass_salt, pass_hash, recover_hash)
-         VALUES (?1, ?2, ?3, ?4, ?5, '已确认', ?6, ?7, ?8)`
-      ).bind(handle, nick, hk, nk, role, salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
-      return json(200, { ok: true, user_id: r.meta.last_row_id, handle, nick, role, tempPass: pass, recoverCode: code });
+         VALUES (?1, ?1, ?2, ?2, ?3, '', ?4, ?5, ?6)`
+      ).bind(nick, nk, role, salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
+      return json(200, { ok: true, user_id: r.meta.last_row_id, nick, role, tempPass: pass, recoverCode: code });
     }
     return json(400, { ok: false, error: "未知动作。" });
   } catch (e) {

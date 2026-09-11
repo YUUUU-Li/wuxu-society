@@ -1,6 +1,7 @@
 // 账号系统单测: node scripts/test-auth.js
-// 用一个"小型内存 D1"跑真实的注册/登录/会话语义(唯一约束、口令哈希、cookie、编委权限),
-// 而不是只记录调用形状 —— 账号这块出错代价高, 值得用真语义测。
+// 用一个"小型内存 D1"跑真实语义(唯一约束、口令哈希、cookie、编委权限)。
+// 模型(小私人项目, 刻意从简): 注册只要「昵称 + 口令」, 昵称唯一(登录靠它认人、也保证标签/评论来源可辨),
+// 不查社员名册、不审身份、没有待确认流程。
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
@@ -11,7 +12,6 @@ const ROOT = path.join(__dirname, "..");
 /* ---------- 小型内存 D1: 只实现 auth.js 用到的那几条语句 ---------- */
 function FakeDB() {
   const db = { users: [], sessions: [], seq: 0 };
-  const norm = (s) => String(s || "");
   async function run(sql, args) {
     const S = sql.replace(/\s+/g, " ").trim();
     if (S.includes("FROM sessions s JOIN users u")) {
@@ -22,25 +22,19 @@ function FakeDB() {
     if (S.includes("FROM users WHERE handle_key = ?1 OR nick_key = ?2")) {
       return db.users.find((u) => u.handle_key === args[0] || u.nick_key === args[1]) || null;
     }
-    if (S.includes("FROM users WHERE handle_key = ?1")) {
-      return db.users.find((u) => u.handle_key === args[0]) || null;
-    }
     if (S.includes("FROM users WHERE nick_key = ?1")) {
       return db.users.find((u) => u.nick_key === args[0]) || null;
     }
-    if (S.includes("FROM users WHERE member_state = '待确认'")) {
-      return db.users.filter((u) => u.member_state === "待确认");
-    }
     if (S.includes("INSERT INTO users")) {
-      if (db.users.some((u) => u.handle_key === args[2] || u.nick_key === args[3])) {
-        throw new Error("UNIQUE constraint failed");
-      }
-      const memberFlow = S.includes("'读者'");   // 注册语句里 role 与 member_state 都是字面量/参数混排
-      const u = memberFlow
-        ? { id: ++db.seq, handle: args[0], nick: args[1], handle_key: args[2], nick_key: args[3],
-            role: "读者", member_state: args[4], pass_salt: args[5], pass_hash: args[6], recover_hash: args[7] }
-        : { id: ++db.seq, handle: args[0], nick: args[1], handle_key: args[2], nick_key: args[3],
-            role: args[4], member_state: "已确认", pass_salt: args[5], pass_hash: args[6], recover_hash: args[7] };
+      // 注册: (nick, nick_key, salt, hash, recover)  开号: (nick, nick_key, role, salt, hash, recover)
+      const viaRole = !S.includes("'读者'");
+      const u = {
+        id: ++db.seq, handle: args[0], nick: args[0], handle_key: args[1], nick_key: args[1],
+        role: viaRole ? args[2] : "读者", member_state: "",
+        pass_salt: viaRole ? args[3] : args[2], pass_hash: viaRole ? args[4] : args[3],
+        recover_hash: viaRole ? args[5] : args[4],
+      };
+      if (db.users.some((x) => x.nick_key === u.nick_key)) throw new Error("UNIQUE constraint failed");
       db.users.push(u);
       return { meta: { last_row_id: u.id, changes: 1 } };
     }
@@ -63,27 +57,19 @@ function FakeDB() {
       if (u) { u.pass_salt = args[0]; u.pass_hash = args[1]; u.recover_hash = args[2]; }
       return { meta: { changes: u ? 1 : 0 } };
     }
-    if (S.includes("UPDATE users SET role = '社员', member_state = '已确认'")) {
-      const u = db.users.find((x) => x.id === args[0]);
-      if (u) { u.role = "社员"; u.member_state = "已确认"; }
-      return { meta: { changes: u ? 1 : 0 } };
-    }
     if (S.includes("UPDATE users SET role = ?1 WHERE id = ?2")) {
       const u = db.users.find((x) => x.id === args[1]);
       if (u) u.role = args[0];
       return { meta: { changes: u ? 1 : 0 } };
     }
-    throw new Error("FakeDB 未实现的语句: " + S.slice(0, 60));
+    throw new Error("FakeDB 未实现的语句: " + S.slice(0, 70));
   }
   const stmt = (sql, args) => ({
     first: () => run(sql, args),
     all: async () => ({ results: await run(sql, args) }),
     run: () => run(sql, args),
   });
-  return {
-    _db: db,
-    prepare: (sql) => Object.assign(stmt(sql, []), { bind: (...args) => stmt(sql, args) }),
-  };
+  return { _db: db, prepare: (sql) => Object.assign(stmt(sql, []), { bind: (...args) => stmt(sql, args) }) };
 }
 
 const HDR = { "content-type": "application/json", "cf-connecting-ip": "9.9.9.9" };
@@ -91,181 +77,154 @@ const get = (u, cookie) => new Request("https://x.test" + u, { headers: cookie ?
 const post = (body, cookie) =>
   new Request("https://x.test/api/auth", { method: "POST", headers: Object.assign({}, HDR, cookie ? { cookie } : {}), body: JSON.stringify(body) });
 const ctxOf = (db, env = {}) => (request) => ({ request, env: Object.assign({ DB: db }, env) });
-const cookieOf = (res) => (res.headers.get("set-cookie") || "");
+const cookieOf = (res) => res.headers.get("set-cookie") || "";
+// 从 Set-Cookie 串里取出会话令牌(形如 zz_sess=<64hex>; Path=/; ...)
+const tokenOf = (setCookie) => decodeURIComponent(String(setCookie).split(";")[0].split("=")[1]);
 
 async function main() {
   const auth = await import(pathToFileURL(path.join(ROOT, "functions", "api", "auth.js")).href);
   const sync = require("./sync-zhuzhu-config.js");
 
-  /* 0) 归一化函数两边必须一致(生成器 vs 函数), 否则保留名单会失效 */
-  const members = JSON.parse(fs.readFileSync(path.join(ROOT, "src/_data/members.json"), "utf8"));
-  for (const sec of members) for (const m of sec.members) {
-    const parts = [m.id, ...String(m.name || "").split("·").map((s) => s.trim())];
-    for (const raw of parts) {
-      const stripped = raw.replace(/[（(][^）)]*[）)]/g, "").trim();
-      if (stripped) assert.strictEqual(auth.normName(stripped), sync.normName(stripped), "归一化不一致: " + stripped);
-    }
-  }
-  /* 生成物与源码同步 */
+  /* 0) 归一化两边一致 + 生成物同步 */
+  const names = ["jwl", "蓦流", "ｒｅａｄｅｒ３", "Reader1", "阿 白", "新酒（Hugo）"];
+  for (const n of names) assert.strictEqual(auth.normName(n), sync.normName(n), "归一化不一致: " + n);
   const genPath = path.join(ROOT, "functions", "api", "zhuzhu-config.js");
   const before = fs.readFileSync(genPath, "utf8");
   sync.build();
   assert.strictEqual(fs.readFileSync(genPath, "utf8"), before, "functions/api/zhuzhu-config.js 应已同步(跑 npm run sync-zhuzhu)");
+  assert(!before.includes("RESERVED"), "账号从简后不该再有保留名单");
 
   const db = FakeDB();
   const ctx = ctxOf(db);
 
-  /* 1) 未登录: me 为空 */
+  /* 1) 未登录 */
   let r = await auth.onRequest(ctx(get("/api/auth")));
   let j = await r.json();
   assert.strictEqual(r.status, 200);
   assert.strictEqual(j.user, null, "未登录应为 null");
   assert.strictEqual(j.showVoters, "admin", "默认投票人名单只给编委");
 
-  /* 2) 注册: 各种校验 */
-  const bad = [
-    [{ handle: "a", nick: "阿白", pass: "12345678" }, "登录名至少"],
-    [{ handle: "readerx", nick: "b", pass: "12345678" }, "昵称至少"],
-    [{ handle: "readerx", nick: "阿白", pass: "1234" }, "口令至少 8 位"],
-  ];
-  for (const [body, msg] of bad) {
+  /* 2) 注册校验: 只要昵称与口令 */
+  for (const [body, msg] of [
+    [{ nick: "a", pass: "12345678" }, "昵称至少"],
+    [{ nick: "阿白", pass: "1234" }, "口令至少 8 位"],
+    [{ nick: "。。", pass: "12345678" }, "不能只有符号"],
+  ]) {
     r = await auth.onRequest(ctx(post(Object.assign({ action: "register" }, body))));
     assert.strictEqual(r.status, 400, "非法注册应 400: " + JSON.stringify(body));
     assert((await r.json()).error.includes(msg), "报错文案: " + msg);
   }
 
-  /* 3) 保留名单: 社员缩写与笔名都不能被抢注 */
-  for (const [field, body] of [["handle", { handle: "jwl", nick: "路人甲", pass: "12345678" }],
-                              ["nick", { handle: "lurenjia", nick: "蓦流", pass: "12345678" }],
-                              ["nick(别名)", { handle: "lurenjia2", nick: "Hugo", pass: "12345678" }]]) {
-    r = await auth.onRequest(ctx(post(Object.assign({ action: "register" }, body))));
-    const out = await r.json();
-    assert.strictEqual(r.status, 409, `保留名(${field})应 409`);
-    assert(out.reserved === true && /保留/.test(out.error), "保留名提示: " + out.error);
-  }
-
-  /* 4) 正常注册: 发会话 cookie、返回恢复码、库里存哈希不存明文 */
-  r = await auth.onRequest(ctx(post({ action: "register", handle: "Reader1", nick: "阿白", pass: "hunter2hunter", member: true })));
+  /* 3) 正常注册: 一个字段就够; 发会话 cookie、给恢复码、库里存哈希不存明文 */
+  r = await auth.onRequest(ctx(post({ action: "register", nick: "阿白", pass: "hunter2hunter" })));
   j = await r.json();
   assert.strictEqual(r.status, 200, "注册应成功: " + JSON.stringify(j));
   const ck = cookieOf(r);
   assert(/^zz_sess=[0-9a-f]{64}/.test(ck), "应种下会话 cookie: " + ck);
   assert(/HttpOnly/.test(ck) && /SameSite=Lax/.test(ck) && /Secure/.test(ck), "cookie 属性: " + ck);
   assert(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(j.recoverCode), "恢复码格式: " + j.recoverCode);
+  assert.strictEqual(j.user.nick, "阿白");
   assert.strictEqual(j.user.role, "读者");
-  assert.strictEqual(j.user.member_state, "待确认", "勾了我是社员 -> 待确认");
   const u1 = db._db.users[0];
   assert.notStrictEqual(u1.pass_hash, "hunter2hunter", "不得存明文");
-  // 云端对 PBKDF2 迭代数有上限, 所以把实际用的迭代数写进哈希串: pbkdf2$<iter>$<hex>
   assert(/^pbkdf2\$\d+\$[0-9a-f]{64}$/.test(u1.pass_hash), "口令哈希应含迭代数: " + u1.pass_hash.slice(0, 24));
   assert.strictEqual(u1.pass_salt.length, 32, "盐 16 字节 hex");
   assert.strictEqual(u1.recover_hash.length, 64, "恢复码也只存哈希");
 
-  /* 4b) 验证按"存进去的迭代数"重算: 较低/较高强度的老哈希都能登录 */
+  /* 3b) 验证按"存进去的迭代数"重算; 坏哈希安全失败 */
   {
     const salt = "a".repeat(32);
     const weak = "pbkdf2$1000$" + (await auth.pbkdf2Hex("legacy-pass-1", salt, 1000));
-    db._db.users.push({ id: 900, handle: "legacy1", nick: "老哈希", handle_key: "legacy1", nick_key: "老哈希",
-      role: "读者", member_state: "", pass_salt: salt, pass_hash: weak, recover_hash: "" });
-    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "legacy-pass-1" })));
+    db._db.users.push({ id: 900, nick: "老哈希", handle_key: "老哈希", nick_key: "老哈希",
+      role: "读者", pass_salt: salt, pass_hash: weak, recover_hash: "" });
+    r = await auth.onRequest(ctx(post({ action: "login", nick: "老哈希", pass: "legacy-pass-1" })));
     assert.strictEqual(r.status, 200, "应按哈希里记录的迭代数验证成功");
-    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "wrong-pass-1" })));
-    assert.strictEqual(r.status, 401, "错口令仍应 401");
-    // 坏格式不得抛异常, 直接判不通过
     const u900 = db._db.users.find((x) => x.id === 900);
     u900.pass_hash = "deadbeef";
-    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "legacy-pass-1" })));
+    r = await auth.onRequest(ctx(post({ action: "login", nick: "老哈希", pass: "legacy-pass-1" })));
     assert.strictEqual(r.status, 401, "坏哈希应安全地判为不通过");
   }
 
-  /* 4c) 可选"胡椒"(env.ZHUI_PEPPER): 设了就必须带着它才能验证通过 */
+  /* 3c) 可选"胡椒"(env.ZHUI_PEPPER) */
   {
     const dbP = FakeDB();
-    r = await auth.onRequest({ request: post({ action: "register", handle: "pepper1", nick: "胡椒测试", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
+    r = await auth.onRequest({ request: post({ action: "register", nick: "胡椒测试", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
     assert.strictEqual(r.status, 200, "带胡椒注册应成功");
-    r = await auth.onRequest({ request: post({ action: "login", handle: "pepper1", pass: "pepper-pass-1" }), env: { DB: dbP } });
-    assert.strictEqual(r.status, 401, "没带胡椒应登不进去(相当于另一套口令)");
-    r = await auth.onRequest({ request: post({ action: "login", handle: "pepper1", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
+    r = await auth.onRequest({ request: post({ action: "login", nick: "胡椒测试", pass: "pepper-pass-1" }), env: { DB: dbP } });
+    assert.strictEqual(r.status, 401, "没带胡椒应登不进去");
+    r = await auth.onRequest({ request: post({ action: "login", nick: "胡椒测试", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
     assert.strictEqual(r.status, 200, "带胡椒应能登录");
   }
 
-  /* 5) 唯一性按归一化比对(大小写/空格/全角都不算新名) */
-  r = await auth.onRequest(ctx(post({ action: "register", handle: "reader1", nick: "另一个", pass: "12345678" })));
-  assert.strictEqual(r.status, 409, "登录名大小写不同应视为占用");
-  r = await auth.onRequest(ctx(post({ action: "register", handle: "reader2", nick: "阿 白", pass: "12345678" })));
-  assert.strictEqual(r.status, 409, "空格差异应视为占用");
-  r = await auth.onRequest(ctx(post({ action: "register", handle: "ｒｅａｄｅｒ３", nick: "小白", pass: "12345678" })));
-  assert.strictEqual(r.status, 200, "全角登录名(不撞名)应可注册");
+  /* 4) 昵称唯一(归一化后): 大小写/空格/全角都算同一个人 */
+  r = await auth.onRequest(ctx(post({ action: "register", nick: "阿 白", pass: "12345678" })));
+  assert.strictEqual(r.status, 409, "空格差异应视为已占用");
+  assert(/换一个吧/.test((await r.json()).error), "应给出可照做的提示");
+  r = await auth.onRequest(ctx(post({ action: "register", nick: "ＡＢ", pass: "12345678" })));
+  assert.strictEqual(r.status, 200, "全角新昵称(不撞名)应可注册");
 
-  /* 6) 用 cookie 取 me */
-  const token = decodeURIComponent(ck.split(";")[0].split("=")[1]);
-  r = await auth.onRequest(ctx(get("/api/auth", "zz_sess=" + token)));
+  /* 5) 带 cookie 取 me; 未登录/伪造 cookie 都是 null */
+  r = await auth.onRequest(ctx(get("/api/auth", "zz_sess=" + tokenOf(ck))));
   j = await r.json();
   assert(j.user && j.user.nick === "阿白", "带 cookie 应返回登录者");
+  r = await auth.onRequest({ request: get("/api/auth", "zz_sess=" + "f".repeat(64)), env: { DB: db } });
+  assert.strictEqual((await r.json()).user, null, "伪造 cookie 应视为未登录");
 
-  /* 7) 登录: 错口令 -> 401; 连错 5 次 -> 429 冷却; 冷却期内正确口令也拒 */
+  /* 6) 登录: 错口令 -> 401; 连错 5 次 -> 冷却(冷却期内正确口令也拒) */
   for (let i = 0; i < 5; i++) {
-    r = await auth.onRequest(ctx(post({ action: "login", handle: "Reader1", pass: "wrong-pass" })));
+    r = await auth.onRequest(ctx(post({ action: "login", nick: "阿白", pass: "wrong-pass" })));
     assert.strictEqual(r.status, 401, "错口令应 401");
   }
-  r = await auth.onRequest(ctx(post({ action: "login", handle: "Reader1", pass: "wrong-pass" })));
+  r = await auth.onRequest(ctx(post({ action: "login", nick: "阿白", pass: "wrong-pass" })));
   assert.strictEqual(r.status, 429, "第 6 次应冷却");
-  r = await auth.onRequest(ctx(post({ action: "login", handle: "Reader1", pass: "hunter2hunter" })));
+  r = await auth.onRequest(ctx(post({ action: "login", nick: "阿白", pass: "hunter2hunter" })));
   assert.strictEqual(r.status, 429, "冷却期内正确口令也应拒(防爆破)");
 
-  r = await auth.onRequest(ctx(post({ action: "login", handle: "reader3", pass: "12345678" })));
-  j = await r.json();
-  assert.strictEqual(r.status, 200, "另一账号应能正常登录");
-  const ck3 = cookieOf(r);
+  r = await auth.onRequest(ctx(post({ action: "login", nick: "ＡＢ", pass: "12345678" })));
+  const ckAB = cookieOf(r);
+  assert.strictEqual(r.status, 200, "另一个账号应能正常登录");
 
-  /* 8) 退出: 删掉"这一个会话" + 清 cookie(同一账号可能有多个设备的会话, 只该退掉当前这个) */
-  const u3id = db._db.users.find((x) => x.handle_key === "reader3").id;
-  const sessBefore = db._db.sessions.filter((s) => s.user_id === u3id).length;
-  assert.strictEqual(sessBefore, 2, "该账号此时应有 2 个会话(注册 + 登录)");
-  r = await auth.onRequest(ctx(post({ action: "logout" }, "zz_sess=" + decodeURIComponent(ck3.split(";")[0].split("=")[1]))));
-  j = await r.json();
-  assert(j.ok && /Max-Age=0/.test(cookieOf(r)), "退出应清 cookie: " + cookieOf(r));
-  assert.strictEqual(db._db.sessions.filter((s) => s.user_id === u3id).length, 1, "退出只该退掉当前会话, 别动别的设备");
+  /* 7) 退出: 只退当前会话 */
+  const uAB = db._db.users.find((x) => x.nick_key === "ab");
+  assert.strictEqual(db._db.sessions.filter((s) => s.user_id === uAB.id).length, 2, "该账号此时应有 2 个会话(注册 + 登录)");
+  r = await auth.onRequest(ctx(post({ action: "logout" }, tokenOf(ckAB) ? "zz_sess=" + tokenOf(ckAB) : "")));
+  assert((await r.json()).ok && /Max-Age=0/.test(cookieOf(r)), "退出应清 cookie");
+  assert.strictEqual(db._db.sessions.filter((s) => s.user_id === uAB.id).length, 1, "只该退掉当前会话");
 
-  /* 9) 恢复码重设口令 */
-  const u3 = db._db.users.find((x) => x.handle_key === "reader3");   // 按登录名查, 别用下标(前面的用例会插入用户)
-  r = await auth.onRequest(ctx(post({ action: "reset", handle: "reader3", code: "AAAA-BBBB-CCCC", pass: "newpass12345" })));
+  /* 8) 恢复码重设口令 */
+  const uAB2 = db._db.users.find((x) => x.nick_key === "ab");
+  r = await auth.onRequest(ctx(post({ action: "reset", nick: "ＡＢ", code: "AAAA-BBBB-CCCC", pass: "newpass12345" })));
   assert.strictEqual(r.status, 401, "错恢复码应 401");
-  // 用第 4 步那个账号的恢复码(recover_hash 已存, 这里直接重算一份新码来验证流程)
   const code = "ZZZZ-YYYY-XXXX";
-  u3.recover_hash = await (async () => {
-    const enc = new TextEncoder();
-    const buf = await crypto.subtle.digest("SHA-256", enc.encode(auth.normName(code).toUpperCase()));
+  uAB2.recover_hash = await (async () => {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(auth.normName(code).toUpperCase()));
     return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
   })();
-  r = await auth.onRequest(ctx(post({ action: "reset", handle: "reader3", code, pass: "newpass12345" })));
-  j = await r.json();
-  assert.strictEqual(r.status, 200, "对恢复码应可重设: " + JSON.stringify(j));
-  assert.strictEqual(db._db.sessions.filter((s) => s.user_id === u3.id).length, 1, "重设后旧会话应作废, 只留新会话");
+  r = await auth.onRequest(ctx(post({ action: "reset", nick: "ＡＢ", code, pass: "newpass12345" })));
+  assert.strictEqual(r.status, 200, "对恢复码应可重设: " + JSON.stringify(await r.json()));
+  assert.strictEqual(db._db.sessions.filter((s) => s.user_id === uAB2.id).length, 1, "重设后旧会话应作废, 只留新会话");
 
-  /* 10) 编委动作权限: 无权限 403; 旧钥匙可; role='编委' 亦可 */
-  r = await auth.onRequest(ctx(post({ action: "pending" })));
+  /* 9) 编委动作权限: 无权限 403; 旧钥匙可以; 角色可以 */
+  r = await auth.onRequest(ctx(post({ action: "role", user_id: 1, role: "编委" })));
   assert.strictEqual(r.status, 403, "非编委应 403");
-  r = await auth.onRequest(ctxOf(db, { ZHUI_ADMIN_KEY: "k" })(post({ action: "pending", key: "k" })));
-  j = await r.json();
-  assert(j.ok && Array.isArray(j.pending) && j.pending.length === 1, "旧钥匙应能看待确认列表");
-  r = await auth.onRequest(ctxOf(db, { ZHUI_ADMIN_KEY: "k" })(post({ action: "confirm", key: "k", user_id: j.pending[0].id })));
-  assert((await r.json()).role === "社员", "确认社员应转 role='社员'");
-
-  const adminUser = { id: 99, handle: "jwl", nick: "蓦流", role: "编委", member_state: "已确认" };
-  r = await auth.onRequest(ctxOf(db, { ZHUI_TEST_USER: JSON.stringify(adminUser) })(post({ action: "open", handle: "member9", nick: "社员九", role: "社员" })));
-  j = await r.json();
-  assert(j.ok && /^[A-Z0-9]{12}$/.test(j.tempPass) && j.role === "社员", "编委开号应给一次性口令: " + JSON.stringify(j));
-  r = await auth.onRequest(ctxOf(db, { ZHUI_TEST_USER: JSON.stringify(adminUser) })(post({ action: "role", user_id: 99, role: "皇上" })));
+  r = await auth.onRequest(ctxOf(db, { ZHUI_ADMIN_KEY: "k" })(post({ action: "role", key: "k", user_id: uAB2.id, role: "编委" })));
+  assert((await r.json()).role === "编委", "旧钥匙应能改角色");
+  r = await auth.onRequest(ctxOf(db, { ZHUI_ADMIN_KEY: "k" })(post({ action: "role", key: "k", user_id: uAB2.id, role: "皇上" })));
   assert.strictEqual(r.status, 400, "非法角色应 400");
 
-  /* 11) 部署早于建表的过渡期: 应提示"先建表"而不是含糊的"操作失败"
-     (用没在前文出现过的账号名, 免得撞上第 7 步的登录冷却) */
+  const adminUser = { id: 99, nick: "蓦流", role: "编委" };
+  r = await auth.onRequest(ctxOf(db, { ZHUI_TEST_USER: JSON.stringify(adminUser) })(post({ action: "open", nick: "社员九", role: "社员" })));
+  const openJ = await r.json();
+  assert(openJ.ok && /^[A-Z0-9]{12}$/.test(openJ.tempPass) && openJ.role === "社员", "编委开号应给一次性口令: " + JSON.stringify(openJ));
+  r = await auth.onRequest(ctxOf(db, { ZHUI_TEST_USER: JSON.stringify(adminUser) })(post({ action: "open", nick: "社员九" })));
+  assert.strictEqual(r.status, 409, "重名开号应 409");
+
+  /* 10) 部署早于建表: 给"先建表"的提示而不是含糊的"操作失败" */
   const dbNoTable = { prepare: () => { throw new Error("D1_ERROR: no such table: users"); } };
-  r = await auth.onRequest({ request: post({ action: "login", handle: "nobody-here", pass: "12345678" }), env: { DB: dbNoTable } });
+  r = await auth.onRequest({ request: post({ action: "login", nick: "nobody-here", pass: "12345678" }), env: { DB: dbNoTable } });
   assert.strictEqual(r.status, 503, "未建表时应 503");
   assert(/建表/.test((await r.json()).error), "应提示先按 sql/accounts 建表");
 
-  console.log("✅ test-auth.js 全部通过 (注册校验/保留名单/归一化唯一/口令哈希/会话cookie/冷却/退出/恢复码/编委权限/未建表提示)");
+  console.log("✅ test-auth.js 全部通过 (昵称+口令注册/唯一性/口令哈希含迭代数/胡椒/会话cookie/冷却/退出/恢复码/编委权限/未建表提示)");
 }
-main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });
+main().catch((e) => { console.error("FAIL:", e.message, "\n", (e && e.stack) || ""); process.exit(1); });

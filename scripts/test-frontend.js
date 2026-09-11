@@ -58,8 +58,11 @@ assert(/<script src="auth\.js\?v=\{\{ assetVer \}\}"><\/script>/.test(nav), "导
 assert(!zzNjk.includes('id="zz-auth"'), "众注区不该再放账号入口(已移到导航)");
 assert(auth.includes("/auth") && auth.includes('"register"') && auth.includes('"login"') && auth.includes('"logout"'),
   "auth.js 应能注册/登录/退出");
-assert(auth.includes("我是社员") && auth.includes("请用名字缩写或笔名") && auth.includes("推荐使用名字缩写或笔名"),
-  "注册弹窗应有「我是社员」勾选与两套提示文案");
+assert(!auth.includes("我是社员") && !auth.includes("zz-a-member"), "账号从简后不该再有「我是社员」勾选");
+assert(auth.includes('id="zz-a-nick"') && auth.includes('id="zz-a-pass"'), "注册/登录弹窗应只有昵称与口令两栏");
+assert(!auth.includes("zz-a-handle"), "不该再有单独的「登录名」栏(昵称即登录名)");
+assert(auth.includes('action: "register", nick: nick') && auth.includes('action: "login", nick: nick'),
+  "注册与登录都应只提交 {nick, pass}");
 assert(auth.includes("window.zzAuth") && auth.includes("onChange"), "auth.js 应对外提供 window.zzAuth(含 onChange)");
 assert(zhuzhu.includes("window.zzAuth") && zhuzhu.includes("zzAuth.ready") && zhuzhu.includes("zzAuth.onChange"),
   "众注区应从 window.zzAuth 取登录态并跟随变化");
@@ -67,10 +70,6 @@ assert(!/fetch\(api \+ "\/auth"/.test(zhuzhu), "众注区不该自己再拉一�
 assert(zhuzhu.includes("needLogin") && zhuzhu.includes("authFailed"), "未登录与过期会话都要有引导/兜底");
 assert(/f\.own[\s\S]{0,80}z-like own/.test(zhuzhu), "自己的评论应渲染成不可点的「同感」");
 assert(zhuzhu.includes("adminOn()"), "编委判定应走账号角色或旧钥匙");
-{
-  const i = auth.indexOf('id="zz-a-nick"');
-  assert(i > 0 && auth.slice(Math.max(0, i - 160), i).includes("isReg ?"), "笔名输入框应只在注册模式出现(登录不需要)");
-}
 
 // 4) 样式: 导航账号态 + 弹窗 + 自己评论的同感
 for (const sel of [".nav-auth", ".nav-auth .nav-who", ".zz-authbox", ".zz-authpanel", ".zz-f", ".zz-msgline", ".z-like.own"]) {

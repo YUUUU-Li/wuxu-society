@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# 编委账号工具(账号系统 P1): 开号 / 待确认社员 / 确认社员 / 改角色 / 看名单
+# 编委账号工具(小项目从简版): 开号 / 改角色 / 一键洗牌
 # 为什么用 Python: 本机没有 Node, 而 D1 控制台只能跑 SQL(开号要算 PBKDF2 口令哈希, 那是服务端的事)。
 # 用法(在仓库根目录跑):
-#   python scripts/zhuzhu-admin.py open jwl --key 你的旧钥匙          # 按名册自动取昵称, 开编委号
-#   python scripts/zhuzhu-admin.py open zhang3 --nick 张三 --role 读者 --key ...
-#   python scripts/zhuzhu-admin.py pending --key ...
-#   python scripts/zhuzhu-admin.py confirm 3 --key ...
-#   python scripts/zhuzhu-admin.py role 3 编委 --key ...
-# 说明: --key 是旧的共享钥匙(ZHUI_ADMIN_KEY); 账号化后它只用于"开第一个编委号"这类过渡操作。
-#       中文一律用 Unicode 码位传入不保险(控制台编码), 故社员昵称直接从 src/_data/members.json 取。
+#   python scripts/zhuzhu-admin.py open 蓦流 --role 编委 --key 你的旧钥匙    # 开号(昵称即登录名)
+#   python scripts/zhuzhu-admin.py role 3 编委 --key 你的旧钥匙             # 改角色
+#   python scripts/zhuzhu-admin.py wipe --key 你的旧钥匙                    # 洗牌(清票/评论/候选词, 词表保留)
+# 更简单的路: 自己先在网页注册, 然后在 D1 控制台跑一句
+#   UPDATE users SET role='编委' WHERE nick_key='你的昵称';
+# 说明: --key 是旧的共享钥匙(ZHUI_ADMIN_KEY); 已有编委账号的话, 把 --key 换成编委账号也行(服务端认 role)。
+#       中文昵称走 Unicode 转义太绕, 所以社员缩写会去 src/_data/members.json 取笔名。
 import argparse
 import json
 import pathlib
@@ -20,7 +20,6 @@ import urllib.request
 BASE = "https://wuxu-society.pages.dev"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ROLES = ["读者", "社员", "编委"]
-ROLE_CP = {"读者": "\u8bfb\u8005", "社员": "\u793e\u5458", "编委": "\u7f16\u59d4"}
 
 try:  # 让中文在 GBK 控制台也能正确输出
     sys.stdout.reconfigure(encoding="utf-8")
@@ -61,11 +60,11 @@ def call(path, payload):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="婺需文学社 · 编委账号工具")
-    ap.add_argument("action", choices=["open", "pending", "confirm", "role", "wipe"])
-    ap.add_argument("args", nargs="*", help="open: <缩写>; confirm: <user_id>; role: <user_id> <角色>")
-    ap.add_argument("--key", default="", help="旧钥匙 ZHUI_ADMIN_KEY(过渡期用)")
-    ap.add_argument("--nick", default="", help="非社员开号时指定昵称(ASCII 更稳)")
+    ap = argparse.ArgumentParser(description="婺需文学社 · 编委账号工具(从简版)")
+    ap.add_argument("action", choices=["open", "role", "wipe"])
+    ap.add_argument("args", nargs="*", help="open: <昵称 或 社员缩写>; role: <user_id> <角色>")
+    ap.add_argument("--key", default="", help="旧钥匙 ZHUI_ADMIN_KEY(有编委账号后也可用账号会话)")
+    ap.add_argument("--nick", default="", help="开号时显式指定昵称(默认从名册按缩写取)")
     ap.add_argument("--role", default="社员", help="open 时的角色: 读者|社员|编委")
     ap.add_argument("--dry-run", action="store_true", help="只打印将发送的内容, 不真的请求")
     a = ap.parse_args()
@@ -78,14 +77,10 @@ def main():
             sys.exit("wipe 需要 --key（旧钥匙）；跑之前请确认已备份（sql/backup 里有快照）。")
     elif a.action == "open":
         if not a.args:
-            sys.exit("open 需要给一个登录名(缩写), 例如: open jwl --key ...")
-        handle = a.args[0]
+            sys.exit("open 需要给一个昵称(或社员缩写), 例如: open jwl --role 编委 --key ...")
+        who = a.args[0]
         role = a.role if a.role in ROLES else "社员"
-        payload.update({"handle": handle, "nick": a.nick or member_nick(handle) or handle, "role": role})
-    elif a.action == "confirm":
-        if not a.args:
-            sys.exit("confirm 需要 user_id, 例如: confirm 3 --key ...")
-        payload["user_id"] = int(a.args[0])
+        payload.update({"nick": a.nick or member_nick(who) or who, "role": role})
     elif a.action == "role":
         if len(a.args) < 2:
             sys.exit("role 需要 user_id 与角色, 例如: role 3 编委 --key ...")

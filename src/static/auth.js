@@ -67,11 +67,11 @@
       '<div class="zz-authpanel" role="dialog" aria-label="登录或注册">' +
       '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
       '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
-      '<label class="zz-f"><span>登录名</span><input id="zz-a-handle" maxlength="20" autocomplete="username" placeholder="社员用名字缩写，如 jwl" /></label>' +
-      (isReg ? '<label class="zz-f" id="zz-f-nick"><span>笔名</span><input id="zz-a-nick" maxlength="20" autocomplete="nickname" placeholder="显示在评论区" /></label>' : "") +
-      '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' + (isReg ? "new-password" : "current-password") + '" placeholder="至少 8 位" /></label>' +
-      (isReg ? '<label class="zz-f zz-member"><input id="zz-a-member" type="checkbox" /> 我是社员</label>' : "") +
-      (isReg ? '<p class="zz-hint" id="zz-a-hint">未勾选「我是社员」时，推荐使用名字缩写或笔名。</p>' : "") +
+      '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" maxlength="20" autocomplete="username" placeholder="' +
+        (isReg ? "社员建议用姓名缩写或笔名" : "注册时用的昵称") + '" /></label>' +
+      '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' +
+        (isReg ? "new-password" : "current-password") + '" placeholder="' + (isReg ? "至少 8 位" : "") + '" /></label>' +
+      (isReg ? '<p class="zz-hint" id="zz-a-hint">昵称就是你的署名（会显示在标签与评论旁）。社员请尽量用姓名缩写或笔名，方便大家认得。</p>' : "") +
       '<div class="zz-authacts"><button class="btn" type="button" id="zz-a-ok">' + (isReg ? "注册并登录" : "登录") + "</button>" +
       '<button class="btn ghost" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
       '<p class="zz-msgline" id="zz-a-msg"></p></div>';
@@ -80,31 +80,16 @@
     var A = function (id) { return box.querySelector("#" + id); };
     var msgEl = A("zz-a-msg");
     function say(t, cls) { msgEl.textContent = t || ""; msgEl.className = "zz-msgline" + (cls ? " " + cls : ""); }
-    if (isReg) {
-      var cb = A("zz-a-member");
-      var hint = A("zz-a-hint");
-      var syncHint = function () {
-        var on = cb.checked;
-        hint.textContent = on ? "请用名字缩写或笔名（与名册一致，便于社员辨认）。" : "推荐使用名字缩写或笔名。";
-        A("zz-a-nick").placeholder = on ? "请用名字缩写或笔名" : "推荐使用名字缩写或笔名";
-        A("zz-a-handle").placeholder = on ? "请用名字缩写或笔名" : "自拟即可，如 luren";
-      };
-      cb.addEventListener("change", syncHint);
-      syncHint();
-    }
     A("zz-a-cancel").addEventListener("click", function () { box.remove(); });
     A("zz-a-switch").addEventListener("click", function () { box.remove(); openAuth(isReg ? "login" : "register"); });
     A("zz-a-ok").addEventListener("click", async function () {
-      var handle = A("zz-a-handle").value.trim();
-      var nick = isReg ? A("zz-a-nick").value.trim() : "";   // 登录模式没有笔名框
+      var nick = A("zz-a-nick").value.trim();
       var pass = A("zz-a-pass").value;
-      if (!handle) { say("请填登录名。"); return; }
-      if (isReg && !nick) { say("请填笔名。"); return; }
+      if (!nick) { say("请填昵称。"); return; }
       if (!pass) { say("请填口令。"); return; }
       try {
-        var payload = isReg
-          ? { action: "register", handle: handle, nick: nick, pass: pass, member: A("zz-a-member").checked }
-          : { action: "login", handle: handle, pass: pass };
+        var payload = isReg ? { action: "register", nick: nick, pass: pass }
+                           : { action: "login", nick: nick, pass: pass };
         var r = await fetch(api + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         var j = await r.json();
         if (!r.ok || !j.ok) throw new Error(j.error || "失败");
@@ -118,7 +103,7 @@
         emit();
       } catch (e) { say(e.message, "bad"); }
     });
-    A("zz-a-handle").focus();
+    A("zz-a-nick").focus();
   }
 
   window.zzAuth = {

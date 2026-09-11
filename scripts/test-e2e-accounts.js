@@ -84,7 +84,7 @@ async function main() {
   {
     const bare = makeDB({ accounts: false });
     const c0 = client();
-    const out = await call(auth, { request: c0.req("/api/auth", { action: "register", handle: "auto1", nick: "自测一号", pass: "12345678" }), env: { DB: bare } });
+    const out = await call(auth, { request: c0.req("/api/auth", { action: "register", nick: "自测一号", pass: "12345678" }), env: { DB: bare } });
     assert.strictEqual(out.res.status, 200, "账号表应被函数自动建好: " + JSON.stringify(out.json));
     c0.save(out.res);
     const tables = bare._raw.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map((r) => r.name);
@@ -102,24 +102,22 @@ async function main() {
   assert.strictEqual((await call(tags, ctxOf(c, c.req("/api/tags", { work: "w-mei", word: "春景" })))).res.status, 401, "未登录不能打标签");
   assert.strictEqual((await call(comments, ctxOf(c, c.req("/api/comments", { work: "w-mei", body: "好" })))).res.status, 401, "未登录不能评论");
 
-  // ── 1. 社员注册(勾了我是社员) ──
-  ({ res, json } = await call(auth, ctxOf(c, c.req("/api/auth", { action: "register", handle: "jwl", nick: "蓦流", pass: "hunter2hunter", member: true }))));
-  assert.strictEqual(res.status, 409, "社员缩写应被保留(防抢注): " + JSON.stringify(json));
-  assert(json.reserved === true, "应给出保留提示");
-
-  ({ res, json } = await call(auth, ctxOf(c, c.req("/api/auth", { action: "register", handle: "reader1", nick: "泊舟", pass: "hunter2hunter", member: true }))));
+  // ── 1. 注册(只要昵称 + 口令) ──
+  ({ res, json } = await call(auth, ctxOf(c, c.req("/api/auth", { action: "register", nick: "泊舟", pass: "hunter2hunter" }))));
   c.save(res);
-  assert.strictEqual(res.status, 200, "普通昵称应可注册: " + JSON.stringify(json));
-  assert.strictEqual(json.user.member_state, "待确认", "勾了社员 -> 待确认");
+  assert.strictEqual(res.status, 200, "注册应成功: " + JSON.stringify(json));
+  assert.strictEqual(json.user.nick, "泊舟", "昵称即署名");
+  assert.strictEqual(json.user.role, "读者", "默认角色是读者");
   const me1 = json.user;
   const rc1 = json.recoverCode;
 
-  // ── 2. 同名(归一化)不能重复注册 ──
+  // ── 2. 昵称唯一(归一化): 空格/大小写/全角差异都算同一个人 ──
   const c2 = client();
-  ({ res } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "register", handle: "Reader1", nick: "别的人", pass: "12345678" }))));
-  assert.strictEqual(res.status, 409, "登录名大小写不同视为占用(真唯一索引)");
-  ({ res } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "register", handle: "reader2", nick: "泊 舟", pass: "12345678" }))));
-  assert.strictEqual(res.status, 409, "笔名空格差异视为占用");
+  ({ res } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "register", nick: "泊 舟", pass: "12345678" }))));
+  assert.strictEqual(res.status, 409, "空格差异应视为已占用(真唯一索引)");
+  ({ res } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "register", nick: "溪云", pass: "12345678" }))));
+  c2.save(res);   // 留着这个会话: 后面要用"另一个人"来同感
+  assert.strictEqual(res.status, 200, "不撞名的昵称应可注册");
 
   // ── 3. 打标签: 红/灰、取消、每篇 3 个上限(全按账号) ──
   ({ res, json } = await call(tags, ctxOf(c, c.req("/api/tags", { work: "w-mei", word: "春景" }))));
@@ -129,7 +127,7 @@ async function main() {
   assert(hit && hit.voted === true, "刷新后应仍是我的票(红) —— 这正是之前反复出问题的地方");
   // 换浏览器(新罐、同账号需重新登录) -> 仍然认得出来
   const c1b = client();
-  ({ res, json } = await call(auth, ctxOf(c1b, c1b.req("/api/auth", { action: "login", handle: "reader1", pass: "hunter2hunter" }))));
+  ({ res, json } = await call(auth, ctxOf(c1b, c1b.req("/api/auth", { action: "login", nick: "泊舟", pass: "hunter2hunter" }))));
   c1b.save(res);
   assert.strictEqual(res.status, 200, "同账号在另一个浏览器登录");
   ({ json } = await call(tags, ctxOf(c1b, c1b.req("/api/tags?work=w-mei"))));
@@ -157,26 +155,22 @@ async function main() {
   ({ res, json } = await call(comments, ctxOf(c1b, c1b.req("/api/comments", { like_comment_id: cid }))));
   assert.strictEqual(res.status, 400, "不能赞同自己的评论: " + JSON.stringify(json));
   assert(/自己的评论/.test(json.error), "提示文案应友好");
-  // 另一个人来赞
-  ({ res } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "register", handle: "reader3", nick: "溪云", pass: "12345678" }))));
-  c2.save(res);
+  // 另一个人来赞(溪云, 第 2 步已注册并保留会话)
   ({ res, json } = await call(comments, ctxOf(c2, c2.req("/api/comments", { like_comment_id: cid }))));
   assert(json.ok && json.liked === true && json.likes === 1, "别人可以同感");
   ({ json } = await call(comments, ctxOf(c1b, c1b.req("/api/comments?work=w-mei"))));
   assert(json.floors.find((f) => f.id === cid).liked === false, "自己的楼不应显示「已赞」");
 
   // ── 5. 编委: 旧钥匙开号 -> 编委账号登录 -> 管理动作 + 拿到投票人名单 ──
-  ({ res, json } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "open", handle: "jwl", nick: "蓦流", role: "编委", key: "site-key" }))));
+  ({ res, json } = await call(auth, ctxOf(c2, c2.req("/api/auth", { action: "open", nick: "蓦流", role: "编委", key: "site-key" }))));
   assert(json.ok && json.tempPass, "旧钥匙应能开编委号: " + JSON.stringify(json));
   const cAdmin = client();
-  ({ res, json } = await call(auth, ctxOf(cAdmin, cAdmin.req("/api/auth", { action: "login", handle: "jwl", pass: json.tempPass }))));
+  ({ res, json } = await call(auth, ctxOf(cAdmin, cAdmin.req("/api/auth", { action: "login", nick: "蓦流", pass: json.tempPass }))));
   cAdmin.save(res);
   assert(json.user.role === "编委", "编委账号登录");
-  // 待确认社员列表 + 确认
-  ({ json } = await call(auth, ctxOf(cAdmin, cAdmin.req("/api/auth", { action: "pending" }))));
-  assert(json.pending.some((u) => u.id === me1.id), "待确认列表应含刚注册的社员申请");
-  ({ json } = await call(auth, ctxOf(cAdmin, cAdmin.req("/api/auth", { action: "confirm", user_id: me1.id }))));
-  assert(json.role === "社员", "确认后转为社员");
+  // 编委身份靠 role 字段(不再有待确认社员流程); 这里顺便验一下"改自己的角色"
+  ({ res, json } = await call(auth, ctxOf(cAdmin, cAdmin.req("/api/auth", { action: "role", user_id: me1.id, role: "社员" }))));
+  assert(json.ok && json.role === "社员", "编委应能把某账号改成社员: " + JSON.stringify(json));
   // 编委看得到投票人名单; 普通读者看不到
   ({ json } = await call(tags, ctxOf(cAdmin, cAdmin.req("/api/tags?work=w-mei"))));
   const vs = json.voters.find((v) => v.nicks && v.nicks.includes("泊舟"));
@@ -191,13 +185,13 @@ async function main() {
 
   // ── 6. 恢复码重设口令 -> 旧会话作废, 新口令可登录 ──
   const cReset = client();
-  ({ res, json } = await call(auth, ctxOf(cReset, cReset.req("/api/auth", { action: "reset", handle: "reader1", code: rc1, pass: "brandnewpass1" }))));
+  ({ res, json } = await call(auth, ctxOf(cReset, cReset.req("/api/auth", { action: "reset", nick: "泊舟", code: rc1, pass: "brandnewpass1" }))));
   assert.strictEqual(res.status, 200, "用恢复码重设口令: " + JSON.stringify(json));
   cReset.save(res);
   const cOld = client();
-  ({ res } = await call(auth, ctxOf(cOld, cOld.req("/api/auth", { action: "login", handle: "reader1", pass: "hunter2hunter" }))));
+  ({ res } = await call(auth, ctxOf(cOld, cOld.req("/api/auth", { action: "login", nick: "泊舟", pass: "hunter2hunter" }))));
   assert.strictEqual(res.status, 401, "旧口令应失效");
-  ({ res } = await call(auth, ctxOf(cOld, cOld.req("/api/auth", { action: "login", handle: "reader1", pass: "brandnewpass1" }))));
+  ({ res } = await call(auth, ctxOf(cOld, cOld.req("/api/auth", { action: "login", nick: "泊舟", pass: "brandnewpass1" }))));
   assert.strictEqual(res.status, 200, "新口令可登录");
 
   // ── 6.5 会话边界: 过期 / 伪造 / 退出后 ──
@@ -208,7 +202,7 @@ async function main() {
   ({ res } = await call(tags, { request: (() => { const q = new Request("https://x.test/api/tags", { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "203.0.113.9", cookie: "zz_sess=" + "f".repeat(64) }, body: JSON.stringify({ work: "w-mei", word: "春景" }) }); return q; })(), env: env() }));
   assert.strictEqual(res.status, 401, "伪造 cookie 不能打标签");
   // 真实会话, 但已过期 -> 同样视为未登录
-  const { res: rLogin, json: jLogin } = await call(auth, ctxOf(c1b, c1b.req("/api/auth", { action: "login", handle: "reader1", pass: "brandnewpass1" })));
+  const { res: rLogin, json: jLogin } = await call(auth, ctxOf(c1b, c1b.req("/api/auth", { action: "login", nick: "泊舟", pass: "brandnewpass1" })));
   assert.strictEqual(rLogin.status, 200, "重新登录以拿到会话");
   c1b.save(rLogin);
   const ckName = c1b.cookie();
@@ -237,7 +231,7 @@ async function main() {
   // ── 8. 一键洗牌(编委动作, 与 sql/curation/05~08 等价) ──
   // 先造点数据: 新注册一个人 -> 投一票 + 留一句评论
   const cW = client();
-  ({ res } = await call(auth, ctxOf(cW, cW.req("/api/auth", { action: "register", handle: "wiper1", nick: "洗牌测试", pass: "12345678" }))));
+  ({ res } = await call(auth, ctxOf(cW, cW.req("/api/auth", { action: "register", nick: "洗牌测试", pass: "12345678" }))));
   cW.save(res);
   await call(tags, ctxOf(cW, cW.req("/api/tags", { work: "w-mei", word: "春景" })));
   await call(tags, ctxOf(cW, cW.req("/api/tags", { work: "w-mei", word: "幽篁" })));   // 表外词 -> 候选, 洗牌时应被清掉
@@ -274,6 +268,6 @@ async function main() {
   const kept = db._raw.prepare("SELECT COUNT(*) AS n FROM tags WHERE word IN ('春景','秋景','风')").get().n;
   assert.strictEqual(kept, 3, "落库的大纲词(预设)应保留: " + kept);
 
-  console.log("✅ test-e2e-accounts.js 全部通过 (真 SQL + 真 cookie: 注册/保留名/唯一/打标红灰与取消/上限3/换设备认人/评论署名/禁自赞/编委开号与名单/软删/恢复码/相似标签/洗牌)");
+  console.log("✅ test-e2e-accounts.js 全部通过 (真 SQL + 真 cookie: 注册(昵称+口令)/昵称唯一/打标红灰与取消/上限3/换设备认人/评论署名/禁自赞/编委开号与名单/软删/恢复码/相似标签/自建表/一键洗牌)");
 }
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });
