@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   role         TEXT NOT NULL DEFAULT '读者',         -- 读者 | 社员 | 编委
   member_state TEXT NOT NULL DEFAULT '',            -- '' | 待确认 | 已确认
   pass_salt    TEXT NOT NULL,                       -- 口令盐(随机 16 字节, hex)
-  pass_hash    TEXT NOT NULL,                       -- PBKDF2-SHA256(盐, 15 万次迭代), 不存明文
+  pass_hash    TEXT NOT NULL,                       -- PBKDF2-SHA256, 形如 pbkdf2$<迭代数>$<hex>(迭代数自适应云端上限)
   recover_hash TEXT NOT NULL DEFAULT '',            -- 一次性恢复码的哈希(可选)
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   last_seen    TEXT NOT NULL DEFAULT ''

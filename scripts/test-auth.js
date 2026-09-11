@@ -156,9 +156,38 @@ async function main() {
   assert.strictEqual(j.user.member_state, "待确认", "勾了我是社员 -> 待确认");
   const u1 = db._db.users[0];
   assert.notStrictEqual(u1.pass_hash, "hunter2hunter", "不得存明文");
-  assert.strictEqual(u1.pass_hash.length, 64, "PBKDF2-SHA256 -> 64 位 hex");
+  // 云端对 PBKDF2 迭代数有上限, 所以把实际用的迭代数写进哈希串: pbkdf2$<iter>$<hex>
+  assert(/^pbkdf2\$\d+\$[0-9a-f]{64}$/.test(u1.pass_hash), "口令哈希应含迭代数: " + u1.pass_hash.slice(0, 24));
   assert.strictEqual(u1.pass_salt.length, 32, "盐 16 字节 hex");
   assert.strictEqual(u1.recover_hash.length, 64, "恢复码也只存哈希");
+
+  /* 4b) 验证按"存进去的迭代数"重算: 较低/较高强度的老哈希都能登录 */
+  {
+    const salt = "a".repeat(32);
+    const weak = "pbkdf2$1000$" + (await auth.pbkdf2Hex("legacy-pass-1", salt, 1000));
+    db._db.users.push({ id: 900, handle: "legacy1", nick: "老哈希", handle_key: "legacy1", nick_key: "老哈希",
+      role: "读者", member_state: "", pass_salt: salt, pass_hash: weak, recover_hash: "" });
+    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "legacy-pass-1" })));
+    assert.strictEqual(r.status, 200, "应按哈希里记录的迭代数验证成功");
+    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "wrong-pass-1" })));
+    assert.strictEqual(r.status, 401, "错口令仍应 401");
+    // 坏格式不得抛异常, 直接判不通过
+    const u900 = db._db.users.find((x) => x.id === 900);
+    u900.pass_hash = "deadbeef";
+    r = await auth.onRequest(ctx(post({ action: "login", handle: "legacy1", pass: "legacy-pass-1" })));
+    assert.strictEqual(r.status, 401, "坏哈希应安全地判为不通过");
+  }
+
+  /* 4c) 可选"胡椒"(env.ZHUI_PEPPER): 设了就必须带着它才能验证通过 */
+  {
+    const dbP = FakeDB();
+    r = await auth.onRequest({ request: post({ action: "register", handle: "pepper1", nick: "胡椒测试", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
+    assert.strictEqual(r.status, 200, "带胡椒注册应成功");
+    r = await auth.onRequest({ request: post({ action: "login", handle: "pepper1", pass: "pepper-pass-1" }), env: { DB: dbP } });
+    assert.strictEqual(r.status, 401, "没带胡椒应登不进去(相当于另一套口令)");
+    r = await auth.onRequest({ request: post({ action: "login", handle: "pepper1", pass: "pepper-pass-1" }), env: { DB: dbP, ZHUI_PEPPER: "s3cret" } });
+    assert.strictEqual(r.status, 200, "带胡椒应能登录");
+  }
 
   /* 5) 唯一性按归一化比对(大小写/空格/全角都不算新名) */
   r = await auth.onRequest(ctx(post({ action: "register", handle: "reader1", nick: "另一个", pass: "12345678" })));
@@ -199,7 +228,7 @@ async function main() {
   assert.strictEqual(db._db.sessions.filter((s) => s.user_id === u3id).length, 1, "退出只该退掉当前会话, 别动别的设备");
 
   /* 9) 恢复码重设口令 */
-  const u3 = db._db.users[1];
+  const u3 = db._db.users.find((x) => x.handle_key === "reader3");   // 按登录名查, 别用下标(前面的用例会插入用户)
   r = await auth.onRequest(ctx(post({ action: "reset", handle: "reader3", code: "AAAA-BBBB-CCCC", pass: "newpass12345" })));
   assert.strictEqual(r.status, 401, "错恢复码应 401");
   // 用第 4 步那个账号的恢复码(recover_hash 已存, 这里直接重算一份新码来验证流程)

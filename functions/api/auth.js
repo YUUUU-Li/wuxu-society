@@ -19,7 +19,14 @@ import { RESERVED_NAMES, RESERVED_LABEL, SHOW_VOTERS } from "./zhuzhu-config.js"
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
 const COOKIE = "zz_sess";
 const SESSION_DAYS = 90;
-const PBKDF2_ITER = 150000;
+// PBKDF2 迭代数: 云端有两个硬约束 —— ① workerd 对 PBKDF2 迭代数有上限(超过会直接抛错,
+// 见 workerd issue #1346: 上限 10 万) ② 免费版对每次请求有 CPU 限时。
+// 所以不写死: 先用 1000 次探一下本环境的算力, 再挑一个"不超预算"的档位, 并把实际用的次数
+// 写进哈希串(pbkdf2$<iter>$<hex>) —— 验证时照抄, 日后调强度也不会让老口令失效。
+const PBKDF2_CANDIDATES = [90000, 25000, 5000];   // 由强到弱(90000 是生产环境验证过的档位)
+const PBKDF2_BUDGET_MS = 8;                       // 自留余量, 免得撞上运行时 CPU 限时
+const PBKDF2_MAX_ACCEPTED = 1000000;              // 校验时拒绝离谱的迭代数(防被伪造的哈希拖垮 CPU)
+let PBKDF2_ITER = 0;                              // 本进程选定/探测出的档位(缓存)
 const RESERVED = new Set(RESERVED_NAMES);
 
 function json(status, body, headers) {
@@ -52,11 +59,57 @@ function randHex(n) {
 async function sha256Hex(s) {
   return hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
 }
-async function pbkdf2Hex(pass, saltHex, iter = PBKDF2_ITER) {
+async function pbkdf2Hex(pass, saltHex, iter) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveBits"]);
   const salt = new Uint8Array(saltHex.match(/../g).map((h) => parseInt(h, 16)));
   const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" }, key, 256);
   return hex(bits);
+}
+export { pbkdf2Hex };
+// 挑一个本环境跑得动的 PBKDF2 档位(探测一次, 进程内缓存)
+export async function pickIterations(saltHex) {
+  if (PBKDF2_ITER) return PBKDF2_ITER;
+  let perIter = 0;
+  try {
+    const t0 = Date.now();
+    await pbkdf2Hex("probe", saltHex, 1000);
+    perIter = (Date.now() - t0) / 1000;          // 每次迭代的毫秒数(定时器精度不够时会得 0)
+    if (perIter === 0) { PBKDF2_ITER = PBKDF2_CANDIDATES[0]; return PBKDF2_ITER; }   // 快到测不出 => 用最强档
+  } catch (e) {
+    // 探测本身被拒(例如该运行时连 1000 次都不允许?) -> 交给下面的循环挑最小档
+    perIter = Infinity;
+  }
+  for (const iter of PBKDF2_CANDIDATES) {
+    if (perIter * iter <= PBKDF2_BUDGET_MS) { PBKDF2_ITER = iter; return iter; }
+  }
+  PBKDF2_ITER = PBKDF2_CANDIDATES[PBKDF2_CANDIDATES.length - 1];
+  return PBKDF2_ITER;
+}
+// 可选"胡椒": 服务器端秘密(env.ZHUI_PEPPER)参与哈希但不入库 —— 万一数据库泄露, 没有它也算不动。
+// 免费版 CPU 预算小、PBKDF2 档位被迫压低, 有了胡椒等于给离线爆破再加一道门。
+function withPepper(pass, pepper) {
+  return pepper ? String(pass) + "\u0001" + String(pepper) : String(pass);
+}
+// 口令哈希: 形如 pbkdf2$90000$<hex> —— 迭代数随哈希一起存, 验证时按存的那个数重算
+export async function hashPassword(pass, saltHex, pepper) {
+  const want = await pickIterations(saltHex);
+  const plain = withPepper(pass, pepper);
+  let lastErr = null;
+  for (const iter of [want, ...PBKDF2_CANDIDATES.filter((x) => x < want)]) {
+    try {
+      const h = await pbkdf2Hex(plain, saltHex, iter);
+      PBKDF2_ITER = iter;                 // 记住这个运行时可用的档位
+      return `pbkdf2$${iter}$${h}`;
+    } catch (e) { lastErr = e; }          // 该档位被运行时拒绝 -> 降一档再试
+  }
+  throw lastErr || new Error("PBKDF2 不可用");
+}
+export async function verifyPassword(pass, saltHex, stored, pepper) {
+  const m = /^pbkdf2\$(\d+)\$([0-9a-f]+)$/.exec(String(stored || ""));
+  if (!m) return false;                   // 格式不对(旧数据/被改坏)一律不通过
+  const iter = Number(m[1]);
+  if (!(iter > 0) || iter > PBKDF2_MAX_ACCEPTED) return false;   // 防被离谱迭代数拖垮 CPU
+  return (await pbkdf2Hex(withPepper(pass, pepper), saltHex, iter)) === m[2];
 }
 function readCookie(req, name) {
   const raw = req.headers.get("cookie") || "";
@@ -230,7 +283,7 @@ export async function onRequest(context) {
       const r = await db.prepare(
         `INSERT INTO users(handle, nick, handle_key, nick_key, role, member_state, pass_salt, pass_hash, recover_hash, last_seen)
          VALUES (?1, ?2, ?3, ?4, '读者', ?5, ?6, ?7, ?8, datetime('now'))`
-      ).bind(handle, nick, hk, nk, member ? "待确认" : "", salt, await pbkdf2Hex(pass, salt), await recoverKey(code)).run();
+      ).bind(handle, nick, hk, nk, member ? "待确认" : "", salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
       const token = await startSession(db, r.meta.last_row_id);
       const user = { id: r.meta.last_row_id, handle, nick, role: "读者", member_state: member ? "待确认" : "" };
       return json(200, {
@@ -247,7 +300,7 @@ export async function onRequest(context) {
       if (cooling(req, handle)) return json(429, { ok: false, error: "尝试次数过多，请 15 分钟后再试。" });
       const row = await db.prepare(`SELECT id, handle, nick, role, member_state, pass_salt, pass_hash FROM users WHERE handle_key = ?1`)
         .bind(normName(handle)).first();
-      if (!row || (await pbkdf2Hex(pass, row.pass_salt)) !== row.pass_hash) {
+      if (!row || !(await verifyPassword(pass, row.pass_salt, row.pass_hash, context.env.ZHUI_PEPPER))) {
         noteFail(req, handle);
         return json(401, { ok: false, error: "登录名或口令不对。" });
       }
@@ -277,7 +330,7 @@ export async function onRequest(context) {
       const salt = randHex(16);
       const code2 = newRecoverCode();
       await db.prepare(`UPDATE users SET pass_salt = ?1, pass_hash = ?2, recover_hash = ?3 WHERE id = ?4`)
-        .bind(salt, await pbkdf2Hex(pass, salt), await recoverKey(code2), row.id).run();
+        .bind(salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code2), row.id).run();
       await db.prepare(`DELETE FROM sessions WHERE user_id = ?1`).bind(row.id).run();   // 旧会话全部失效
       const token = await startSession(db, row.id);
       return json(200, { ok: true, recoverCode: code2, note: "口令已重设，恢复码已更新，请重新保存。" },
@@ -342,7 +395,7 @@ export async function onRequest(context) {
       const r = await db.prepare(
         `INSERT INTO users(handle, nick, handle_key, nick_key, role, member_state, pass_salt, pass_hash, recover_hash)
          VALUES (?1, ?2, ?3, ?4, ?5, '已确认', ?6, ?7, ?8)`
-      ).bind(handle, nick, hk, nk, role, salt, await pbkdf2Hex(pass, salt), await recoverKey(code)).run();
+      ).bind(handle, nick, hk, nk, role, salt, await hashPassword(pass, salt, context.env.ZHUI_PEPPER), await recoverKey(code)).run();
       return json(200, { ok: true, user_id: r.meta.last_row_id, handle, nick, role, tempPass: pass, recoverCode: code });
     }
     return json(400, { ok: false, error: "未知动作。" });

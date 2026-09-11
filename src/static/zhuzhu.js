@@ -47,44 +47,24 @@
   var near = [];          // 易混近义词组 [[词...]]
   var maxPerDevice = 3;   // 每设备每篇最多赞同标签数(服务端同时兜底)
   var tagState = {};      // word -> {id,count,voted,kind,hint}
-  /* ---------- 账号(轻身份): 打标签/评论/同感都要求登录 ---------- */
-  var me = null;                 // 当前登录者 {id,handle,nick,role,member_state}
+  /* ---------- 账号态: 来自全站 auth.js(登录入口在导航右上角) ---------- */
+  var me = null;                 // 当前登录者(由 window.zzAuth 同步过来)
   var tagVoters = {};            // tag_id -> {nicks:[...]} (仅编委可见, 由服务端按策略下发)
-  var authBar = gid("zz-auth");
   var tagCap = gid("zz-tagcap");
   var cmCap = gid("zz-cmcap");
   function adminOn() { return !!adminKey || !!(me && me.role === "编委"); }
-  function needLogin(where) { speak(where || tmsg, "请先登录（右上角「登录 / 注册」）。"); openAuth("login"); }
+  function needLogin(where) {
+    speak(where || tmsg, "请先登录（点页面右上角「登录 / 注册」）。");
+    if (window.zzAuth) window.zzAuth.open("login");
+  }
   // 服务端说"要登录/无权" => 会话多半已过期: 把界面切回未登录并弹出登录框, 别只丢一句报错
   function authFailed(e) {
     if (!/登录|无权/.test((e && e.message) || "")) return false;
-    me = null; syncAuthUI(); openAuth("login");
+    me = null; syncAuthUI();
+    if (window.zzAuth) { window.zzAuth.refresh(); window.zzAuth.open("login"); }
     return true;
   }
-  async function loadMe() {
-    try {
-      var r = await fetch(api + "/auth", { cache: "no-store" });
-      var j = await r.json();
-      me = (j && j.user) || null;
-    } catch (e) { me = null; }
-    syncAuthUI();
-  }
   function syncAuthUI() {
-    if (authBar) {
-      authBar.innerHTML = me
-        ? '<span class="zz-who">' + esc(me.nick) + (me.role === "编委" ? " · 编委" : me.role === "社员" ? " · 社员" : "") +
-          '</span> <a href="#" id="zz-logout">退出</a>'
-        : '<a href="#" id="zz-login">登录 / 注册</a>';
-      var lo = gid("zz-logout");
-      if (lo) lo.addEventListener("click", async function (ev) {
-        ev.preventDefault();
-        try { await fetch(api + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "logout" }) }); } catch (e) {}
-        me = null; syncAuthUI(); await loadAll();
-        speak(msg, "已退出登录。");
-      });
-      var li = gid("zz-login");
-      if (li) li.addEventListener("click", function (ev) { ev.preventDefault(); openAuth("login"); });
-    }
     if (tagCap) tagCap.textContent = me ? "点一下即赞同，可再点取消（每篇最多 3 个）" : "登录后可打标签";
     if (cmCap) cmCap.textContent = me ? "署名：" + me.nick : "登录后发表，署名用你的笔名";
     if (tagInput) {
@@ -98,73 +78,7 @@
     var postBtn = document.querySelector("#zz-form button[type=submit]");
     if (postBtn) postBtn.disabled = !me;
   }
-  // 登录/注册弹窗
-  function openAuth(mode) {
-    var old = gid("zz-authbox");
-    if (old) old.remove();
-    var isReg = mode === "register";
-    var box = document.createElement("div");
-    box.id = "zz-authbox";
-    box.className = "zz-authbox";
-    box.innerHTML =
-      '<div class="zz-authpanel" role="dialog" aria-label="登录或注册">' +
-      '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
-      '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
-      '<label class="zz-f"><span>登录名</span><input id="zz-a-handle" maxlength="20" autocomplete="username" placeholder="社员用名字缩写，如 jwl" /></label>' +
-      (isReg ? '<label class="zz-f" id="zz-f-nick"><span>笔名</span><input id="zz-a-nick" maxlength="20" autocomplete="nickname" placeholder="显示在评论区" /></label>' : "") +
-      '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' + (isReg ? "new-password" : "current-password") + '" placeholder="至少 8 位" /></label>' +
-      (isReg ? '<label class="zz-f zz-member"><input id="zz-a-member" type="checkbox" /> 我是社员</label>' : "") +
-      (isReg ? '<p class="zz-hint" id="zz-a-hint">未勾选「我是社员」时，推荐使用名字缩写或笔名。</p>' : "") +
-      '<div class="zz-authacts"><button class="btn" type="button" id="zz-a-ok">' + (isReg ? "注册并登录" : "登录") + "</button>" +
-      '<button class="btn ghost" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
-      '<p class="zz-msgline" id="zz-a-msg"></p></div>';
-    document.body.appendChild(box);
-    var A = (id) => box.querySelector("#" + id);
-    var msgEl = A("zz-a-msg");
-    function say(t, cls) { msgEl.textContent = t || ""; msgEl.className = "zz-msgline" + (cls ? " " + cls : ""); }
-    if (isReg) {
-      var cb = A("zz-a-member");
-      var hint = A("zz-a-hint");
-      function syncHint() {
-        var on = cb.checked;
-        hint.textContent = on
-          ? "请用名字缩写或笔名（与名册一致，便于社员辨认）。"
-          : "推荐使用名字缩写或笔名。";
-        A("zz-a-nick").placeholder = on ? "请用名字缩写或笔名" : "推荐使用名字缩写或笔名";
-        A("zz-a-handle").placeholder = on ? "请用名字缩写或笔名" : "自拟即可，如 luren";
-      }
-      cb.addEventListener("change", syncHint);
-      syncHint();
-    }
-    A("zz-a-cancel").addEventListener("click", function () { box.remove(); });
-    A("zz-a-switch").addEventListener("click", function () { box.remove(); openAuth(isReg ? "login" : "register"); });
-    A("zz-a-ok").addEventListener("click", async function () {
-      var handle = A("zz-a-handle").value.trim();
-      var nick = isReg ? A("zz-a-nick").value.trim() : "";   // 登录模式没有笔名框
-      var pass = A("zz-a-pass").value;
-      if (!handle) { say("请填登录名。"); return; }
-      if (isReg && !nick) { say("请填笔名。"); return; }
-      if (!pass) { say("请填口令。"); return; }
-      try {
-        var payload = isReg
-          ? { action: "register", handle: handle, nick: nick, pass: pass, member: A("zz-a-member").checked }
-          : { action: "login", handle: handle, pass: pass };
-        var r = await fetch(api + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        var j = await r.json();
-        if (!r.ok || !j.ok) throw new Error(j.error || "失败");
-        me = j.user;
-        if (j.recoverCode) {
-          window.alert("注册成功！请把下面这串「恢复码」自己存好（换设备或忘记口令时用它重设）：\n\n" + j.recoverCode +
-            (j.note ? "\n\n" + j.note : ""));
-        }
-        box.remove();
-        syncAuthUI();
-        await loadAll();
-        speak(msg, isReg ? "注册成功，欢迎 " + me.nick + "。" : "已登录，欢迎回来 " + me.nick + "。");
-      } catch (e) { say(e.message, "bad"); }
-    });
-    A("zz-a-handle").focus();
-  }
+  // 登录/注册弹窗已移到全站脚本 auth.js(导航右上角入口), 众注区只负责"未登录时引导去登录"
 
   function hintOf(word) {
     var st = tagState[word];
@@ -625,7 +539,12 @@
     else fn();
   }
   (async function boot() {
-    await loadMe();      // 先取登录态: 未登录时打标签/评论入口显示为「请先登录」
+    // 账号态由全站脚本 auth.js 提供(导航右上角): 先在导航里登录/退出, 这里跟着启用/禁用并重画
+    if (window.zzAuth) {
+      me = await window.zzAuth.ready;
+      window.zzAuth.onChange(function (u) { me = u; syncAuthUI(); loadAll(); });
+    }
+    syncAuthUI();
     await loadAll();
     syncAdmin();
   })();

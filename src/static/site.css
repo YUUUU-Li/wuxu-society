@@ -286,6 +286,9 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .nav-links a.txt{display:block;padding:11px 14px;border-radius:6px;font-size:15px}
   .nav-links a.txt:hover,.nav-links a.txt.on{background:rgba(176,133,90,.14)}
   .nav-links .btn{margin:8px 6px 4px;text-align:center;display:block}
+  .nav-auth{display:block;padding:6px 14px 10px;border-top:1px solid rgba(0,0,0,.08);margin-top:6px}
+  .nav-auth a.txt{display:inline-block;padding:0;background:none}
+  .nav-auth a.txt:hover{background:none;color:var(--seal)}
 }
 
 /* 作品库筛选条 */
@@ -347,11 +350,11 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .zz-head h3{font-size:1.15rem;margin:0}
 .zz-rule{font-size:12.5px;color:var(--dim,#6e6a5e);margin-right:auto}
 .zz-cap{font-size:12.5px;color:var(--dim,#6e6a5e);margin:12px 0 8px}
-/* 账号态(登录/注册 · 笔名 · 退出) */
-.zz-auth{font-size:12.5px;color:var(--dim,#6e6a5e);white-space:nowrap}
-.zz-auth a{color:var(--seal,#9c3f30);text-decoration:none;border-bottom:1px solid rgba(156,63,48,.35)}
-.zz-auth a:hover{border-bottom-color:var(--seal,#9c3f30)}
-.zz-who{color:var(--ink,#3a3630);font-weight:600}
+/* 导航右上角的账号态(登录/注册 · 笔名 · 退出) */
+.nav-auth{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.nav-auth .nav-who{color:var(--ink,#3a3630);font-weight:600;font-size:15px}
+.nav-auth a.txt{color:var(--seal,#9c3f30);text-decoration:none;border-bottom:1px solid rgba(156,63,48,.35)}
+.nav-auth a.txt:hover{border-bottom-color:var(--seal,#9c3f30)}
 /* 登录/注册弹窗 */
 .zz-authbox{position:fixed;inset:0;z-index:60;background:rgba(28,24,20,.42);display:flex;
   align-items:center;justify-content:center;padding:20px}

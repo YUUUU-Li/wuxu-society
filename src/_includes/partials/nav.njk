@@ -14,6 +14,9 @@
       <a class="txt{% if active == 'library' %} on{% endif %}" href="library.html">作品库</a>
       <a class="txt" href="submit.html">投稿</a>
       <a class="btn" href="{% if home %}#join{% else %}index.html#join{% endif %}">申请入社</a>
+      <span class="nav-auth" id="nav-auth" hidden></span>
     </nav>
   </div>
 </header>
+{# 账号态(登录/注册 · 笔名 · 退出)与弹窗: 全站脚本, 放在导航里保证每个页面都有入口 #}
+<script src="auth.js?v={{ assetVer }}"></script>
