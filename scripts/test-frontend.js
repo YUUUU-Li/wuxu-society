@@ -163,7 +163,7 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
 
 // 8) 登录/注册弹窗的 HTML 模板: 把 auth.js 里那段字符串拼出来真跑一遍(本地没浏览器, 只能这样验结构)
 {
-  const seg = /box\.innerHTML =([\s\S]*?);\n\s*document\.body\.appendChild/.exec(auth);
+  const seg = /box\.innerHTML =([\s\S]*?);\r?\n\s*document\.body\.appendChild/.exec(auth);
   assert(seg, "应从 auth.js 里找到弹窗模板(box.innerHTML = …)");
   const build = new Function("isReg", "return " + seg[1].trim() + ";");
   for (const isReg of [false, true]) {
