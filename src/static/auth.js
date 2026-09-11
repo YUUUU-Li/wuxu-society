@@ -40,7 +40,8 @@
       var lo = gid("nav-logout");
       if (lo) lo.addEventListener("click", function (ev) { ev.preventDefault(); logout(); });
     } else {
-      slot.innerHTML = '<a class="txt nav-login" href="#" id="nav-login">登录 / 注册</a>';
+      // 未登录: 用页头按钮(原「申请入社」那款)的样式, 一眼能看见
+      slot.innerHTML = '<a class="btn nav-login" href="#" id="nav-login">登录 / 注册</a>';
       var li = gid("nav-login");
       if (li) li.addEventListener("click", function (ev) { ev.preventDefault(); openAuth("login"); });
     }
@@ -67,13 +68,12 @@
       '<div class="zz-authpanel" role="dialog" aria-label="登录或注册">' +
       '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
       '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
-      '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" maxlength="20" autocomplete="username" placeholder="' +
-        (isReg ? "社员建议用姓名缩写或笔名" : "注册时用的昵称") + '" /></label>' +
+      '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" maxlength="20" autocomplete="username" placeholder="社员建议用笔名" /></label>' +
       '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' +
         (isReg ? "new-password" : "current-password") + '" placeholder="' + (isReg ? "至少 8 位" : "") + '" /></label>' +
-      (isReg ? '<p class="zz-hint" id="zz-a-hint">昵称就是你的署名（会显示在标签与评论旁）。社员请尽量用姓名缩写或笔名，方便大家认得。</p>' : "") +
+      (isReg ? '<p class="zz-hint" id="zz-a-hint">昵称就是你的署名（会显示在标签与评论旁）。</p>' : "") +
       '<div class="zz-authacts"><button class="btn" type="button" id="zz-a-ok">' + (isReg ? "注册并登录" : "登录") + "</button>" +
-      '<button class="btn ghost" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
+      '<button class="btn" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
       '<p class="zz-msgline" id="zz-a-msg"></p></div>';
     document.body.appendChild(box);
 

@@ -50,15 +50,23 @@ assert.throws(() => renameWork("w-qingmingyu", "Bad Name", { root: tmp }), /新�
 assert.throws(() => renameWork("w-qingmingyu", "w-yiqinehe", { root: tmp }), /目标已存在/);
 assert.throws(() => renameWork("w-nope", "w-x", { root: tmp }), /找不到作品文件/);
 
-// 4) 创作时间: 新增 / 更新 / 干跑 / 非法
+// 4) 创作时间: 新增 / 更新 / 干跑 / 宽松写法 / 非法
 setCreated("w-yiqinehe", "2025-06", { root: tmp });
 assert(/^created: "2025-06"$/m.test(read("src/works/w-yiqinehe.md")), "created 新增在 genre 之后");
 setCreated("w-yiqinehe", "2025-06-18", { root: tmp });
 assert(/^created: "2025-06-18"$/m.test(read("src/works/w-yiqinehe.md")), "created 原地更新");
+// 社内实测写法: 整串 8 位 / 点号 / 汉字
+setCreated("w-yiqinehe", "20250618", { root: tmp });
+assert(/^created: "2025-06-18"$/m.test(read("src/works/w-yiqinehe.md")), "8 位数字 20250618 -> 2025-06-18");
+setCreated("w-yiqinehe", "2025.6", { root: tmp });
+assert(/^created: "2025-06"$/m.test(read("src/works/w-yiqinehe.md")), "点号 2025.6 -> 2025-06(只到月)");
+setCreated("w-yiqinehe", "2025年6月7日", { root: tmp });
+assert(/^created: "2025-06-07"$/m.test(read("src/works/w-yiqinehe.md")), "汉字 2025年6月7日 -> 2025-06-07");
 const before = read("src/works/w-yiqinehe.md");
 setCreated("w-yiqinehe", "2025-07", { root: tmp, dryRun: true });
 assert.strictEqual(read("src/works/w-yiqinehe.md"), before, "干跑不写入");
-assert.throws(() => setCreated("w-yiqinehe", "2025-13", { root: tmp }), /日期格式|不合法/);
+assert.throws(() => setCreated("w-yiqinehe", "2025-13", { root: tmp }), /认不出|日期/);
+assert.throws(() => setCreated("w-yiqinehe", "去年春天", { root: tmp }), /认不出|日期/);
 assert.throws(() => setCreated("w-nope", "2025-06", { root: tmp }), /找不到作品文件/);
 
 fs.rmSync(tmp, { recursive: true, force: true });

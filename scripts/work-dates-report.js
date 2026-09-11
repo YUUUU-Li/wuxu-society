@@ -3,10 +3,10 @@
 //   写得 docs/作品时间收集表.md; 加 --stdout 只打印不写文件。
 // 说明: 本表只汇总**仓库里已有的证据**(期/出处/干支落款/节令题名), 不替作者猜日期;
 //       created 的确切值仍由作者或编委确认后, 用 npm run set-created 写入。
-// 排序口径与 .eleventy.js 一致(共用 scripts/work-order.js): created 升序, 未填者列于其后。
+// 排序口径与 .eleventy.js 一致(共用 scripts/work-order.js): created 升序, 模糊的排当月具体日子之前, 未填者列于其后。
 const fs = require("fs");
 const path = require("path");
-const { sortByCreated } = require("./work-order.js");
+const { sortByCreated, createdKey, normalizeCreated } = require("./work-order.js");
 
 const ROOT = path.join(__dirname, "..");
 const WORKS = path.join(ROOT, "src", "works");
@@ -82,13 +82,15 @@ function batchesOf(missing) {
 
 function build() {
   const all = collect();
+  // 宽松写法统一归一化(20240911 / 2024.9.11 / 2024年9月11日 / 202409 / 2024-09 / 2024)
+  all.forEach((w) => { if (w.created) w.created = normalizeCreated(w.created); });
   const created = {};
-  all.forEach((w) => { if (w.created) created[w.slug] = w.created; });
+  all.forEach((w) => { if (createdKey(w.created)) created[w.slug] = w.created; });
   const orderIdx = {};
   sortByCreated(ORDER, created).forEach((s, i) => (orderIdx[s] = i));
   const sorted = all.slice().sort((a, b) => (orderIdx[a.slug] ?? 9999) - (orderIdx[b.slug] ?? 9999));
-  const dated = sorted.filter((w) => w.created);
-  const missing = sorted.filter((w) => !w.created);
+  const dated = sorted.filter((w) => createdKey(w.created));
+  const missing = sorted.filter((w) => !createdKey(w.created));
 
   const row = (w) =>
     `| \`${w.slug}\` | ${w.title} | ${w.author} | ${w.genre} | ${w.created || "**待填**"} | ${w.source || (w.issue ? w.issue : "—")} | ${w.hints.length ? w.hints.join("；") : "—"} |`;
@@ -103,14 +105,16 @@ function build() {
   out.push("");
   out.push("## 一、怎么补填");
   out.push("");
-  out.push("1. 与作者或编委核对到**年、月**即可（知道具体日子更好），格式 `YYYY-MM` 或 `YYYY-MM-DD`；");
+  out.push("1. 与作者或编委核对到**年、月**即可（知道具体日子更好）。日期写法很随意，脚本会统一归一化：");
+  out.push("   `20240911` · `2024.9.11` · `2024/9/11` · `2024年9月11日` · `2024-09-11`（到日）；`202409` · `2024-09`（只到月）；`2024`（只到年）；");
   out.push("2. 写进 front matter：");
   out.push("   ```bash");
   out.push("   npm run set-created -- w-mei 2024-05 w-feng 2024-06 --dry-run   # 先看改动");
-  out.push("   npm run set-created -- w-mei 2024-05 w-feng 2024-06            # 真写入");
+  out.push("   npm run set-created -- w-mei 2024-05 w-feng 20240605           # 8 位/点号写法也认");
   out.push("   npm test && git add -A && git commit -m \"补创作时间\" && git push");
   out.push("   ```");
-  out.push("3. 排序口径（`.eleventy.js` 与 `scripts/work-order.js`，单一真相）：`created` **升序**（早者在前）；");
+  out.push("3. 排序口径（单一真相在 `scripts/work-order.js`）：`created` **升序**（早者在前）；");
+  out.push("   **模糊的往前排**——只知月份的排在该月有具体日子的**前面**（`2024-06` 在 `2024-06-07` 之前，`2024` 在 `2024-06` 之前）；");
   out.push("   **未填者不猜日期**——统一排在已填者之后，作品库里另立「年份待考」一节（组内保持 `fulltext_order.json` 原次序）。");
   out.push("   ⚠️ 旧口径是「未填者继承前一篇已填作品的时点」：因 `fulltext_order.json` 开头就是 2024-04-04 的清明雅集，");
   out.push("   30 多篇未填作品会被一律算作 2024-04-04（含 2026 年的投稿）挤作一堆，故已废弃。");
@@ -139,7 +143,7 @@ function build() {
   out.push("| # | 标识 | 题名 | 创作时间 | 状态 |");
   out.push("|---|---|---|---|---|");
   sorted.forEach((w, i) => {
-    out.push(`| ${i + 1} | \`${w.slug}\` | ${w.title} | ${w.created || "—"} | ${w.created ? "已填" : "**年份待考**（库里另列一节）"} |`);
+    out.push(`| ${i + 1} | \`${w.slug}\` | ${w.title} | ${w.created || "—"} | ${createdKey(w.created) ? "已填" : "**年份待考**（库里另列一节）"} |`);
   });
   out.push("");
   return { md: out.join("\n"), dated: dated.length, missing: missing.length, total: all.length };

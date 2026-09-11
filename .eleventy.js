@@ -2,7 +2,7 @@
 // 构建: npm run build  (输出到 dist/, 即 Cloudflare Pages 发布目录)
 const fs = require("fs");
 const path = require("path");
-const { sortByCreated, undatedSlugs } = require("./scripts/work-order.js");
+const { sortByCreated, undatedSlugs, parseCreated, cnCreated } = require("./scripts/work-order.js");
 const { escLines } = require("./scripts/text-blocks.js");
 
 const MEMBERS = JSON.parse(
@@ -14,14 +14,24 @@ const FULLTEXT_ORDER = JSON.parse(
 const memberById = {};
 for (const sec of MEMBERS) for (const m of sec.members) memberById[m.id] = m;
 
-// 创作时间排序(口径见 scripts/work-order.js): created(YYYY-MM 或 YYYY-MM-DD) 升序;
-// 未填者不猜日期, 统一排在已填者之后(组内保持 fulltext_order.json 原次序), 作品库里另立「年份待考」一节。
-const createdOf = {};
+// 创作时间排序(口径见 scripts/work-order.js): created 升序; 模糊的(只到月/只到年)排在当月具体日子之前;
+// 未填(或写错认不出)者不猜日期, 统一排在已填者之后(组内保持 fulltext_order.json 原次序), 作品库里另立「年份待考」一节。
+// 写法很宽松(20240911 / 2024.9.11 / 2024年9月11日 / 202409 / 2024-09 / 2024), 这里统一归一化后再排序与显示。
+const createdRawOf = {};
 for (const f of fs.readdirSync(path.join(__dirname, "src", "works"))) {
   if (!f.endsWith(".md")) continue;
   const s = fs.readFileSync(path.join(__dirname, "src", "works", f), "utf8");
-  const m = /^created:\s*"([^"]*)"/m.exec(s);
-  if (m) createdOf[f.slice(0, -3)] = m[1];
+  const m = /^created:\s*"?([^"\n]*)"?/m.exec(s);
+  if (m && m[1].trim()) createdRawOf[f.slice(0, -3)] = m[1].trim();
+}
+const createdOf = {};
+for (const [slug, raw] of Object.entries(createdRawOf)) {
+  const parsed = parseCreated(raw);
+  if (!parsed) {
+    console.warn(`⚠️ ${slug}: created = "${raw}" 认不出（支持 20240911 / 2024.9.11 / 2024年9月11日 / 2024-09 / 2024），已按"年份待考"处理`);
+    continue;
+  }
+  createdOf[slug] = parsed.text;
 }
 const FULLTEXT_SORTED = sortByCreated(FULLTEXT_ORDER, createdOf);
 const UNDATED = undatedSlugs(FULLTEXT_ORDER, createdOf);
@@ -122,11 +132,8 @@ module.exports = function (eleventyConfig) {
     (slugs || []).slice().sort((a, b) => (orderIdx[a] ?? 9999) - (orderIdx[b] ?? 9999))
   );
   // 创作时间显示: "2024-03" -> 2024年3月; "2024-03-06" -> 2024年3月6日
-  eleventyConfig.addFilter("cnDate", (s) => {
-    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(String(s || "").trim());
-    if (!m) return s || "";
-    return m[1] + "年" + Number(m[2]) + "月" + (m[3] ? Number(m[3]) + "日" : "");
-  });
+  // (宽松写法也认: 20240911 / 2024.9.11 / 2024年9月11日 / 2024 都走同一口径, 逻辑在 scripts/work-order.js)
+  eleventyConfig.addFilter("cnDate", cnCreated);
   // 题记/自注: 转义 + 换行 -> <br /> (模板里配 | safe; 口径与 /api/preview 一致)
   eleventyConfig.addFilter("escLines", escLines);
 

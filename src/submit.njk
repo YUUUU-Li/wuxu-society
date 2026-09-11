@@ -52,9 +52,10 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
             <option value="">月</option>
             {% for m in monthsList %}<option value="{{ m.v }}">{{ m.label }}</option>{% endfor %}
           </select>
-          <input id="sub-created-day" type="number" min="1" max="31" placeholder="日（可选）" aria-label="创作日（可选）" />
+          <input id="sub-created-day" type="text" inputmode="numeric" maxlength="12" placeholder="日（可选）" aria-label="创作日（可选）" />
         </div>
-        <small style="color:var(--dim)">只记得年月就选到月即可；知道具体日子再填"日"。此时间用于作品排序与编委封期，并会显示在作品页的题下信息里。</small>
+        <small style="color:var(--dim)">只记得年月就选到月即可；知道具体日子再填"日"。<b>也可以把整串日期直接写进"日"这一格</b>（如 <code>20240911</code>、<code>2024.6.7</code>、<code>2024-6-7</code>、<code>2024年6月7日</code>，只写 <code>2024.6</code> 也行），会自动拆到上面的年、月里。此时间用于作品排序与编委封期，并会显示在作品页的题下信息里。</small>
+        <small id="sub-created-note" style="color:var(--seal);display:none"></small>
       </div>
       <div class="field">
         <label for="sub-excerpt">摘句（选填，缩略显示）</label>
@@ -119,6 +120,73 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
   var msg = document.getElementById("sub-msg");
   var btn = document.getElementById("sub-btn");
   if (!form) return;
+
+  /* ---------- 创作时间: 也认"整串日期" ---------- */
+  // 年/月是下拉, "日"这一格额外接受整串日期(社内习惯写 20240911 / 2024.6.7 / 2024年6月7日),
+  // 会自动拆到上面的年、月里; 只认到月的(2024.6 / 202406)也可以 —— 模糊的排在当月具体日子之前。
+  var yearEl = document.getElementById("sub-created-year");
+  var monthEl = document.getElementById("sub-created-month");
+  var dayEl = document.getElementById("sub-created-day");
+  var dayNote = document.getElementById("sub-created-note");
+  // 先把各种分隔写法统一成 "YYYY-M-D", 再用一条严格正则读(避免 202409 被切成 0 月 9 日这种歧义)
+  var RE_DATE = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/;
+  var MDAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   // 与 scripts/work-order.js 同一张月长表
+  function parseLooseDate(v) {
+    var s = String(v || "").trim();
+    if (!s) return null;
+    if (/^\d+$/.test(s)) {
+      // 纯数字靠位数判断: 4=年(交给上面的年份下拉, 这里不认) / 6=年月 / 8=年月日
+      if (s.length === 6) s = s.slice(0, 4) + "-" + s.slice(4);
+      else if (s.length === 8) s = s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6);
+      else if (s.length !== 4) return null;
+    } else {
+      s = s.replace(/\s+/g, "").replace(/[年月.\/]/g, "-").replace(/日$/, "").replace(/-+$/, "");
+    }
+    var m = RE_DATE.exec(s);
+    if (!m) return null;
+    var mo = ("0" + m[2]).slice(-2);
+    var d = m[3] ? ("0" + m[3]).slice(-2) : "";
+    if (+mo < 1 || +mo > 12) return null;
+    if (d && (+d < 1 || +d > MDAYS[+mo - 1])) return null;
+    return { y: m[1], mo: mo, d: d };
+  }
+  function hasOption(sel, v) {
+    for (var i = 0; i < sel.options.length; i++) if (sel.options[i].value === v) return true;
+    return false;
+  }
+  function showDayNote(t) {
+    if (!dayNote) return;
+    dayNote.textContent = t || "";
+    dayNote.style.display = t ? "block" : "none";
+  }
+  // 把"日"里的整串日期拆到年、月: 拆成功返回 true
+  function absorbLooseDate() {
+    if (!dayEl) return false;
+    var raw = (dayEl.value || "").trim();
+    if (!raw) { showDayNote(""); return false; }
+    if (/^\d{1,2}$/.test(raw)) { showDayNote(""); return false; }   // 正常只填"日", 不动
+    var p = parseLooseDate(raw);
+    if (!p) {
+      if (/^\d{4}$/.test(raw)) showDayNote("只知年份的话，" + raw + " 请填在左边的「年」里，月份任选一个相近的即可。");
+      else showDayNote("认不出这个日期；可写 20240911、2024.6.7、2024年6月7日，或只写 2024.6。");
+      return false;
+    }
+    if (!hasOption(yearEl, p.y)) { showDayNote("年份 " + p.y + " 不在下拉范围里，请手动选。"); return false; }
+    yearEl.value = p.y;
+    monthEl.value = p.mo;
+    dayEl.value = p.d ? String(+p.d) : "";
+    showDayNote("已识别：" + p.y + " 年 " + +p.mo + " 月" + (p.d ? " " + +p.d + " 日" : "（只到月，将排在当月有具体日子的作品之前）"));
+    return true;
+  }
+  if (dayEl) {
+    dayEl.addEventListener("input", function () {
+      var v = (dayEl.value || "").trim();
+      if (v.length >= 8) absorbLooseDate();        // 8 位以上基本是整串, 边打边拆
+      else if (!v) showDayNote("");
+    });
+    dayEl.addEventListener("blur", absorbLooseDate);
+    dayEl.addEventListener("change", absorbLooseDate);
+  }
 
   /* ---------- 正文: 示例 + 左写右预览 ---------- */
   var bodyEl = document.getElementById("sub-body");
@@ -217,17 +285,35 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     if (!title) { msg.textContent = "请先写题名。"; msg.className = "form-msg err"; form.title.focus(); return; }
     if (!author) { msg.textContent = "请留下署名（缩写或缩写（笔名））。"; msg.className = "form-msg err"; form.author.focus(); return; }
     if (body.length < 10) { msg.textContent = "正文太短了，再写几句吧。"; msg.className = "form-msg err"; form.body.focus(); return; }
-    var createdYear = document.getElementById("sub-created-year").value;
-    var createdMonth = document.getElementById("sub-created-month").value;
+    // 先把"日"里的整串日期拆开(用户可能只填了那一格就点提交)
+    absorbLooseDate();
+    var createdYear = yearEl.value;
+    var createdMonth = monthEl.value;
     if (!createdYear || !createdMonth) {
-      msg.textContent = "请选择创作时间（年、月）。";
-      msg.className = "form-msg err"; return;
+      msg.textContent = "请选择创作时间（年、月）；也可以把整串日期写进「日」（如 20240911）。";
+      msg.className = "form-msg err"; yearEl.focus(); return;
     }
-    var dayRaw = (document.getElementById("sub-created-day").value || "").trim();
-    var day = dayRaw ? ("0" + dayRaw).slice(-2) : "";
-    if (dayRaw && (+dayRaw < 1 || +dayRaw > 31)) {
-      msg.textContent = "\"日\" 请填 1–31 之间的数字（不填也可以）。";
-      msg.className = "form-msg err"; return;
+    var dayRaw = (dayEl.value || "").trim();
+    var day = "";
+    var loose = parseLooseDate(dayRaw);
+    if (loose) {
+      // 用户把整串日期填进了"日": 就用整串(顺手把上面的年、月也同步过去)
+      if (!hasOption(yearEl, loose.y)) {
+        msg.textContent = "年份 " + loose.y + " 超出可选范围（" + yearEl.options[yearEl.options.length - 1].value + "–" + yearEl.options[1].value + "），请手动选。";
+        msg.className = "form-msg err"; yearEl.focus(); return;
+      }
+      yearEl.value = loose.y;
+      monthEl.value = loose.mo;
+      day = loose.d;
+      createdYear = loose.y;
+      createdMonth = loose.mo;
+      dayEl.value = loose.d ? String(+loose.d) : "";
+    } else if (dayRaw) {
+      if (!/^\d{1,2}$/.test(dayRaw) || +dayRaw < 1 || +dayRaw > 31) {
+        msg.textContent = "「日」请填 1–31（不填也行），或把整串日期写进来（如 20240911、2024.6.7）。";
+        msg.className = "form-msg err"; dayEl.focus(); return;
+      }
+      day = ("0" + dayRaw).slice(-2);
     }
     var created = createdYear + "-" + createdMonth + (day ? "-" + day : "");
     var payload = {
@@ -259,6 +345,7 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
             "。编委通过后会自动发布；若需修改，可在同一条投稿里留言重投。<br />" +
             (res.j.html_url ? '<a href="' + res.j.html_url + '" target="_blank" rel="noopener">查看审稿单（需 GitHub 登录）</a>' : "");
           form.reset();
+          showDayNote("");
         } else {
           msg.textContent = res.j && res.j.error ? res.j.error : "提交失败，请稍后再试或联系社长。";
           msg.className = "form-msg err";

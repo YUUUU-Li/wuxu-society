@@ -11,3 +11,6 @@ dist/
 # 构建期从仓库根复制进静态区的许可证副本(不入库)
 src/static/LICENSE.txt
 src/static/LICENSE-CODE.txt
+
+# 本地工具/浏览器内核在仓库根留下的运行日志(不入库)
+debug.log

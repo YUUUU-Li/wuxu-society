@@ -45,29 +45,29 @@ assert(home.includes("M20.5 14.6A8.6") && home.includes("site.css?v="), "月亮�
 assert(home.includes('href="yaji.html"') && !home.includes("#gathering") && !home.includes("#works"), "导航: 雅集指向新页, 已删「作品」项");
 assert(read("submit.html").includes("分割线") && read("submit.html").includes("楷体文段"), "投稿页格式提示含行首标记说明");
 assert(read("submit.html").includes('id="sub-sample"') && read("submit.html").includes('id="sub-preview"') && read("submit.html").includes("/api/preview"), "投稿页含示例按钮与左写右预览");
-// —— 创作时间排序: 库池顺序 = created 升序(未填者继承前一篇) ——
+// 「日」一栏也接受整串日期(20240911 / 2024.6.7 / 2024年6月7日), 会拆到上面的年、月里
+assert(read("submit.html").includes('id="sub-created-day"') && read("submit.html").includes("parseLooseDate")
+  && read("submit.html").includes("20240911"), "投稿页创作时间应支持整串日期(自动拆分)");
+// —— 创作时间排序: 库池顺序 = created 升序(模糊的往前排, 未填者列于最后) ——
+const { sortByCreated } = require("./work-order.js");
 const regOrder = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/fulltext_order.json"), "utf8"));
 const createdOf = {};
 for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
   if (!f.endsWith(".md")) continue;
-  const m = /^created:\s*"([^"]*)"/m.exec(fs.readFileSync(path.join(__dirname, "..", "src/works", f), "utf8"));
-  if (m) createdOf[f.slice(0, -3)] = m[1];
+  const m = /^created:\s*"?([^"\n]*)"?/m.exec(fs.readFileSync(path.join(__dirname, "..", "src/works", f), "utf8"));
+  if (m && m[1].trim()) createdOf[f.slice(0, -3)] = m[1].trim();
 }
 {
-  let carry = "";
-  const key = {};
-  for (const s of regOrder) { if (createdOf[s]) carry = createdOf[s]; key[s] = carry; }
-  const expected = regOrder.map((s, i) => ({ s, i }))
-    .sort((a, b) => String(key[a.s] || "").localeCompare(String(key[b.s] || "")) || a.i - b.i)
-    .map((x) => x.s);
+  // 期望值直接用构建期的同一函数算(单一真相), 避免测试里再抄一份会走样的旧口径
+  const expected = sortByCreated(regOrder, createdOf);
   const actual = JSON.parse(/id="lib-pool">([\s\S]*?)<\/script>/.exec(read("library.html"))[1].trim())
     .map((w) => w.h.replace(/^\//, "").replace(/\.html$/, ""));
-  assert.deepStrictEqual(actual, expected, "作品库顺序应按创作时间升序");
+  assert.deepStrictEqual(actual, expected, "作品库顺序应按创作时间升序(未填者列于最后)");
   assert(regOrder.some((s) => createdOf[s]), "至少应有作品填了 created(回填后排序才生效)");
 }
 
 assert(css.includes(".lib-body hr.rule") && css.includes(".lib-body blockquote.quote"), "正文分割线/引文块样式");
-assert(/\.created-row select,\s*\n?\.created-row input\[type="number"\]\{[^}]*height:46px/.test(css), "创作时间三控件统一高度");
+assert(/\.created-row select,\s*\n?\.created-row #sub-created-day\{[^}]*height:46px/.test(css), "创作时间三控件统一高度");
 assert(css.includes("color-scheme:light") && css.includes("color-scheme:dark"), "声明 color-scheme(原生下拉/滚动条随主题)");
 assert(css.includes("select option") && css.includes("[data-theme=\"dark\"] select option"), "下拉选项配色兜底(浅底深字/深底浅字)");
 assert(css.includes('[data-theme="dark"] .sug{background:#26221c'), "深色联想下拉为不透明面板(否则压住评论会透字)");
@@ -197,6 +197,17 @@ assert(read("w-guixiang.html").includes('id="zz-admin-btn"'), "众注含编委�
 assert(read("site.js").includes("zz_key") === false && read("zhuzhu.js").includes('id="zz-admin-btn"') === false && read("zhuzhu.js").includes("zz_key"), "编委钥匙仅存 sessionStorage");
 // 账号化改造: 每个页面导航右上角都要有账号入口(登录/注册 · 笔名 · 退出); 评论不再让读者自填昵称
 assert(read("w-guixiang.html").includes('id="nav-auth"'), "页面导航含账号态入口(登录/注册)");
+// —— 导航版式: 申请入社与投稿都成了文字链, 且申请入社在前(两者交换过位置); 按钮位留给登录/注册 ——
+{
+  const navBlock = /<nav class="nav-links"[\s\S]*?<\/nav>/.exec(home);
+  assert(navBlock, "首页应有主导航块");
+  const nb = navBlock[0];
+  assert(/申请入社<\/a>[\s\S]{0,120}?<a class="txt" href="submit\.html">投稿<\/a>/.test(nb),
+    "导航里「申请入社」应排在「投稿」之前");
+  assert(/<a class="txt" href="(?:index\.html)?#join">申请入社<\/a>/.test(nb), "申请入社应与缘起/社员同款(文字链)");
+  assert(!/class="btn"[^>]*>申请入社</.test(nb), "导航里的申请入社不再是按钮(按钮位留给登录/注册)");
+  assert(nb.includes('id="nav-auth"'), "导航含账号态入口占位");
+}
 assert(read("w-guixiang.html").includes("auth.js"), "页面应加载全站账号脚本 auth.js");
 assert(read("library.html").includes('id="nav-auth"'), "作品库页也要有账号入口");
 assert(!read("w-guixiang.html").includes('id="zz-name"'), "评论表单已去掉「笔名/昵称」输入框");

@@ -63,6 +63,21 @@ async function main() {
   assert.strictEqual((await post(mod, { title: "a<b", author: "a", genre: "词", created: "2024-04", body: LONG_BODY })).status, 400, "非法字符 < >");
   assert.strictEqual((await post(mod, { title: "无时间", author: "a", genre: "词", body: LONG_BODY })).status, 400, "缺创作时间");
   assert.strictEqual((await post(mod, { title: "坏时间", author: "a", genre: "词", created: "2024-13", body: LONG_BODY })).status, 400, "月份非法");
+  assert.strictEqual((await post(mod, { title: "坏时间2", author: "a", genre: "词", created: "去年春天", body: LONG_BODY })).status, 400, "认不出的日期");
+
+  // 1.5) 创作时间的宽松写法: 8 位数字 / 点号 / 汉字 / 只到月, 入库前统一归一化
+  for (const [raw, want, slugWant] of [
+    ["20240911", "2024-09-11", "w-20240911-01"],
+    ["2024.9.11", "2024-09-11", "w-20240911-01"],
+    ["2024年9月11日", "2024-09-11", "w-20240911-01"],
+    ["2024-09", "2024-09", "w-202409-01"],
+    ["202409", "2024-09", "w-202409-01"],
+  ]) {
+    const rr = await post(mod, { title: "日期写法", author: "zk（道格）", genre: "七律", created: raw, body: LONG_BODY });
+    assert.strictEqual(rr.status, 200, `「${raw}」应被接受: ` + (await rr.text()));
+    assert(new RegExp('^created: "' + want + '"$', "m").test(md), `「${raw}」应归一化为 ${want}`);
+    assert(prBody.includes("`" + slugWant + "`"), `「${raw}」标识名应为 ${slugWant}`);
+  }
 
   // 2) 诗句排版(行间 <br />) + 空行分段
   let r = await post(mod, { title: "联句", author: "jwl（蓦流）", genre: "联句", created: "2024-04", body: "共怀帘中清明雨。\n相与檐下语清明。" });

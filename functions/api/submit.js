@@ -47,6 +47,51 @@ function b64decode(b64) {
 
 const P_ANALYSIS = /^(注|注释|评注|评|赏析)\s*[:：]?\s*/;
 const RULE_RE = /^-{3,}$/;
+// 创作时间: 认 20240911 / 2024.9.11 / 2024/9/11 / 2024年9月11日 / 2024-09 / 202409 / 2024
+// (与 scripts/work-order.js 的 parseCreated 同口径 —— scripts/test-dates.js 会逐例比对两边)
+const MONTH_DAYS = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const pad2 = (n) => ("0" + n).slice(-2);
+function parseCreated(s) {
+  const raw = String(s == null ? "" : s).trim();
+  if (!raw) return null;
+  const parts = raw.split(/[^\d]+/).filter((x) => x !== "");
+  let y = "";
+  let m = "";
+  let d = "";
+  if (parts.length >= 3) {
+    [y, m, d] = parts;
+  } else if (parts.length === 2) {
+    [y, m] = parts;
+  } else {
+    const t = parts[0] || "";
+    if (t.length === 4) y = t;
+    else if (t.length === 6) { y = t.slice(0, 4); m = t.slice(4); }
+    else if (t.length === 8) { y = t.slice(0, 4); m = t.slice(4, 6); d = t.slice(6); }
+    else return null;
+  }
+  if (!/^\d{4}$/.test(y)) return null;
+  const yi = Number(y);
+  if (yi < 1000 || yi > 2999) return null;
+  let mi = null;
+  let di = null;
+  if (m !== "") {
+    if (!/^\d{1,2}$/.test(m)) return null;
+    mi = Number(m);
+    if (mi < 1 || mi > 12) return null;
+  }
+  if (d !== "") {
+    if (!/^\d{1,2}$/.test(d)) return null;
+    di = Number(d);
+    if (di < 1 || di > (mi ? MONTH_DAYS[mi - 1] : 31)) return null;
+  }
+  return {
+    y: yi,
+    m: mi,
+    d: di,
+    key: y + (mi ? pad2(mi) : "00") + (di ? pad2(di) : "00"),
+    text: y + (mi ? "-" + pad2(mi) : "") + (di ? "-" + pad2(di) : ""),
+  };
+}
 // 行首标记语法(投稿方写):
 //   & 开头   -> 楷体文段(前记/后记/序/跋 等)
 //   > 开头   -> 引文块(楷体 + 朱砂竖线)
@@ -141,14 +186,12 @@ async function doSubmit(context) {
   if (/[<>]/.test(title + author + genre + source + excerpt + epigraph + selfNote)) {
     return json(400, { ok: false, error: "题名/署名/摘句/题记/自注里不能包含 < > 字符。" });
   }
-  const created = String(input.created || "").trim();
-  if (!/^\d{4}-\d{2}(-\d{2})?$/.test(created)) {
-    return json(400, { ok: false, error: "请填写创作时间（年月，如 2024-04）。" });
+  // 创作时间: 宽松写法(20240911 / 2024.9.11 / 2024年9月11日 / 2024-09 / 202409 / 2024)统一归一化后入库
+  const createdParsed = parseCreated(input.created);
+  if (!createdParsed) {
+    return json(400, { ok: false, error: "请填写创作时间（年月即可，如 2024-04；也可写 20240404 或 2024.4）。" });
   }
-  const [cy, cm, cd] = created.split("-");
-  if (+cy < 1900 || +cy > 2100 || +cm < 1 || +cm > 12 || (cd && (+cd < 1 || +cd > 31))) {
-    return json(400, { ok: false, error: "创作时间不合法。" });
-  }
+  const created = createdParsed.text;
   const imageries = imageriesRaw
     ? imageriesRaw.split(/[,，、;；]/).map((s) => s.trim()).filter(Boolean).slice(0, 12)
     : [];
@@ -286,4 +329,6 @@ export async function onRequestPost(context) {
 export async function onRequest(context) {
   return json(405, { ok: false, error: "只接受 POST" });
 }
+// 供单测复用(与 scripts/work-order.js 的口径比对, 见 scripts/test-dates.js)
+export { parseCreated };
 export { bodyToHtml };

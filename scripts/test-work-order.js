@@ -7,7 +7,11 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { sortByCreated, undatedSlugs } = require("./work-order.js");
+const { sortByCreated, undatedSlugs, createdKey } = require("./work-order.js");
+
+// 0) 宽松写法也照样排序(20240911 / 2024.9.11 / 2024年9月11日 …) —— 详见 scripts/test-dates.js
+assert.deepStrictEqual(sortByCreated(["a", "b", "c"], { a: "2024.6.7", b: "2024.6", c: "20240911" }), ["b", "a", "c"],
+  "模糊的(只到月)应排在当月具体日子之前");
 
 // 1) 与登记位置无关的升序
 let order = ["a", "b", "c", "d"];
@@ -47,8 +51,8 @@ assert.strictEqual(new Set(sorted).size, ORDER.length, "排序不得重复篇目
 assert.deepStrictEqual(sorted.slice(sorted.length - undated.length), undated, "未填者应恰好排在末尾");
 const dated = sorted.slice(0, sorted.length - undated.length);
 for (let i = 1; i < dated.length; i++) {
-  assert(realCreated[dated[i - 1]] <= realCreated[dated[i]],
+  assert(createdKey(realCreated[dated[i - 1]]) <= createdKey(realCreated[dated[i]]),
     `已填部分应升序: ${dated[i - 1]}(${realCreated[dated[i - 1]]}) 排在 ${dated[i]}(${realCreated[dated[i]]}) 之前`);
 }
 
-console.log(`✅ test-work-order.js 全部通过 (升序 / 未填者列于其后 / 同时点稳定 / 空输入; 真仓库 ${ORDER.length} 篇: 已填 ${dated.length} · 待考 ${undated.length})`);
+console.log(`✅ test-work-order.js 全部通过 (宽松写法 / 升序 / 模糊在前 / 未填者列于其后 / 同时点稳定 / 空输入; 真仓库 ${ORDER.length} 篇: 已填 ${dated.length} · 待考 ${undated.length})`);
