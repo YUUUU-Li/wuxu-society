@@ -2,11 +2,11 @@
 {# 众注容器: 默认 hidden, zhuzhu.js 在 API 可用后才点亮并填充 #}
 <section class="wrap zz" id="zhuzhu" data-work="{{ page.fileSlug }}" data-api="{{ site.zhuzhu.api }}" hidden>
   <div class="zz-head">
-    <h3>众注</h3><span class="zz-rule">以诗会友，勿作恶语</span>
+    <h3>众注</h3><span class="zz-rule">以诗会友，勿作恶语</span><span class="zz-auth" id="zz-auth"></span>
   </div>
 
   <div class="zz-tags">
-    <p class="zz-cap">标签（你认为的本作品亮点）· 点一下即赞同，可再点取消</p>
+    <p class="zz-cap">标签（你认为的本作品亮点）· <span id="zz-tagcap">登录后点一下即赞同，可再点取消</span></p>
     <div class="tag-line" id="zz-tags"></div>
     <form class="tag-add" id="zz-tagform">
       <span class="tag-wrap">
@@ -19,10 +19,9 @@
   </div>
 
   <div class="zz-comments">
-    <p class="zz-cap">评论 · 楼式，笔名/昵称制（游客亦可评，随评随写）</p>
+    <p class="zz-cap">评论 · 楼式（<span id="zz-cmcap">登录后发表，署名用你的笔名</span>）</p>
     <ol class="z-list" id="zz-floors"></ol>
     <form class="z-form" id="zz-form">
-      <input id="zz-name" type="text" maxlength="20" placeholder="笔名/昵称（必填）" aria-label="笔名或昵称" />
       <textarea id="zz-text" rows="3" maxlength="500" placeholder="写几句感受、典故或呼应……（行首加 > 可引原句/他人评论；网址自动成链接）" aria-label="评论内容"></textarea>
       <div class="z-acts">
         <button class="btn ghost" type="submit">发表</button>

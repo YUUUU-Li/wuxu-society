@@ -11,7 +11,8 @@
   },
   "zhuzhu": {
     "enabled": true,
-    "api": "/api"
+    "api": "/api",
+    "showVoters": "admin"
   },
   "apiBase": "/api"
 }

@@ -195,6 +195,10 @@ assert(read("site.js").includes("member-pools") && read("site.js").includes(".m-
 assert(read("w-guixiang.html").includes('id="rel-sim"'), "作品页含相似标签动态容器(有真实分组时)");
 assert(read("w-guixiang.html").includes('id="zz-admin-btn"'), "众注含编委模式入口");
 assert(read("site.js").includes("zz_key") === false && read("zhuzhu.js").includes('id="zz-admin-btn"') === false && read("zhuzhu.js").includes("zz_key"), "编委钥匙仅存 sessionStorage");
+// 账号化改造: 众注区要有登录态入口; 评论不再让读者自填昵称(署名取账号笔名)
+assert(read("w-guixiang.html").includes('id="zz-auth"'), "众注含账号态入口(登录/注册)");
+assert(!read("w-guixiang.html").includes('id="zz-name"'), "评论表单已去掉「笔名/昵称」输入框");
+assert(read("zhuzhu.js").includes("/auth"), "前端会向 /api/auth 取登录态");
 assert(read("w-guixiang.html").includes("相关联作品"), "关联区仍在");
 const relMeta = JSON.parse(read("rel-meta.json"));
 assert.strictEqual(Object.keys(relMeta).length, nWorksSrc, `rel-meta.json 应含 ${nWorksSrc} 篇`);

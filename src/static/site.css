@@ -343,10 +343,36 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* ══ 众注原型(zhu zhu) ══ */
 .zz{border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
   padding:22px 26px;margin-top:48px;background:rgba(255,253,248,.6)}
-.zz-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.zz-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:6px}
 .zz-head h3{font-size:1.15rem;margin:0}
-.zz-rule{font-size:12.5px;color:var(--dim,#6e6a5e)}
+.zz-rule{font-size:12.5px;color:var(--dim,#6e6a5e);margin-right:auto}
 .zz-cap{font-size:12.5px;color:var(--dim,#6e6a5e);margin:12px 0 8px}
+/* 账号态(登录/注册 · 笔名 · 退出) */
+.zz-auth{font-size:12.5px;color:var(--dim,#6e6a5e);white-space:nowrap}
+.zz-auth a{color:var(--seal,#9c3f30);text-decoration:none;border-bottom:1px solid rgba(156,63,48,.35)}
+.zz-auth a:hover{border-bottom-color:var(--seal,#9c3f30)}
+.zz-who{color:var(--ink,#3a3630);font-weight:600}
+/* 登录/注册弹窗 */
+.zz-authbox{position:fixed;inset:0;z-index:60;background:rgba(28,24,20,.42);display:flex;
+  align-items:center;justify-content:center;padding:20px}
+.zz-authpanel{background:var(--paper,#faf7f0);border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
+  border-radius:4px;padding:20px 22px;width:min(400px,100%);box-shadow:0 18px 48px rgba(0,0,0,.22)}
+.zz-authhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.zz-authhd b{font-size:1.05rem}
+.zz-x{background:none;border:0;font-size:20px;line-height:1;color:var(--dim,#6e6a5e);cursor:pointer;padding:0 2px}
+.zz-x:hover{color:var(--seal,#9c3f30)}
+.zz-f{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13.5px}
+.zz-f > span{flex:0 0 56px;color:var(--dim,#6e6a5e)}
+.zz-f input[type=text],.zz-f input[type=password]{flex:1;min-width:0;border:1px solid var(--line,#cfc6b4);
+  border-radius:3px;padding:7px 10px;font:inherit;font-size:14px;background:#fff;color:var(--ink,#3a3630)}
+.zz-member{gap:8px}
+.zz-member > input{flex:0 0 auto}
+.zz-hint{margin:8px 0 0;font-size:12.5px;color:var(--dim,#6e6a5e);line-height:1.6}
+.zz-authacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.zz-msgline{margin:10px 0 0;font-size:12.5px;min-height:1.2em;color:var(--dim,#6e6a5e)}
+.zz-msgline.bad{color:var(--seal,#9c3f30)}
+.z-like.own{cursor:default;opacity:.72}
+.z-r-as{font-size:12.5px;color:var(--dim,#6e6a5e);align-self:center}
 .tag-line{display:flex;flex-wrap:wrap;gap:8px}
 .tagpill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line,#cfc6b4);
   border-radius:999px;padding:3px 8px 3px 14px;background:#fff;cursor:pointer;font-size:13.5px;color:var(--ink,#3a3630)}

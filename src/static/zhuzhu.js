@@ -47,15 +47,124 @@
   var near = [];          // 易混近义词组 [[词...]]
   var maxPerDevice = 3;   // 每设备每篇最多赞同标签数(服务端同时兜底)
   var tagState = {};      // word -> {id,count,voted,kind,hint}
-  // 设备号(限流用; 无 localStorage 时回退 IP)
-  var device = "";
-  try {
-    device = localStorage.getItem("zz_dev") || "";
-    if (!device) {
-      device = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      localStorage.setItem("zz_dev", device);
+  /* ---------- 账号(轻身份): 打标签/评论/同感都要求登录 ---------- */
+  var me = null;                 // 当前登录者 {id,handle,nick,role,member_state}
+  var tagVoters = {};            // tag_id -> {nicks:[...]} (仅编委可见, 由服务端按策略下发)
+  var authBar = gid("zz-auth");
+  var tagCap = gid("zz-tagcap");
+  var cmCap = gid("zz-cmcap");
+  function adminOn() { return !!adminKey || !!(me && me.role === "编委"); }
+  function needLogin(where) { speak(where || tmsg, "请先登录（右上角「登录 / 注册」）。"); openAuth("login"); }
+  // 服务端说"要登录/无权" => 会话多半已过期: 把界面切回未登录并弹出登录框, 别只丢一句报错
+  function authFailed(e) {
+    if (!/登录|无权/.test((e && e.message) || "")) return false;
+    me = null; syncAuthUI(); openAuth("login");
+    return true;
+  }
+  async function loadMe() {
+    try {
+      var r = await fetch(api + "/auth", { cache: "no-store" });
+      var j = await r.json();
+      me = (j && j.user) || null;
+    } catch (e) { me = null; }
+    syncAuthUI();
+  }
+  function syncAuthUI() {
+    if (authBar) {
+      authBar.innerHTML = me
+        ? '<span class="zz-who">' + esc(me.nick) + (me.role === "编委" ? " · 编委" : me.role === "社员" ? " · 社员" : "") +
+          '</span> <a href="#" id="zz-logout">退出</a>'
+        : '<a href="#" id="zz-login">登录 / 注册</a>';
+      var lo = gid("zz-logout");
+      if (lo) lo.addEventListener("click", async function (ev) {
+        ev.preventDefault();
+        try { await fetch(api + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "logout" }) }); } catch (e) {}
+        me = null; syncAuthUI(); await loadAll();
+        speak(msg, "已退出登录。");
+      });
+      var li = gid("zz-login");
+      if (li) li.addEventListener("click", function (ev) { ev.preventDefault(); openAuth("login"); });
     }
-  } catch (e) { device = ""; }
+    if (tagCap) tagCap.textContent = me ? "点一下即赞同，可再点取消（每篇最多 3 个）" : "登录后可打标签";
+    if (cmCap) cmCap.textContent = me ? "署名：" + me.nick : "登录后发表，署名用你的笔名";
+    if (tagInput) {
+      tagInput.disabled = !me;
+      tagInput.placeholder = me ? "输入标签：同名/相似即选中匹配；没有再新建" : "登录后可打标签";
+    }
+    if (zfText) {
+      zfText.disabled = !me;
+      zfText.placeholder = me ? "写几句感受、典故或呼应……（行首加 > 可引原句/他人评论；网址自动成链接）" : "登录后可发表评论";
+    }
+    var postBtn = document.querySelector("#zz-form button[type=submit]");
+    if (postBtn) postBtn.disabled = !me;
+  }
+  // 登录/注册弹窗
+  function openAuth(mode) {
+    var old = gid("zz-authbox");
+    if (old) old.remove();
+    var isReg = mode === "register";
+    var box = document.createElement("div");
+    box.id = "zz-authbox";
+    box.className = "zz-authbox";
+    box.innerHTML =
+      '<div class="zz-authpanel" role="dialog" aria-label="登录或注册">' +
+      '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
+      '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
+      '<label class="zz-f"><span>登录名</span><input id="zz-a-handle" maxlength="20" autocomplete="username" placeholder="社员用名字缩写，如 jwl" /></label>' +
+      (isReg ? '<label class="zz-f" id="zz-f-nick"><span>笔名</span><input id="zz-a-nick" maxlength="20" autocomplete="nickname" placeholder="显示在评论区" /></label>' : "") +
+      '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' + (isReg ? "new-password" : "current-password") + '" placeholder="至少 8 位" /></label>' +
+      (isReg ? '<label class="zz-f zz-member"><input id="zz-a-member" type="checkbox" /> 我是社员</label>' : "") +
+      (isReg ? '<p class="zz-hint" id="zz-a-hint">未勾选「我是社员」时，推荐使用名字缩写或笔名。</p>' : "") +
+      '<div class="zz-authacts"><button class="btn" type="button" id="zz-a-ok">' + (isReg ? "注册并登录" : "登录") + "</button>" +
+      '<button class="btn ghost" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
+      '<p class="zz-msgline" id="zz-a-msg"></p></div>';
+    document.body.appendChild(box);
+    var A = (id) => box.querySelector("#" + id);
+    var msgEl = A("zz-a-msg");
+    function say(t, cls) { msgEl.textContent = t || ""; msgEl.className = "zz-msgline" + (cls ? " " + cls : ""); }
+    if (isReg) {
+      var cb = A("zz-a-member");
+      var hint = A("zz-a-hint");
+      function syncHint() {
+        var on = cb.checked;
+        hint.textContent = on
+          ? "请用名字缩写或笔名（与名册一致，便于社员辨认）。"
+          : "推荐使用名字缩写或笔名。";
+        A("zz-a-nick").placeholder = on ? "请用名字缩写或笔名" : "推荐使用名字缩写或笔名";
+        A("zz-a-handle").placeholder = on ? "请用名字缩写或笔名" : "自拟即可，如 luren";
+      }
+      cb.addEventListener("change", syncHint);
+      syncHint();
+    }
+    A("zz-a-cancel").addEventListener("click", function () { box.remove(); });
+    A("zz-a-switch").addEventListener("click", function () { box.remove(); openAuth(isReg ? "login" : "register"); });
+    A("zz-a-ok").addEventListener("click", async function () {
+      var handle = A("zz-a-handle").value.trim();
+      var nick = isReg ? A("zz-a-nick").value.trim() : "";   // 登录模式没有笔名框
+      var pass = A("zz-a-pass").value;
+      if (!handle) { say("请填登录名。"); return; }
+      if (isReg && !nick) { say("请填笔名。"); return; }
+      if (!pass) { say("请填口令。"); return; }
+      try {
+        var payload = isReg
+          ? { action: "register", handle: handle, nick: nick, pass: pass, member: A("zz-a-member").checked }
+          : { action: "login", handle: handle, pass: pass };
+        var r = await fetch(api + "/auth", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        var j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || "失败");
+        me = j.user;
+        if (j.recoverCode) {
+          window.alert("注册成功！请把下面这串「恢复码」自己存好（换设备或忘记口令时用它重设）：\n\n" + j.recoverCode +
+            (j.note ? "\n\n" + j.note : ""));
+        }
+        box.remove();
+        syncAuthUI();
+        await loadAll();
+        speak(msg, isReg ? "注册成功，欢迎 " + me.nick + "。" : "已登录，欢迎回来 " + me.nick + "。");
+      } catch (e) { say(e.message, "bad"); }
+    });
+    A("zz-a-handle").focus();
+  }
 
   function hintOf(word) {
     var st = tagState[word];
@@ -84,7 +193,11 @@
       tagState[t.word] = t;
       var cand = t.kind === "候选";
       var pill = pillFor(t.word, t.count, t.voted, cand);
-      if (adminKey) tagLine.appendChild(adminWrap(pill, t.word));
+      var vs = tagVoters[t.id];                    // 投票人名单: 仅编委可见(服务端按 site.json 策略下发)
+      if (vs && vs.nicks && vs.nicks.length) {
+        pill.title = (pill.title ? pill.title + " · " : "") + "赞同者：" + vs.nicks.join("、");
+      }
+      if (adminOn()) tagLine.appendChild(adminWrap(pill, t.word));
       else tagLine.appendChild(pill);
     });
   }
@@ -132,6 +245,7 @@
     else hideSug();
   }
   async function vote(word) {
+    if (!me) { needLogin(tmsg); return; }
     // 近义提醒: 与已选标签易混时先提示(不阻止, 用户确认即可)
     if (tagState[word] && !tagState[word].voted) {
       var clash = nearClash(word);
@@ -141,7 +255,7 @@
       var r = await fetch(api + "/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ work: work, word: word, device: device }),
+        body: JSON.stringify({ work: work, word: word }),   // 身份来自登录会话, 不再传设备号
       });
       var j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "失败");
@@ -173,7 +287,7 @@
       }
       tagInput.value = "";
     } catch (e) {
-      speak(tmsg, "操作失败：" + e.message);
+      if (!authFailed(e)) speak(tmsg, "操作失败：" + e.message);
     }
   }
   tagForm.addEventListener("submit", function (ev) {
@@ -188,8 +302,7 @@
 
   /* ---------- 评论(平铺楼式) ---------- */
   var floorsEl = gid("zz-floors");
-  var zfName = gid("zz-name");
-  var zfText = gid("zz-text");
+  var zfText = gid("zz-text");     // 署名不再让读者自填: 一律取登录账号的笔名
   var floorsDirty = false;
 
   function fmtTime(iso) {
@@ -232,22 +345,27 @@
       li.innerHTML = '<span class="z-no">' + no + '</span><div class="z-body"><div class="z-mrow"><span class="z-meta">' +
         esc(f.name) + " · " + fmtTime(f.created_at) + "</span>" + ref + "</div>" +
         renderText(f.body) +
-        '<div class="z-acts"><button class="z-like" type="button"><span>同感 ' + f.likes + "</span><i></i></button>" +
+        '<div class="z-acts">' + (f.own
+          ? '<span class="z-like own" title="自己的评论就不用同感啦"><span>同感 ' + f.likes + "</span></span>"
+          : '<button class="z-like" type="button"><span>同感 ' + f.likes + "</span><i></i></button>") +
         '<button class="z-reply" type="button" data-id="' + f.id + '">回复</button>' +
-        (adminKey ? '<button class="z-del" type="button" data-id="' + f.id + '" data-no="' + no + '">删</button>' : "") +
+        (adminOn() ? '<button class="z-del" type="button" data-id="' + f.id + '" data-no="' + no + '">删</button>' : "") +
         "</div></div>";
-      li.querySelector(".z-like").addEventListener("click", function () { like(f.id, li.querySelector(".z-like")); });
+      if (!f.own) {
+        li.querySelector(".z-like").addEventListener("click", function () { like(f.id, li.querySelector(".z-like")); });
+      }
       floorsEl.appendChild(li);
     });
   }
   /* ---------- 编委模式(删评): 钥匙只存内存/sessionStorage ---------- */
   function syncAdmin() {
     if (!adminBtn) return;
-    adminBtn.textContent = adminKey ? "退出编委" : "编委";
+    var on = adminOn();
+    adminBtn.textContent = on ? (me && me.role === "编委" ? "编委（账号）" : "退出编委") : "编委";
     if (adminState) {
-      adminState.textContent = adminKey ? "编委模式已开" : "";
+      adminState.textContent = on ? "编委模式已开" : "";
       adminState.innerHTML = "";
-      if (adminKey) {
+      if (on) {
         adminState.appendChild(document.createTextNode("编委模式已开 · "));
         var a = document.createElement("a");
         a.href = "#";
@@ -345,6 +463,7 @@
   }
   if (adminBtn) {
     adminBtn.addEventListener("click", async function () {
+      if (me && me.role === "编委" && !adminKey) { speak(msg, "你已是编委账号，管理入口已开（每词旁的「⋯」、每楼的「删」）。"); return; }
       if (adminKey) {
         adminKey = "";
         try { sessionStorage.removeItem("zz_key"); } catch (e) {}
@@ -362,42 +481,43 @@
     });
   }
   function openReplyBar(li, idDb) {
+    if (!me) { needLogin(msg); return; }
     var old = li.querySelector(".z-replyform");
     if (old) { old.remove(); return; }
     Array.prototype.forEach.call(document.querySelectorAll(".z-replyform"), function (f) { f.remove(); });
     var body = li.querySelector(".z-body");
     var f = document.createElement("div");
     f.className = "z-replyform";
-    f.innerHTML = '<input class="z-r-name" type="text" maxlength="20" placeholder="笔名/昵称" aria-label="笔名或昵称" />' +
+    f.innerHTML = '<span class="z-r-as">以「' + esc(me.nick) + '」回帖</span>' +
       '<textarea class="z-r-text" rows="2" maxlength="300" placeholder="回帖内容… 行首加 > 可引原帖" aria-label="回帖内容"></textarea>' +
       '<button class="btn ghost z-r-send" type="button">发送</button>' +
       '<button class="z-r-cancel" type="button">取消</button>';
     body.appendChild(f);
-    f.querySelector(".z-r-name").focus();
+    f.querySelector(".z-r-text").focus();
     f.querySelector(".z-r-send").addEventListener("click", function () {
-      var nm = f.querySelector(".z-r-name").value.trim();
       var tx = f.querySelector(".z-r-text").value.trim();
-      if (!nm) { speak(msg, "回帖需填笔名/昵称。"); return; }
       if (!tx) { speak(msg, "写点回帖内容吧。"); return; }
-      postComment(nm, tx, idDb);
+      postComment(tx, idDb);
     });
     f.querySelector(".z-r-cancel").addEventListener("click", function () { f.remove(); });
   }
-  async function postComment(name, text, replyTo) {
+  async function postComment(text, replyTo) {
+    if (!me) { needLogin(msg); return; }
     try {
       var r = await fetch(api + "/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ work: work, name: name, body: text, reply_to: replyTo || null }),
+        body: JSON.stringify({ work: work, body: text, reply_to: replyTo || null }),   // 署名由服务端取账号笔名
       });
       var j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || "失败");
       speak(msg, "已发表。");
       zfText.value = "";
       await loadAll();
-    } catch (e) { speak(msg, "发表失败：" + e.message); }
+    } catch (e) { if (!authFailed(e)) speak(msg, "发表失败：" + e.message); }
   }
   async function like(idDb, btn) {
+    if (!me) { needLogin(msg); return; }
     try {
       var r = await fetch(api + "/comments", {
         method: "POST",
@@ -408,7 +528,7 @@
       if (!r.ok || !j.ok) throw new Error(j.error || "失败");
       btn.classList.toggle("on", !!j.liked);
       btn.querySelector("span").textContent = "同感 " + j.likes;
-    } catch (e) { speak(msg, "同感失败：" + e.message); }
+    } catch (e) { if (!authFailed(e)) speak(msg, "同感失败：" + e.message); }
   }
   floorsEl.addEventListener("click", function (ev) {
     var ref = ev.target.closest(".z-ref");
@@ -425,11 +545,10 @@
   });
   gid("zz-form").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    var nm = zfName.value.trim();
     var tx = zfText.value.trim();
-    if (!nm) { speak(msg, "请填笔名/昵称。"); return; }
+    if (!me) { needLogin(msg); return; }
     if (!tx) { speak(msg, "写点什么吧。"); return; }
-    postComment(nm, tx, null);
+    postComment(tx, null);
   });
 
   /* ---------- 相似标签(余弦) 动态组 ---------- */
@@ -478,12 +597,13 @@
   async function loadAll() {
     try {
       var [tr, cr] = await Promise.all([
-        // 带上设备号: 服务端据此标出「我赞过的」标签(与投票写入时同一身份, 才能再点一下取消);
-        // no-store: 每次打开都按库里的真实票况着色, 不拿缓存里的旧状态
-        fetch(api + "/tags?work=" + encodeURIComponent(work) + "&dev=" + encodeURIComponent(device), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
+        // 身份走登录会话(cookie), 服务端据此标出「我赞过的」标签; no-store: 每次都按库里的真实票况着色
+        fetch(api + "/tags?work=" + encodeURIComponent(work), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
         fetch(api + "/comments?work=" + encodeURIComponent(work), { cache: "no-store" }).then(function (r) { if (!r.ok) throw 0; return r.json(); }),
       ]);
       if (!tr.ok || !cr.ok) throw 0;
+      tagVoters = {};
+      (tr.voters || []).forEach(function (v) { tagVoters[v.id] = v; });
       renderTags(tr.tags || []);
       pool = (tr.pool || []).map(function (p) { return typeof p === "string" ? { word: p, hint: "" } : p; });
       near = tr.near || [];
@@ -504,7 +624,10 @@
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
     else fn();
   }
-  loadAll();
-  syncAdmin();
+  (async function boot() {
+    await loadMe();      // 先取登录态: 未登录时打标签/评论入口显示为「请先登录」
+    await loadAll();
+    syncAdmin();
+  })();
   whenReady(loadRel);
 })();

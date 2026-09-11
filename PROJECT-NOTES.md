@@ -32,6 +32,8 @@
    - 与早期稿不同处（社内定论）：**不加权**（关联度用标签向量余弦，各类平权）、**不建 `tag_aliases` 吸附表**（同义由编委「合并」动作处理，票数并入）、`tags` 表**不加 `category` 列**（分类随函数下发，避免两份真相）、**每设备每篇最多赞同 3 个标签**（服务端按 IP 兜底）、手法类也开放给读者。
    - 关联输出次序：强关联（唱和/组诗，front matter `related`）→ 同作者 → 相似标签（`/api/related` 余弦，前端动态填充）→ 同时同源。
    - 已修 bug：`TAG_LEGACY` 里的 `夜景 → 夜景` 自映射会让「整理历史标签」把该词连同票一起删掉（已跳过自映射 + 加单测）。
+   - **相似标签口径（2026-09 修订）**：只用**读者票**算余弦（删掉"用 frontmatter 意象按 1 票兜底"的老逻辑），共享 **1** 个标签即可上榜；没有票的作品不参与（该组自行隐藏）。
+   - **账号化 P1 已实现（待部署）**：注册/登录/退出/恢复码（PBKDF2-SHA256 + HttpOnly 会话 cookie，库里只存 token 哈希）；**打标签与评论要求登录**，署名取账号笔名（评论表单已去掉昵称输入）；**不能赞同自己的评论**；每篇 3 个标签按**账号**计；编委用 `role='编委'` 取代共享钥匙（旧钥匙过渡期仍认）；投票人名单默认只给编委（`site.json → zhuzhu.showVoters`）；名册里的缩写/笔名作为**保留昵称**防抢注（`npm run sync-zhuzhu`）。方案与验收见 `docs/账号系统方案.md`。
 2. **作品创作时间：字段已定，数据待补**
    - 字段就是 front matter 的 **`created`**（`YYYY-MM` / `YYYY-MM-DD`），**不是 `date`**；标签沿用 **`imageries`**（必须是大纲词），另有 `source`（出处/期）、`related`（唱和·组诗）、`excerpt`（摘句）。
    - **收集表已生成**：`docs/作品时间收集表.md`（重跑 `node scripts/work-dates-report.js` 刷新）——已填 11 篇 / 待填 38 篇，按刊期与出处分批，附干支/节令线索。
@@ -42,11 +44,18 @@
    - 口径的单一真相在 **`scripts/work-order.js`**（`.eleventy.js` 与 `scripts/work-dates-report.js` 共用；单测 `scripts/test-work-order.js`）：`created` **升序**（早者在前），作品库/全文库/期页/关联组内同口径。**本条早期写的"倒序 + 按年分组"未采纳**（保持升序平铺 + 现有筛选）。
    - **未填者不猜日期**：一律排在已填者之后，作品库底部另立「**年份待考**」一节（标出篇数；被筛选筛空时标题自动收起）。旧口径"继承前一篇时点"已废弃——`fulltext_order.json` 开头即 2024-04-04，会把 38 篇未填作品一律算作那天（含 2026 年两篇投稿）挤作一堆。
    - 待办只剩**收集数据**：照 `docs/作品时间收集表.md` 问作者，`npm run set-created` 写入即自动归位（2026 两篇已确认先不填）。
-4. **D1 / 函数现状（已完成部分）**
-   - D1 数据库名 `wuxu-database`，四表已建、15 条预置标签已插入
-   - 待办：Pages 项目 Settings → Functions → D1 binding，变量名必须是 `DB`
-   - env：`GITHUB_TOKEN_SUBMIT`（Secret，需 Contents: Read and write；若 403 换 classic `repo` token）
+4. **D1 / 函数现状**
+   - D1 数据库名 `wuxu-database`；四表已建；词表 94 词已落库并完成历史写法归并；D1 绑定 `DB` ✅ 已配置（`/api/tags`、`/api/related` 线上可用）
+   - env：`GITHUB_TOKEN_SUBMIT`（Secret，需 Contents: Read and write；若 403 换 classic `repo` token）；`ZHUI_ADMIN_KEY` 为编委旧钥匙（账号化后仅过渡期使用）
    - 函数必须 **ESM 导出**（`export async function onRequest/onRequestPost`），CommonJS 的 `module.exports` 会导致路由 404
+5. **账号化 P1 上线顺序（不能颠倒）—— 逐条照 `docs/账号系统上线清单.md` 做**
+   1. 备份 ✅ `sql/backup/2026-09-11-众注数据快照.json`
+   2. **部署代码**：push → CF 部署（此后打标签/评论需登录；⚠️ 服务端与前端必须**一起**推，只推一半会让众注不可用）
+      - **建表不用手工**：`auth.js` 首次用到账号时自动建 `users`/`sessions`/`comments.user_id`（幂等；排错时仍可粘 `sql/accounts/01…04`）
+   3. 开第一个编委号：`python scripts/zhuzhu-admin.py open jwl --role 编委 --key <旧钥匙>`
+   4. 洗牌：`python scripts/zhuzhu-admin.py wipe --key <旧钥匙>`（等价于 `sql/curation/05…08`；**94 词词表保留**）
+   5. 验收：`sql/curation/09` 或洗牌命令的返回（票 0 / 同感 0 / 评论 0 / 词条 94）+ 按《账号系统方案.md》第九节逐条走
+   - `scripts/zhuzhu-admin.py` 的四个动作：`open` / `pending` / `confirm` / `role` / `wipe`（**自动从名册取笔名，不用在命令行敲中文**）
 
 ## 四、协作分工
 

@@ -1,20 +1,20 @@
 -- 众注·标签系统 v1: 受控词表落库 + 历史写法归并(随 Cloudflare Pages + D1 上线执行)
 -- 前置: 先执行 sql/zhuzhu.sql (四表 + 15 条起步标签)
--- 执行方式: Cloudflare D1 控制台(数据库页 -> Console) —— **一段一段粘**, 每段都是一条完整语句, 见下方「段 N」;
+-- 执行方式: Cloudflare D1 控制台(数据库页 -> Console) —— **一段一段粘**, 每段都是一条完整语句, 见下方「段 N」；
 --   或命令行一次跑完: npx wrangler d1 execute wuxu-database --remote --file=sql/zhuzhu-tags-v1.sql
 -- 为什么分段: 控制台对"一次粘进超长多语句"偶发不执行(回显像成功但库里没变)。分段每段有回显, 出问题一眼看得见。
--- 幂等: 可重复执行; 跑第二遍不再改动任何数据(词已在库则跳过, 旧写法已归并则无匹配)。
+-- 幂等: 可重复执行； 跑第二遍不再改动任何数据(词已在库则跳过, 旧写法已归并则无匹配)。
 -- 每段跑完可核对(这条也是判断"控制台到底有没有执行"的探针):
---   SELECT COUNT(*) AS n FROM tags;
---   段 1~4 跑完 => 100 上下(库里的旧写法还在); 段 6 归并跑完 => 94。
+--   SELECT COUNT(*) AS n FROM tags；
+--   段 1~4 跑完 => 100 上下(库里的旧写法还在)； 段 6 归并跑完 => 94。
 
 -- 词表真相在 src/_data/tag_outline.json (94 词):
---   改词 -> 改 JSON -> npm run sync-tags (生成 functions/api/tag-outline.js) -> npm test -> 重跑本文件;
+--   改词 -> 改 JSON -> npm run sync-tags (生成 functions/api/tag-outline.js) -> npm test -> 重跑本文件；
 --   或在作品页众注区「编委 -> 初始化/更新标签词表」点一次(与段 1~5 等价, 幂等)。
 --   scripts/test-tags-sql.js 校验本文件的词表/转正表/归并表跟 JSON 一致, 防止两份漂移。
 
 -- 两处与早期讨论稿不同、以 docs/标签大纲.md §2 定论为准的取舍:
---   1) 不落 category 列: 分类(cat)与释义(hint)随 tag-outline.js 编译下发, 库里不再存副本, 免得两处真相;
+--   1) 不落 category 列: 分类(cat)与释义(hint)随 tag-outline.js 编译下发, 库里不再存副本, 免得两处真相；
 --      下面按四大类书写, 只为便于人读。
 --   2) 不建 tag_aliases 吸附表: 同义词不做自动映射, 由编委「合并」动作处理(票数并入目标词)。
 
@@ -52,7 +52,7 @@ INSERT OR IGNORE INTO tags(word, kind) VALUES
   ('打油诗','预设'), ('回忆','预设'), ('幽默','预设'), ('抽象','预设'), ('情节','预设'),
   ('炼字','预设');
 
--- ══ 段 5/5: 候选转正(大纲词若曾被读者以「候选」落库, 一并转正; 与编委「初始化/更新标签词表」同一动作) ══
+-- ══ 段 5/5: 候选转正(大纲词若曾被读者以「候选」落库, 一并转正； 与编委「初始化/更新标签词表」同一动作) ══
 UPDATE tags SET kind = '预设' WHERE kind = '候选' AND word IN (
   '春景','夏景','秋景','冬景','夜景','清明','重阳','元宵','月','星','雨','雪','霜','露','风','灯','酒','舟','窗','楼',
   '山','水','草木','城','花','叶','柳','松','梧桐','鸿雁','鱼','书信','琴','棋','梦',
@@ -62,8 +62,8 @@ UPDATE tags SET kind = '预设' WHERE kind = '候选' AND word IN (
   '校园','成长','旅途','科幻','网络世代','打油诗','回忆','幽默','抽象','情节','炼字'
 );
 
--- ══ 段 6: 历史写法归并(一次清洗; 与函数 /api/tags 的 cleanup 动作同一张表) ══
--- 左=历史写法(含 sql/zhuzhu.sql 那 15 条起步标签里的 6 条), 右=大纲词; 空串 = 弃用(仅下架不合并)
+-- ══ 段 6: 历史写法归并(一次清洗； 与函数 /api/tags 的 cleanup 动作同一张表) ══
+-- 左=历史写法(含 sql/zhuzhu.sql 那 15 条起步标签里的 6 条), 右=大纲词； 空串 = 弃用(仅下架不合并)
 -- 6.1 建归并表(临时表, 段末即删)
 DROP TABLE IF EXISTS _tag_legacy_map;
 CREATE TABLE _tag_legacy_map (from_word TEXT PRIMARY KEY, to_word TEXT NOT NULL);
@@ -78,7 +78,7 @@ INSERT INTO _tag_legacy_map(from_word, to_word) VALUES
   ('棋局','棋'),       ('星际','星'),       ('凄冷','孤寂'),     ('累','忧郁'),
   ('恋','恋慕'),       ('爱','恋慕'),
   ('风物','');         -- 弃用: 只下架, 不并入任何词
--- 注: tag_outline.json 里 '夜景'->'夜景' 属自映射, 此处不收; 若收, 会把大纲词『夜景』连同票一起删掉。
+-- 注: tag_outline.json 里 '夜景'->'夜景' 属自映射, 此处不收； 若收, 会把大纲词『夜景』连同票一起删掉。
 
 -- 6.2 目标词先确保在库且为预设(离愁/月/春景…可能还没落库)
 INSERT OR IGNORE INTO tags(word, kind)
@@ -103,7 +103,7 @@ UPDATE tag_votes
  WHERE EXISTS (SELECT 1 FROM tags tf JOIN _tag_legacy_map m ON m.from_word = tf.word
                 WHERE tf.id = tag_votes.tag_id AND m.to_word <> '' AND m.to_word <> m.from_word);
 
--- 6.5 删旧写法(票已迁走; 弃用词的票随之删)
+-- 6.5 删旧写法(票已迁走； 弃用词的票随之删)
 DELETE FROM tag_votes WHERE tag_id IN (SELECT tf.id FROM tags tf JOIN _tag_legacy_map m ON m.from_word = tf.word);
 DELETE FROM tags WHERE word IN (SELECT from_word FROM _tag_legacy_map);
 
@@ -114,5 +114,5 @@ DROP TABLE _tag_legacy_map;
 CREATE INDEX IF NOT EXISTS idx_tags_kind ON tags(kind);
 
 -- ══ 核对(可选) ══
--- SELECT kind, COUNT(*) AS n FROM tags GROUP BY kind;                    -- 全跑完: 预设 = 94
--- SELECT t.word, COUNT(*) AS c FROM tag_votes tv JOIN tags t ON t.id = tv.tag_id GROUP BY t.id ORDER BY c DESC;
+-- SELECT kind, COUNT(*) AS n FROM tags GROUP BY kind；                    -- 全跑完: 预设 = 94
+-- SELECT t.word, COUNT(*) AS c FROM tag_votes tv JOIN tags t ON t.id = tv.tag_id GROUP BY t.id ORDER BY c DESC；

@@ -1,0 +1,154 @@
+{
+  "说明": "众注数据逻辑备份(改造为账号体系前的快照)。由公开接口逐篇读回, 用于万一清库后的对账/重建。",
+  "局限": "接口不暴露 voter_key, 故本快照只有「某作品某标签几张票」, 不含投票人身份; 老 IP 票的具体归属无法恢复。",
+  "生成时间": "2026-09-11 12:37:19",
+  "统计": {
+    "票数合计": 31,
+    "有票作品": 11,
+    "评论楼数": 2
+  },
+  "标签票": [
+    {
+      "work": "qingming-jwl",
+      "word": "春景",
+      "count": 3,
+      "kind": "预设"
+    },
+    {
+      "work": "qingming-hde",
+      "word": "相逢",
+      "count": 2,
+      "kind": "候选"
+    },
+    {
+      "work": "qingming-hde",
+      "word": "对仗",
+      "count": 2,
+      "kind": "预设"
+    },
+    {
+      "work": "w-yangzhouman",
+      "word": "思乡",
+      "count": 2,
+      "kind": "预设"
+    },
+    {
+      "work": "w-shixi1",
+      "word": "女人",
+      "count": 2,
+      "kind": "候选"
+    },
+    {
+      "work": "w-shixi1",
+      "word": "恋慕",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-shixi2",
+      "word": "女人",
+      "count": 1,
+      "kind": "候选"
+    },
+    {
+      "work": "w-shixi2",
+      "word": "恋慕",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-luochun",
+      "word": "春景",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-luochun",
+      "word": "对仗",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-liqiu",
+      "word": "离愁",
+      "count": 2,
+      "kind": "预设"
+    },
+    {
+      "work": "w-liqiu",
+      "word": "秋景",
+      "count": 2,
+      "kind": "预设"
+    },
+    {
+      "work": "w-liqiu",
+      "word": "雨",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-liqiu",
+      "word": "风",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-changxiangsi",
+      "word": "秋景",
+      "count": 2,
+      "kind": "预设"
+    },
+    {
+      "work": "w-changxiangsi",
+      "word": "思乡",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-xiaochongshan",
+      "word": "秋景",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-xiaochongshan",
+      "word": "虚实结合",
+      "count": 1,
+      "kind": "预设"
+    },
+    {
+      "work": "w-yiqinepa",
+      "word": "高数",
+      "count": 2,
+      "kind": "候选"
+    },
+    {
+      "work": "w-golden",
+      "word": "JOJO",
+      "count": 2,
+      "kind": "候选"
+    }
+  ],
+  "评论": [
+    {
+      "work": "w-xiaochongshan",
+      "id": 2,
+      "name": "谰予",
+      "body": "注意，我们能在该作者的另外一首词里的一句中也找到“蔷薇”“春”“雨”（灵光一动）",
+      "reply_to": null,
+      "created_at": "2026-09-10T23:34:46+08:00",
+      "likes": 0,
+      "deleted": false
+    },
+    {
+      "work": "w-yiqinepa",
+      "id": 1,
+      "name": "蓦流",
+      "body": "> 莫缠高树\n莫缠高数！",
+      "reply_to": null,
+      "created_at": "2026-09-10T01:13:03+08:00",
+      "likes": 2,
+      "deleted": false
+    }
+  ]
+}

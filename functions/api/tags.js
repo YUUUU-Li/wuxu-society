@@ -1,33 +1,26 @@
 // 众注·标签 API（Cloudflare Pages Functions + D1）
-// GET  /api/tags?work=<slug> -> { tags:[{id,word,count,voted,hint,cat}], pool:[{word,hint,cat}], near:[[...]], ok:true }
-// POST /api/tags  {work, word, device}          -> 点赞/取消；大纲内词=预设, 其它=候选
-// POST /api/tags  {key, action, ...}            -> 编委动作(需 ZHUI_ADMIN_KEY):
+// GET  /api/tags?work=<slug> -> { tags:[{id,word,count,voted,hint,cat}], pool, near, maxPerDevice, voters, showVoters }
+// POST /api/tags  {work, word}                  -> 赞同/取消（**需登录**；身份=账号，一首作品最多赞同 3 个）
+// POST /api/tags  {key, action, ...}            -> 编委动作（role='编委' 或旧钥匙 ZHUI_ADMIN_KEY，过渡期两者都认）：
 //      seed                          词表落库(94 词 kind='预设', 幂等)
 //      adopt {word}                  候选转正 -> '已采纳'
 //      merge {from, to}              把 from 的票并入 to 后删除 from
 //      delete {word}                 删除标签及其票
-// 计票口径：同一「设备」(前端 localStorage 的 zz_dev, 缺省回退 IP) 对 同一作品+同一标签 一票。
-//   ⚠️ 写入与查票必须同源：voter_key 一律用「设备号优先、无则 IP」(voteKey)，
-//      否则再点一下取消时会查不到自己那行 → 撞唯一约束、取消不掉。
-// 限流：同一设备(缺省回退 IP) 对同一作品最多赞同 3 个标签（讨论定）。
-//   计数口径必须与「我赞过的」高亮、取消完全一致(都只看 voteKey)，否则会出现
-//   "页面上没有一个红标签、却被告知已达上限"的死锁。
+// 计票口径：同一「账号」对 同一作品+同一标签 一票（voter_key = 'u:<user_id>'）。
+//   红/灰高亮、每篇 3 票上限、取消 三处都只看账号 —— 不会再出现"页面全灰却说已满"这类口径不一致。
+//   历史遗留的 'd:<设备>' / IP 票仍计入总数, 但不认人、不占名额。
+// 可见性：投票人名单默认只给编委（site.json → zhuzhu.showVoters: admin | aggregate | public，见 zhuzhu-config.js）
 import { TAG_OUTLINE, TAG_HINTS, TAG_NEAR, TAG_LEGACY } from "./tag-outline.js";
+import { SHOW_VOTERS } from "./zhuzhu-config.js";
+import { currentUser, isAdmin } from "./auth.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" };
-const MAX_TAGS_PER_DEVICE = 3;
+const MAX_TAGS_PER_WORK = 3;
 const CAT = {};
 TAG_OUTLINE.forEach((o) => (CAT[o.w] = o.cat));
 
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
-}
-function ipOf(req) {
-  return req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "0";
-}
-// 投票人身份: 设备号优先(前端传 device), 无则回退 IP。写入/查票/取消三处必须都用它。
-function voteKey(device, req) {
-  return clean(device, 40) || ipOf(req);
 }
 function clean(s, n) {
   return String(s == null ? "" : s).trim().replace(/[\r\t]/g, "").slice(0, n);
@@ -39,11 +32,38 @@ async function q(db, sql, ...b) {
   return (await db.prepare(sql).bind(...b).all()).results;
 }
 
+// 投票人名单(仅在策略允许时返回)。policy 默认取 site.json 的编译值, 测试可显式传入以覆盖三档:
+//   admin(默认): 只有编委拿到完整名单; aggregate: 任何人只拿到聚合人数; public: 所有人拿到完整名单
+export async function votersOf(db, work, me, policy) {
+  const mode = policy || SHOW_VOTERS;
+  const canSee = mode === "public" || (mode === "admin" && me && me.role === "编委");
+  if (canSee) {
+    const rows = await q(db,
+      `SELECT tv.tag_id AS id, u.nick AS nick FROM tag_votes tv
+         JOIN users u ON u.id = CAST(substr(tv.voter_key, 3) AS INTEGER)
+        WHERE tv.work_id = ?1 AND tv.voter_key LIKE 'u:%'
+        ORDER BY tv.id`, work);
+    const map = {};
+    for (const r of rows) (map[r.id] = map[r.id] || []).push(r.nick);
+    return Object.keys(map).map((id) => ({ id: Number(id), nicks: map[id] }));
+  }
+  if (mode === "aggregate") {
+    const rows = await q(db,
+      `SELECT tv.tag_id AS id, COUNT(*) AS n,
+              SUM(CASE WHEN u.role IN ('社员','编委') THEN 1 ELSE 0 END) AS members
+         FROM tag_votes tv LEFT JOIN users u ON u.id = CAST(substr(tv.voter_key, 3) AS INTEGER)
+        WHERE tv.work_id = ?1 GROUP BY tv.tag_id`, work);
+    return rows.map((r) => ({ id: r.id, n: r.n, members: r.members || 0 }));
+  }
+  return [];
+}
+
 export async function onRequest(context) {
   const req = context.request;
   const db = context.env.DB;
   if (!db) return json(503, { ok: false, error: "数据库尚未配置。" });
   const u = new URL(req.url);
+  const me = await currentUser(context);
 
   if (req.method === "GET") {
     const work = clean(u.searchParams.get("work"), 60);
@@ -57,13 +77,9 @@ export async function onRequest(context) {
          ORDER BY c DESC, t.id ASC`,
         work
       );
-      // 与写入同源: 设备号优先(前端在 ?dev= 里带), 无则回退 IP —— 用于标记「我赞过的」
-      const voterKey = voteKey(u.searchParams.get("dev"), req);
-      const votedRows = await q(
-        db,
-        `SELECT tag_id FROM tag_votes WHERE work_id = ?1 AND voter_key = ?2`,
-        work, voterKey
-      );
+      const votedRows = me
+        ? await q(db, `SELECT tag_id FROM tag_votes WHERE work_id = ?1 AND voter_key = ?2`, work, "u:" + me.id)
+        : [];
       const voted = new Set(votedRows.map((r) => r.tag_id));
       // 联想池 = 库中非候选词 ∪ 大纲未落库的词（保证词表一上线即可用）
       const poolRows = await q(db, `SELECT word FROM tags WHERE kind != '候选' ORDER BY id`);
@@ -80,7 +96,9 @@ export async function onRequest(context) {
         })),
         pool,
         near: TAG_NEAR,
-        maxPerDevice: MAX_TAGS_PER_DEVICE,
+        maxPerDevice: MAX_TAGS_PER_WORK,   // 名字沿用旧字段(前端兼容); 口径已改为"每账号每篇 3 个"
+        voters: await votersOf(db, work, me),
+        showVoters: SHOW_VOTERS,
       });
     } catch (e) {
       return json(500, { ok: false, error: "标签读取失败。" });
@@ -91,15 +109,13 @@ export async function onRequest(context) {
     let body;
     try { body = await req.json(); } catch { return json(400, { ok: false, error: "请求格式不正确。" }); }
 
-    // —— 编委动作（需钥匙）——
+    // —— 编委动作（role='编委' 或旧钥匙）——
     if (body.action) {
-      const admin = context.env.ZHUI_ADMIN_KEY;
-      if (!admin || clean(body.key, 80) !== admin) return json(403, { ok: false, error: "无权操作。" });
+      if (!isAdmin(context, me, body.key)) return json(403, { ok: false, error: "无权操作。" });
       try {
         if (body.action === "seed") {
           let n = 0;
           for (const o of TAG_OUTLINE) {
-            // 注意: 必须把 kind 一起取回来, 否则 found.kind 恒为 undefined, 下面的「候选转正」永远不生效
             const found = await db.prepare(`SELECT id, kind FROM tags WHERE word = ?1`).bind(o.w).first();
             if (!found) {
               await db.prepare(`INSERT INTO tags(word, kind) VALUES (?1, '预设')`).bind(o.w).run();
@@ -180,7 +196,8 @@ export async function onRequest(context) {
       }
     }
 
-    // —— 普通点赞/取消 ——
+    // —— 赞同/取消（需登录）——
+    if (!me) return json(401, { ok: false, error: "登录后才能赞同标签。", needLogin: true });
     const work = clean(body.work, 60);
     const word = clean(body.word, 12);
     if (!work || !word) return json(400, { ok: false, error: "缺少作品标识或标签词。" });
@@ -194,27 +211,23 @@ export async function onRequest(context) {
         tagId = r.meta.last_row_id;
         candidate = kind === "候选";
       }
-      const dev = voteKey(body.device, req);   // 与写入时同一个身份, 否则取消找不到自己那行
+      const who = "u:" + me.id;                          // 身份就是账号: 写作/查票/取消/限流四处同源
       const exist = (await db.prepare(`SELECT id FROM tag_votes WHERE work_id = ?1 AND tag_id = ?2 AND voter_key = ?3`)
-        .bind(work, tagId, dev).first());
+        .bind(work, tagId, who).first());
       if (exist) {
         await db.prepare(`DELETE FROM tag_votes WHERE id = ?1`).bind(exist.id).run();
       } else {
-        // 每设备每篇最多 3 个标签(取消不算)。
-        // 只数「本设备」的票: 与「我赞过的」高亮、取消三处同源。
-        // ⚠️ 别把 IP 的票一起数进来 —— 那会让"一个红标签都没有、却被告知已达上限"成为死锁
-        //    (历史 IP 票既不高亮、又占着名额, 用户既加不了也取消不了)。
         const mine = await q(
           db,
           `SELECT COUNT(DISTINCT tag_id) AS n FROM tag_votes WHERE work_id = ?1 AND voter_key = ?2`,
-          work, dev
+          work, who
         );
         const used = (mine[0] && mine[0].n) || 0;
-        if (used >= MAX_TAGS_PER_DEVICE) {
-          return json(429, { ok: false, error: `每篇最多赞同 ${MAX_TAGS_PER_DEVICE} 个标签，先取消一个再加吧。`, limit: MAX_TAGS_PER_DEVICE, used });
+        if (used >= MAX_TAGS_PER_WORK) {
+          return json(429, { ok: false, error: `每篇最多赞同 ${MAX_TAGS_PER_WORK} 个标签，先取消一个再加吧。`, limit: MAX_TAGS_PER_WORK, used });
         }
         await db.prepare(`INSERT INTO tag_votes(work_id, tag_id, voter_key) VALUES (?1, ?2, ?3)`)
-          .bind(work, tagId, dev).run();
+          .bind(work, tagId, who).run();
       }
       const c = (await q(db, `SELECT COUNT(*) AS n FROM tag_votes WHERE work_id = ?1 AND tag_id = ?2`, work, tagId))[0];
       return json(200, {
