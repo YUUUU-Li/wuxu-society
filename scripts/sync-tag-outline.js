@@ -32,6 +32,8 @@ if (require.main === module) {
   try {
     const r = build();
     console.log(`✅ 已生成 functions/api/tag-outline.js (${r.count} 个标签词)`);
+    console.log("   ⚠️ 词表改动还需同步落库脚本(以 SQL 为准): sql/zhuzhu-tags-v1.sql 与 sql/tags-v1/ 的落库/转正/归并三段");
+    console.log("      (npm test 里的 test-tags-sql.js 会校验两者是否漂移)");
   } catch (e) {
     console.error("❌ " + e.message);
     process.exit(1);
