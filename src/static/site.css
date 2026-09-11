@@ -211,6 +211,11 @@ a.plink:hover{color:var(--seal)}
 .idx-undated .cnt{color:var(--dim);font-size:13px}
 .idx-undated[hidden]{display:none}
 .kaiti{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
+/* 题记(正文开篇) 与 自注(正文下方): 都由投稿表单的选填项生成, 统一楷体 */
+.work-epigraph{margin:0 0 20px;font-size:15.5px;line-height:1.9;color:var(--ink-soft,#4a453d);
+  padding-left:14px;border-left:2px solid rgba(156,63,48,.35)}
+.work-selfnote{margin:26px 0 0;padding-top:14px;border-top:1px dotted var(--line,#d8d0c0);
+  font-size:14px;line-height:1.9;color:var(--ink-soft,#4a453d)}
 
 /* ---------- 页脚 ---------- */
 footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}

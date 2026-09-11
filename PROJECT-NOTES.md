@@ -37,11 +37,12 @@
      **刻意不做**：登录名/笔名两栏、社员勾选与待确认流程、保留昵称防抢注（小私人项目，靠群内提醒用缩写/笔名即可）。
      建表由函数首次用到账号时**自建**；编委身份：自己注册后跑一句 `UPDATE users SET role='编委' WHERE nick_key='你的昵称';`。方案与验收见 `docs/账号系统方案.md`、`docs/账号系统上线清单.md`。
 2. **作品创作时间：字段已定，数据待补**
-   - 字段就是 front matter 的 **`created`**（`YYYY-MM` / `YYYY-MM-DD`），**不是 `date`**；标签沿用 **`imageries`**（必须是大纲词），另有 `source`（出处/期）、`related`（唱和·组诗）、`excerpt`（摘句）。
+   - 字段就是 front matter 的 **`created`**（`YYYY-MM` / `YYYY-MM-DD`），**不是 `date`**；标签沿用 **`imageries`**（必须是大纲词），另有 `source`（出处/期）、`related`（唱和·组诗）、`excerpt`（摘句）、`epigraph`（题记，楷体排开篇）、`selfNote`（自注，楷体排正文下方）。
    - **收集表已生成**：`docs/作品时间收集表.md`（重跑 `node scripts/work-dates-report.js` 刷新）——已填 11 篇 / 待填 38 篇，按刊期与出处分批，附干支/节令线索。
    - 已知锚点：清明首聚 7 篇 = **2024-04-04**；回忆文会《时间溯流》9 篇同批；四季组诗 4 篇（w-luochun/w-liuxia/w-liqiu/w-wangdong，作者 ylj/lfk/lys/hde）；《小重山》⇄《忆秦娥·和答蓦流〈小重山〉》是唱和（已在 `related`）。
    - 九月投稿辑两篇（`w-zhuyingtai` / `w-chenmo`）只知期时点 2026-09，**作品创作时间待作者确认**（社内已定：先不填，只在收集表里标注）。
-   - 序/记/自注不设 `preface`/`note` 字段：正文楷体段 `<p class="stanza kaiti">`（投稿时行首写 `&`）承担前记/后记/序，赏析段用 `class="analysis"`；概念题解另在 `concepts.json` 的 `note`（待补）。
+   - **题记 / 自注已有专用字段（2026-09 加）**：front matter `epigraph`（题记，≤200 字）/ `selfNote`（自注，≤600 字），投稿页对应两栏（选填，可换行）；作品页把题记以**楷体排在正文开篇**、自注以**楷体排在正文下方**（`.work-epigraph` / `.work-selfnote`，见 `src/_includes/layouts/work.njk`）；换行由 `escLines` 过滤器转 `<br />`（`scripts/text-blocks.js`，与 `/api/preview` 逐字节同口径，单测 `scripts/test-blocks.js`）——**预览即发布**。
+   - 正文内的前记/后记/序仍走行首 `&` 的楷体段（`<p class="stanza kaiti">`），赏析段仍 `class="analysis"`；概念题解另在 `concepts.json` 的 `note`（待补）。旧稿不写这两栏即零影响。
 3. **作品库时间排序 —— 已定案并落地（缺的只是数据）**
    - 口径的单一真相在 **`scripts/work-order.js`**（`.eleventy.js` 与 `scripts/work-dates-report.js` 共用；单测 `scripts/test-work-order.js`）：`created` **升序**（早者在前），作品库/全文库/期页/关联组内同口径。**本条早期写的"倒序 + 按年分组"未采纳**（保持升序平铺 + 现有筛选）。
    - **未填者不猜日期**：一律排在已填者之后，作品库底部另立「**年份待考**」一节（标出篇数；被筛选筛空时标题自动收起）。旧口径"继承前一篇时点"已废弃——`fulltext_order.json` 开头即 2024-04-04，会把 38 篇未填作品一律算作那天（含 2026 年两篇投稿）挤作一堆。

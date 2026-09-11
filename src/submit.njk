@@ -62,6 +62,16 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
         <small style="color:var(--dim)">一句话（建议 ≤40 字），将用于首页卡片与列表缩略展示；留空则自动取正文首句。</small>
       </div>
       <div class="field">
+        <label for="sub-epigraph">题记（选填）</label>
+        <textarea id="sub-epigraph" name="epigraph" rows="2" maxlength="200" placeholder="例：是夜宿江馆，闻雨声不绝，遂录旧句于笺尾。"></textarea>
+        <small style="color:var(--dim)">会以<b>楷体</b>排在作品开篇（正文之前），像一句题引或小序；留空则不显示。</small>
+      </div>
+      <div class="field">
+        <label for="sub-selfnote">自注（选填）</label>
+        <textarea id="sub-selfnote" name="selfNote" rows="3" maxlength="600" placeholder="例：颔联用《世说新语》王子猷雪夜访戴事；「红砖」指老校区的红砖楼。"></textarea>
+        <small style="color:var(--dim)">会以<b>楷体</b>排在作品正文下方（相当于作者自己的注释），与正文隔一条细线；留空则不显示。</small>
+      </div>
+      <div class="field">
         <label for="sub-note">给编委的附言（选填）</label>
         <textarea id="sub-note" name="editorNote" rows="2" maxlength="500" placeholder="例：此为第三稿，已按上轮意见修改；或：请以笔名发布。"></textarea>
         <small style="color:var(--dim)">仅编委在审稿时可见，不会出现在作品页面上。</small>
@@ -155,7 +165,12 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
     fetch("{{ site.apiBase | default('/api') }}/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: body, genre: form.genre.value }),
+      body: JSON.stringify({
+        body: body,
+        genre: form.genre.value,
+        epigraph: form.epigraph.value.trim(),
+        selfNote: form.selfNote.value.trim()
+      }),
     })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
       .then(function (j) {
@@ -180,6 +195,16 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
   bodyEl.addEventListener("input", function () {
     if (syncT) clearTimeout(syncT);
     syncT = setTimeout(syncHeights, 400);
+  });
+  // 题记/自注改了也要重新预览(它们直接进开篇与正文下方)
+  var previewT = null;
+  [form.epigraph, form.selfNote].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("input", function () {
+      if (!bodyEl.value.trim()) return;
+      if (previewT) clearTimeout(previewT);
+      previewT = setTimeout(renderPreview, 800);
+    });
   });
   window.addEventListener("resize", syncHeights);
   form.addEventListener("submit", function (ev) {
@@ -212,6 +237,8 @@ footerNote: "来稿必经编委审阅，方得入社刊。"
       created: created,
       body: body,
       excerpt: form.excerpt.value.trim(),
+      epigraph: form.epigraph.value.trim(),
+      selfNote: form.selfNote.value.trim(),
       editorNote: form.editorNote.value.trim(),
       imageries: form.imageries.value,
       source: form.source.value,

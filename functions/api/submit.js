@@ -129,14 +129,17 @@ async function doSubmit(context) {
   const source = String(input.source || "").trim().slice(0, 100);
   const imageriesRaw = String(input.imageries || "").trim().slice(0, 200);
   const excerpt = String(input.excerpt || "").trim().replace(/\s+/g, " ").slice(0, 60);
+  // 题记(排在正文开篇, 楷体) 与 自注(排在正文下方, 楷体) —— 保留换行, 两个都选填
+  const epigraph = String(input.epigraph || "").replace(/\r/g, "").trim().slice(0, 200);
+  const selfNote = String(input.selfNote || "").replace(/\r/g, "").trim().slice(0, 600);
   const editorNote = String(input.editorNote || "").trim().replace(/[\r\t]/g, "").slice(0, 500);
   const body = String(input.body || "").trim().slice(0, 20000);
   if (!title) return json(400, { ok: false, error: "缺少题名。" });
   if (!author) return json(400, { ok: false, error: "缺少署名。" });
   if (!genre) return json(400, { ok: false, error: "请选择体裁。" });
   if (body.length < 10) return json(400, { ok: false, error: "正文太短。" });
-  if (/[<>]/.test(title + author + genre + source + excerpt)) {
-    return json(400, { ok: false, error: "题名/署名/摘句里不能包含 < > 字符。" });
+  if (/[<>]/.test(title + author + genre + source + excerpt + epigraph + selfNote)) {
+    return json(400, { ok: false, error: "题名/署名/摘句/题记/自注里不能包含 < > 字符。" });
   }
   const created = String(input.created || "").trim();
   if (!/^\d{4}-\d{2}(-\d{2})?$/.test(created)) {
@@ -184,6 +187,8 @@ async function doSubmit(context) {
 
   const bodyHtml = bodyToHtml(body, genre);
   const q = (s) => s.replace(/"/g, '\\"');
+  // 双引号 YAML 标量里的换行要写成 \n 转义(解析回来仍是真换行), 这样题记/自注的多行不会破坏 front matter
+  const qm = (s) => q(s).replace(/\n/g, "\\n");
   const fm = [
     "---",
     'title: "' + q(title) + '"',
@@ -193,6 +198,8 @@ async function doSubmit(context) {
   ];
   if (source) fm.push('source: "' + q(source) + '"');
   if (excerpt) fm.push('excerpt: "' + q(excerpt) + '"');
+  if (epigraph) fm.push('epigraph: "' + qm(epigraph) + '"');
+  if (selfNote) fm.push('selfNote: "' + qm(selfNote) + '"');
   if (imageries.length) fm.push("imageries: [" + imageries.map((s) => JSON.stringify(s)).join(", ") + "]");
   fm.push("---", "");
   const md = fm.join("\n") + "<!-- 正文片段: 每段一个 <p>；改字请只动这里 -->\n" + bodyHtml + "\n";
@@ -258,6 +265,8 @@ async function doSubmit(context) {
           "\n- 体裁：" + genre +
           "\n- 创作时间：" + created +
           (source ? "\n- 出处：" + source : "") +
+          (epigraph ? "\n- 题记：" + epigraph.replace(/\n/g, " ⏎ ") : "") +
+          (selfNote ? "\n- 自注：" + selfNote.replace(/\n/g, " ⏎ ") : "") +
           "\n- 文件标识（自动生成）：`" + slug + "`——如想要雅名，见《编委操作手册》「改名」一节（本地终端跑 `npm run rename-work`，合并前后皆可；已自动带 301 跳转，旧链接不失效）" +
           "\n\nCloudflare Pages 预览链接会自动出现在本 PR 中。审核通过请点 **Merge pull request**；需修改可在文件里直接改，或让作者在网页重新提交。",
       }),

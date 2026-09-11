@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { sortByCreated, undatedSlugs } = require("./scripts/work-order.js");
+const { escLines } = require("./scripts/text-blocks.js");
 
 const MEMBERS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "src/_data/members.json"), "utf8")
@@ -126,6 +127,8 @@ module.exports = function (eleventyConfig) {
     if (!m) return s || "";
     return m[1] + "年" + Number(m[2]) + "月" + (m[3] ? Number(m[3]) + "日" : "");
   });
+  // 题记/自注: 转义 + 换行 -> <br /> (模板里配 | safe; 口径与 /api/preview 一致)
+  eleventyConfig.addFilter("escLines", escLines);
 
   // 关联作品自动推导: 强关联(手动related) -> 同作者 -> 同意象 -> 同时同源
   // 每篇作品只出现在最先命中的一类里; 组内按全文库顺序排列

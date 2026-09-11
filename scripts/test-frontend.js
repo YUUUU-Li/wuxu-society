@@ -73,10 +73,25 @@ assert(zhuzhu.includes("赞同者："), "编委 hover 标签应能看到赞同�
 assert(/if \(adminOn\(\)\) await loadAll\(\)/.test(zhuzhu), "编委投完票应重拉一次, 让名单立刻含自己");
 assert(zhuzhu.includes("adminOn()"), "编委判定应走账号角色或旧钥匙");
 
-// 4) 样式: 导航账号态 + 弹窗 + 自己评论的同感
-for (const sel of [".nav-auth", ".nav-auth .nav-who", ".zz-authbox", ".zz-authpanel", ".zz-f", ".zz-msgline", ".z-like.own"]) {
+// 4) 样式: 导航账号态 + 弹窗 + 自己评论的同感 + 题记/自注
+for (const sel of [".nav-auth", ".nav-auth .nav-who", ".zz-authbox", ".zz-authpanel", ".zz-f", ".zz-msgline", ".z-like.own", ".work-epigraph", ".work-selfnote"]) {
   assert(css.includes(sel), "site.css 缺样式: " + sel);
 }
 assert(/@media \(max-width:760px\)[\s\S]*?\.nav-auth\{/.test(css), "移动端菜单里也要有账号态样式");
 
-console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备)");
+// 5) 题记/自注: 投稿表单 -> 接口 -> 作品页 三处齐备(少一处就会出现"填了不显示")
+const submitNjk = readf("src/submit.njk");
+const workNjk = readf("src/_includes/layouts/work.njk");
+assert(submitNjk.includes('name="epigraph"') && submitNjk.includes('name="selfNote"'), "投稿表单缺题记/自注栏");
+assert(submitNjk.includes('for="sub-epigraph"') && submitNjk.includes('for="sub-selfnote"'), "题记/自注栏缺 label");
+assert(/name="epigraph"[^>]*maxlength="200"/.test(submitNjk) && /name="selfNote"[^>]*maxlength="600"/.test(submitNjk),
+  "题记/自注要各自限长(200 / 600)");
+const epCount = (submitNjk.match(/epigraph: form\.epigraph\.value\.trim\(\)/g) || []).length;
+const snCount = (submitNjk.match(/selfNote: form\.selfNote\.value\.trim\(\)/g) || []).length;
+assert(epCount >= 2 && snCount >= 2, "题记/自注既要随投稿送出, 也要发给 /api/preview 预览");
+assert(workNjk.includes('class="work-epigraph kaiti"'), "作品页开篇缺题记(楷体)");
+assert(workNjk.includes('class="work-selfnote kaiti"'), "作品页正文下方缺自注(楷体)");
+assert(workNjk.indexOf("work-epigraph") < workNjk.indexOf("content | safe") && workNjk.indexOf("content | safe") < workNjk.indexOf("work-selfnote"),
+  "作品页顺序必须是 题记 → 正文 → 自注");
+
+console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通)");

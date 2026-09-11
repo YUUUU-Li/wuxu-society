@@ -3,6 +3,9 @@ title: "十二月的夕阳堕入山林（其二）"
 author: "zk（道格）"
 genre: "七律"
 imageries: ["月", "星", "离愁"]
+related:
+  - to: "w-shixi1"
+    label: "组诗 · 同题其一"
 ---
 
 <!-- 正文片段: 每段一个 <p>；改字请只动这里 -->

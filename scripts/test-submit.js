@@ -113,11 +113,32 @@ async function main() {
   assert(prBody.includes("> 此为第三稿。\n> 如合适请以笔名发布。"), "附言按行转引用");
   assert(!md.includes("此为第三稿"), "附言不进作品 md");
 
-  // 8) 待辑登记: 每篇投稿 slug 写入 pending_issue.json
+  // 8) 题记 / 自注: 选填, 写进 front matter(换行转义 \n) 也进 PR body; 留空不写; 非法字符拒绝
+  r = await post(mod, {
+    title: "夜航", author: "zk（道格）", genre: "七律", created: "2024-12",
+    epigraph: "是夜宿江馆，\n闻雨声不绝。",
+    selfNote: "颔联用王子猷雪夜访戴事。\n「红砖」指老校区的红砖楼。",
+    body: "寒江夜雨入孤篷。\n一盏灯明万里风。\n\n后文亦足够长了。",
+  });
+  assert.strictEqual(r.status, 200, await r.text());
+  const ep = /epigraph: "([^"]*)"/.exec(md);
+  const sn = /selfNote: "([^"]*)"/.exec(md);
+  assert(ep && ep[1] === "是夜宿江馆，\\n闻雨声不绝。", "题记进 front matter, 换行写成 \\n 转义");
+  assert(sn && sn[1] === "颔联用王子猷雪夜访戴事。\\n「红砖」指老校区的红砖楼。", "自注进 front matter, 换行写成 \\n 转义");
+  assert(prBody.includes("题记：是夜宿江馆， ⏎ 闻雨声不绝。"), "PR body 含题记(换行显示为 ⏎)");
+  assert(prBody.includes("自注：颔联用王子猷雪夜访戴事。 ⏎ 「红砖」指老校区的红砖楼。"), "PR body 含自注");
+  // 留空 -> 两栏都不写进 front matter(老稿零影响)
+  r = await post(mod, { title: "无题记", author: "zk（道格）", genre: "七律", created: "2025-01", body: LONG_BODY });
+  assert.strictEqual(r.status, 200, await r.text());
+  assert(!/\nepigraph: /.test(md) && !/\nselfNote: /.test(md), "留空则不写题记/自注");
+  assert.strictEqual((await post(mod, { title: "x", author: "a", genre: "词", created: "2024-04", body: LONG_BODY, epigraph: "a<b" })).status, 400, "题记非法字符");
+  assert.strictEqual((await post(mod, { title: "x", author: "a", genre: "词", created: "2024-04", body: LONG_BODY, selfNote: "a>b" })).status, 400, "自注非法字符");
+
+  // 9) 待辑登记: 每篇投稿 slug 写入 pending_issue.json
   const pend = JSON.parse(pendingPut);
   assert(Array.isArray(pend) && pend.length === 1 && /^w-/.test(pend[0]), "pending_issue.json 登记待辑 slug");
 
-  console.log("✅ test-submit.js 全部通过 (校验/创作时间/自动标识名/诗句/散文/&楷体稿/评注/分割线/摘句/蜜罐/附言/待辑登记)");
+  console.log("✅ test-submit.js 全部通过 (校验/创作时间/自动标识名/诗句/散文/&楷体稿/评注/分割线/摘句/题记/自注/蜜罐/附言/待辑登记)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

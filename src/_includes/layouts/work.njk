@@ -22,7 +22,11 @@
 <p class="work-concepts rv">本期概念：{% for c in workCpts %}<a class="chip" href="concepts/{{ c.id }}.html">{{ c.name }}</a>{% endfor %}</p>
 {% endif %}
 <section class="wrap poem-body rv"><div class="lib-body">
+{# 题记: 投稿时填的「题记」统一排在正文开篇, 楷体(与 preview.js 的包法一致) #}
+{% if epigraph %}<p class="work-epigraph kaiti">{{ epigraph | escLines | safe }}</p>{% endif %}
 {{ content | safe }}
+{# 自注: 投稿时填的「自注」统一排在正文下方, 楷体, 与正文隔一条细线 #}
+{% if selfNote %}<div class="work-selfnote kaiti">{{ selfNote | escLines | safe }}</div>{% endif %}
 </div></section>
 {% include "partials/zhuzhu.njk" %}
 {% set relGroups = { slug: page.fileSlug, author: author, imageries: imageries, source: source, related: related } | relOf(collections.works) %}
