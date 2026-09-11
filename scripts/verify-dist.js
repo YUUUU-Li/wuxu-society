@@ -79,6 +79,7 @@ assert(css.includes(".sug-h") && css.includes(".tag-cog") && css.includes(".tag-
 // 登录/注册弹窗: 输入框规则须"不看 type"(昵称框无 type 属性), 次按钮描边款, 面板无朱砂顶边
 assert(/\.zz-f input\{/.test(css) && !/\.zz-f input\[type=text\]/.test(css), "弹窗输入框规则用 .zz-f input(昵称框无 type 属性)");
 assert(css.includes("#zz-a-switch{background:transparent"), "弹窗次按钮为描边款(非朱砂实心)");
+assert(read("auth.js").includes('id="zz-a-eye"') && css.includes(".zz-passwrap"), "口令显示/隐藏按钮已随站发布");
 assert(!/\.zz-authpanel\{[^}]*border-top/.test(css), "弹窗面板无额外朱砂顶边");
 }
 assert(css.includes('[data-theme="dark"]') && css.includes("invert(1) brightness(1.02)") && css.includes("--nav-bg"), "深色变量/logo 反白/顶栏深色");

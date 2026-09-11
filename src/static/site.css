@@ -613,3 +613,15 @@ select optgroup{background:var(--paper-deep);color:var(--ink)}
 .tag-cog:hover{color:var(--seal)}
 .zz-seed{color:var(--seal);text-decoration:underline;text-decoration-color:rgba(156,63,48,.45);text-underline-offset:3px;cursor:pointer}
 [data-theme="dark"] .tag-cog{color:var(--ink-soft)}
+
+/* 口令框: 右侧显示/隐藏切换按钮(眼睛图标) */
+.zz-passwrap{position:relative;display:block}
+.zz-passwrap input{padding-right:40px}
+.zz-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--dim);
+  cursor:pointer;padding:6px;line-height:0;border-radius:3px}
+.zz-eye:hover{color:var(--seal)}
+.zz-eye:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.zz-eye svg{width:19px;height:19px;display:block}
+.zz-eye .eye-off{display:none}
+.zz-eye.on .eye-on{display:none}
+.zz-eye.on .eye-off{display:block}

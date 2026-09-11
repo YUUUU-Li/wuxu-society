@@ -104,6 +104,11 @@ assert(/\.zz-f input\{[^}]*height:44px/.test(css), "两栏输入框应等高(44p
 assert(/\.zz-f\{[^}]*font-size:15px/.test(css) && /\.zz-f input\{[^}]*font:inherit/.test(css),
   "弹窗里的字体应与正文一致(15px, 不用输入框自带小字号)");
 assert(/\.zz-authacts \.btn\{[^}]*flex:1 1 0[^}]*height:46px/.test(css), "底部两按钮应同宽(flex:1 1 0)同高(46px)");
+// 口令栏: 右侧显示/隐藏切换(眼睛)按钮
+assert(/id="zz-a-eye"/.test(auth) && /class="zz-eye"/.test(auth), "口令栏应有显示/隐藏切换按钮(#zz-a-eye)");
+assert(auth.includes('passEl.type = show ? "text" : "password"'), "切换按钮应真实切换 input.type(而非只改样式)");
+assert(/\.zz-eye\{position:absolute/.test(css) && /\.zz-passwrap input\{padding-right:40px\}/.test(css),
+  "切换按钮应绝对定位在框内右侧, 且输入框留出右内距(字不压图标)");
 assert(/@media \(max-width:640px\)\{\s*\.zz-authacts\{flex-direction:column/.test(css), "手机端两按钮应竖向通栏");
 assert(/\.nav-auth \.btn\{margin:4px 0 2px/.test(css), "移动端菜单里的登录/注册按钮也要对齐");
 
