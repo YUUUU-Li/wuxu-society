@@ -8,22 +8,17 @@ const { escLines } = require("./scripts/text-blocks.js");
 const MEMBERS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "src/_data/members.json"), "utf8")
 );
-const FULLTEXT_ORDER = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "src/_data/fulltext_order.json"), "utf8")
-);
+// 作品登记不再来自 JSON(见 scripts/works-registry.js 的说明: 共享登记表会在并发投稿 PR 上冲突)
+const { readWorks } = require("./scripts/works-registry.js");
+const WORKS = readWorks(__dirname);
+const FULLTEXT_ORDER = WORKS.slugs;
 const memberById = {};
 for (const sec of MEMBERS) for (const m of sec.members) memberById[m.id] = m;
 
 // 创作时间排序(口径见 scripts/work-order.js): created 升序; 模糊的(只到月/只到年)排在当月具体日子之前;
 // 未填(或写错认不出)者不猜日期, 统一排在已填者之后(组内保持 fulltext_order.json 原次序), 作品库里另立「年份待考」一节。
 // 写法很宽松(20240911 / 2024.9.11 / 2024年9月11日 / 202409 / 2024-09 / 2024), 这里统一归一化后再排序与显示。
-const createdRawOf = {};
-for (const f of fs.readdirSync(path.join(__dirname, "src", "works"))) {
-  if (!f.endsWith(".md")) continue;
-  const s = fs.readFileSync(path.join(__dirname, "src", "works", f), "utf8");
-  const m = /^created:\s*"?([^"\n]*)"?/m.exec(s);
-  if (m && m[1].trim()) createdRawOf[f.slice(0, -3)] = m[1].trim();
-}
+const createdRawOf = { ...WORKS.created };
 const createdOf = {};
 for (const [slug, raw] of Object.entries(createdRawOf)) {
   const parsed = parseCreated(raw);
@@ -125,6 +120,14 @@ module.exports = function (eleventyConfig) {
   );
   // 按创作时间排序后的全文库顺序(供作品库平铺池与全文库页使用)
   eleventyConfig.addGlobalData("fulltextSorted", () => FULLTEXT_SORTED);
+  // 待辑名单: 作品 front matter 里 pending: true 的(投稿函数只写这一个标记, 不碰共享文件)
+  eleventyConfig.addGlobalData("pending_issue", () => WORKS.pending);
+  // 未入期散作 = 全站 − 已入期(供需要"其余社员作品"的地方)
+  eleventyConfig.addGlobalData("looseSlugs", () => {
+    const issued = new Set();
+    for (const it of JSON.parse(fs.readFileSync(path.join(__dirname, "src/_data/issues.json"), "utf8"))) for (const s of it.slugs || []) issued.add(s);
+    return FULLTEXT_ORDER.filter((s) => !issued.has(s));
+  });
   // 未填创作时间的标识(作品库「年份待考」一节用)
   eleventyConfig.addGlobalData("undatedSlugs", () => UNDATED);
   // 把任意 slug 列表按创作时间(created 升序, 未填者列于其后)重排 —— 作品库分组列表用

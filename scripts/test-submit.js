@@ -7,7 +7,6 @@ const { pathToFileURL } = require("url");
 
 let md = "";
 let prBody = "";
-let pendingPut = "";
 function mockFetch(url, opts) {
   const path_ = /\/repos\/YUUUU-Li\/wuxu-society\/(.*)/.exec(url)[1];
   const method = (opts && opts.method) || "GET";
@@ -18,16 +17,6 @@ function mockFetch(url, opts) {
   if (method === "POST" && /refs$/.test(path_)) return Promise.resolve(new Response("{}", { status: 201 }));
   if (method === "GET" && /contents\/src\/works\/.+\.md/.test(path_))
     return Promise.resolve(new Response(JSON.stringify({ message: "Not Found" }), { status: 404 }));
-  if (method === "GET" && /groups\.json/.test(path_))
-    return Promise.resolve(new Response(JSON.stringify({ sha: "gs", content: b64([{ key: "other", slugs: [] }]) }), { status: 200 }));
-  if (method === "GET" && /fulltext_order\.json/.test(path_))
-    return Promise.resolve(new Response(JSON.stringify({ sha: "os", content: b64(["w-feng"]) }), { status: 200 }));
-  if (method === "GET" && /pending_issue\.json/.test(path_))
-    return Promise.resolve(new Response(JSON.stringify({ sha: "ps", content: b64([]) }), { status: 200 }));
-  if (method === "PUT" && /pending_issue\.json/.test(path_)) {
-    pendingPut = Buffer.from(body.content, "base64").toString("utf8");
-    return Promise.resolve(new Response("{}", { status: 200 }));
-  }
   if (method === "PUT" && /works\//.test(path_)) {
     md = Buffer.from(body.content, "base64").toString("utf8");
     return Promise.resolve(new Response("{}", { status: 201 }));
@@ -149,11 +138,10 @@ async function main() {
   assert.strictEqual((await post(mod, { title: "x", author: "a", genre: "词", created: "2024-04", body: LONG_BODY, epigraph: "a<b" })).status, 400, "题记非法字符");
   assert.strictEqual((await post(mod, { title: "x", author: "a", genre: "词", created: "2024-04", body: LONG_BODY, selfNote: "a>b" })).status, 400, "自注非法字符");
 
-  // 9) 待辑登记: 每篇投稿 slug 写入 pending_issue.json
-  const pend = JSON.parse(pendingPut);
-  assert(Array.isArray(pend) && pend.length === 1 && /^w-/.test(pend[0]), "pending_issue.json 登记待辑 slug");
+  // 9) 待辑标记: 写在作品 front matter 里(pending: true), 不再改任何共享登记表
+  assert(/^pending: true$/m.test(md), "新稿 front matter 应带 pending: true 待辑标记");
 
-  console.log("✅ test-submit.js 全部通过 (校验/创作时间/自动标识名/诗句/散文/&楷体稿/评注/分割线/摘句/题记/自注/蜜罐/附言/待辑登记)");
+  console.log("✅ test-submit.js 全部通过 (校验/创作时间/自动标识名/诗句/散文/&楷体稿/评注/分割线/摘句/题记/自注/蜜罐/附言/待辑标记/不改共享登记表)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

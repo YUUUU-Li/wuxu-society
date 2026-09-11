@@ -1,7 +1,8 @@
 // 下架/撤稿脚本: node scripts/remove-work.js <slug> [--dry-run]
 // 场景: 审核误合入、来稿要求撤下、内容问题需要删除。
-// 自动做: 删 src/works/<slug>.md; 并从 groups.json / fulltext_order.json /
-//        pending_issue.json / issues.json 中摘除该 slug —— 不留孤儿引用。
+// 自动做: 删 src/works/<slug>.md; 并从 issues.json 里摘除该 slug(若已入期)。
+// 说明: groups / fulltext_order / pending 三张共享登记表已取消(见 scripts/works-registry.js),
+//       名单由构建期从作品目录推导, 所以删掉文件即等于从所有名单中移除。
 // 站点效果: 作品库行、刊期收录、首页拾读、筛选、sitemap、概念收录一并消失
 //          (git 历史仍保留, 需要找回可 revert 本提交)。
 // 用法示例: node scripts/remove-work.js w-sub-20260909-133804-31
@@ -44,21 +45,12 @@ const groupMap = (f, name, mutate) => {
 act(`删除文件 ${slug}.md`);
 if (!dry) fs.rmSync(mdPath);
 
-// 2) groups.json(通常 other 分组)
-groupMap("groups.json", "groups.json", (gs) => gs.map((g) => ({ ...g, slugs: g.slugs.filter((s) => s !== slug) })));
-
-// 3) fulltext_order.json(全文库顺序)
-groupMap("fulltext_order.json", "fulltext_order.json", (o) => o.filter((s) => s !== slug));
-
-// 4) pending_issue.json(待辑)
-groupMap("pending_issue.json", "pending_issue.json", (p) => p.filter((s) => s !== slug));
-
-// 5) issues.json(已入期)
+// 2) issues.json(若已入期则摘除; 其余名单都是构建期推导, 删文件即等于摘除)
 groupMap("issues.json", "issues.json", (iss) => iss.map((i) => ({ ...i, slugs: i.slugs.filter((s) => s !== slug) })));
 
 console.log("");
 if (touched === 0) {
-  console.log("⚠️  除作品文件外, 各登记表均未含此 slug(可能只登记在别处, 请人工核对)。");
+  console.log("⚠️  该 slug 不在任何一期 issues.json 里(未入期散作, 删文件即已从名单移除)。");
 }
 console.log(dry ? "干跑完成(未改动任何文件)。" : "✅ 下架完成。请检查后提交推送:");
 console.log('  git add -A && git -c core.autocrlf=false commit -m "chore: 下架 ' + slug + '"');

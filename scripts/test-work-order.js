@@ -35,15 +35,16 @@ assert.deepStrictEqual(undatedSlugs(undefined, undefined), [], "undefined 输入
 
 // 4) 真仓库
 const ROOT = path.join(__dirname, "..");
-const ORDER = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "_data", "fulltext_order.json"), "utf8"));
-const files = new Set(fs.readdirSync(path.join(ROOT, "src", "works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));
+// 名单来自作品目录(共享登记表已取消)
+const ORDER = fs.readdirSync(path.join(ROOT, "src", "works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)).sort();
+const files = new Set(ORDER);
 const realCreated = {};
 for (const slug of files) {
   const m = /^created:\s*"([^"]*)"/m.exec(fs.readFileSync(path.join(ROOT, "src", "works", slug + ".md"), "utf8"));
   if (m) realCreated[slug] = m[1];
 }
-const missingFile = ORDER.filter((s) => !files.has(s));
-assert.deepStrictEqual(missingFile, [], "fulltext_order.json 里的标识都应有对应作品文件: " + missingFile.join(" "));
+assert(ORDER.length > 40, `作品目录应有 >40 篇, 实得 ${ORDER.length}`);
+assert.strictEqual(new Set(ORDER).size, ORDER.length, "作品目录不得有重名");
 const sorted = sortByCreated(ORDER, realCreated);
 const undated = undatedSlugs(ORDER, realCreated);
 assert.strictEqual(sorted.length, ORDER.length, "排序不得增删篇目");

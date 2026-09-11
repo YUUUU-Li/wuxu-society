@@ -15,7 +15,7 @@
 ## 二、目录速查（以实际仓库为准，进仓库后先 `ls` 校对）
 
 - `src/works/*.md` —— 作品正文（每篇一个 md，含 frontmatter）
-- `src/_data/groups.json` —— 作品分组/顺序（slugs 列表）
+- ~~`src/_data/groups.json`~~ —— **已删除**（2026-09）：名单改由构建期从 `src/works/` 推导，见 `scripts/works-registry.js`
 - `src/_data/members.json` —— 社员名单
 - `src/_includes/` —— 布局、导航、页脚
 - `functions/api/submit.js` —— 投稿（GitHub API，需 env `GITHUB_TOKEN_SUBMIT`）
@@ -46,7 +46,7 @@
    - 正文内的前记/后记/序仍走行首 `&` 的楷体段（`<p class="stanza kaiti">`），赏析段仍 `class="analysis"`；概念题解另在 `concepts.json` 的 `note`（待补）。旧稿不写这两栏即零影响。
 3. **作品库时间排序 —— 已定案并落地（缺的只是数据）**
    - 口径的单一真相在 **`scripts/work-order.js`**（`.eleventy.js` 与 `scripts/work-dates-report.js` 共用；单测 `scripts/test-work-order.js`）：`created` **升序**（早者在前），作品库/全文库/期页/关联组内同口径。**本条早期写的"倒序 + 按年分组"未采纳**（保持升序平铺 + 现有筛选）。
-   - **未填者不猜日期**：一律排在已填者之后，作品库底部另立「**年份待考**」一节（标出篇数；被筛选筛空时标题自动收起）。旧口径"继承前一篇时点"已废弃——`fulltext_order.json` 开头即 2024-04-04，会把 38 篇未填作品一律算作那天（含 2026 年两篇投稿）挤作一堆。
+   - **未填者不猜日期**：一律排在已填者之后，作品库底部另立「**年份待考**」一节（标出篇数；被筛选筛空时标题自动收起）。旧口径"继承前一篇时点"已废弃——那份手工名单开头即 2024-04-04，会把 38 篇未填作品一律算作那天（含 2026 年两篇投稿）挤作一堆。同时间点或未填者按文件名稳定排列。
    - 待办只剩**收集数据**：照 `docs/作品时间收集表.md` 问作者，`npm run set-created` 写入即自动归位（2026 两篇已确认先不填）。
 4. **D1 / 函数现状**
    - D1 数据库名 `wuxu-database`；四表已建；词表 94 词已落库并完成历史写法归并；D1 绑定 `DB` ✅ 已配置（`/api/tags`、`/api/related` 线上可用）

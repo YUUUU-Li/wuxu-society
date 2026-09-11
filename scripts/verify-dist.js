@@ -50,7 +50,7 @@ assert(read("submit.html").includes('id="sub-created-day"') && read("submit.html
   && read("submit.html").includes("20240911"), "投稿页创作时间应支持整串日期(自动拆分)");
 // —— 创作时间排序: 库池顺序 = created 升序(模糊的往前排, 未填者列于最后) ——
 const { sortByCreated } = require("./work-order.js");
-const regOrder = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/fulltext_order.json"), "utf8"));
+const regOrder = fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)).sort();
 const createdOf = {};
 for (const f of fs.readdirSync(path.join(__dirname, "..", "src/works"))) {
   if (!f.endsWith(".md")) continue;
@@ -133,18 +133,20 @@ assert(!undated.includes("<b>创作时间</b>"), "未填 created 的作品不显
 
 // —— 登记一致性: works md = groups∪issues 各一次, order 同集合 (删稿脚本防孤儿) ——
 const workSet = new Set(fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)));
+// 名单一律由 src/works 推导(共享登记表已取消, 见 scripts/works-registry.js):
+// 一期里同一 slug 只能出现一次; 期里的 slug 必须有作品文件; 未入期者即"散作"
+const issuesData = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/issues.json"), "utf8"));
+const leftover = ["groups.json", "fulltext_order.json", "pending_issue.json"]
+  .filter((x) => fs.existsSync(path.join(__dirname, "..", "src/_data", x)));
+assert.strictEqual(leftover.length, 0, `共享登记表应已删除: ${leftover.join(" ")}`);
 const counts = new Map();
 const bump = (arr) => arr.forEach((s) => counts.set(s, (counts.get(s) || 0) + 1));
-const issuesData = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/issues.json"), "utf8"));
-bump(JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/groups.json"), "utf8")).find((g) => g.key === "other").slugs);
 issuesData.forEach((i) => bump(i.slugs));
 const dupes = [...counts].filter(([, c]) => c > 1).map(([s]) => s);
-assert.strictEqual(dupes.length, 0, `slug 重复登记: ${dupes.join(", ")}`);
-assert.strictEqual(counts.size, workSet.size, `登记表 ${counts.size} 个 slug vs works ${workSet.size} 个文件`);
-for (const s of workSet) assert(counts.has(s), `孤儿(有文件未登记): ${s}`);
-const orderArr = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/fulltext_order.json"), "utf8"));
-assert.strictEqual(orderArr.length, workSet.size, `fulltext_order ${orderArr.length} vs works ${workSet.size}`);
-for (const s of orderArr) assert(workSet.has(s), `order 孤儿: ${s}`);
+assert.strictEqual(dupes.length, 0, `期册里 slug 重复: ${dupes.join(", ")}`);
+for (const s of counts.keys()) assert(workSet.has(s), `期册孤儿(无作品文件): ${s}`);
+const loose = [...workSet].filter((s) => !counts.has(s));
+assert(loose.length + counts.size === workSet.size, "已入期 + 散作 应等于全站篇目");
 for (const x of ["author", "genre", "imagery", "source"]) assert(lib.includes(`id="f-${x}"`), `筛选 ${x} 缺失`);
 
 // —— 关联轮换结构抽查 ——
@@ -170,7 +172,8 @@ assert(read("issue-huiyi-shijianliuliu.html").includes("回忆文会《时间溯
 assert(read("issue-qingming-ji.html").includes("全部刊期"), "期页互链");
 assert(!lib.includes("清明首聚 · 立社原创") && !lib.includes("回忆文会《时间溯流》（公众号）"), "库页不再有旧分组分区");
 assert(read("index.html").includes("yaji.html") && !read("index.html").includes('id="works"') && !read("index.html").includes('id="gathering"'), "首页已去掉雅集档案/同题作品区块, 改为跳雅集页");
-const pendN = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "src/_data/pending_issue.json"), "utf8")).length;
+const pendN = fs.readdirSync(path.join(__dirname, "..", "src/works")).filter((f) => f.endsWith(".md"))
+  .filter((f) => /^pending:\s*true\s*$/m.test(fs.readFileSync(path.join(__dirname, "..", "src/works", f), "utf8"))).length;
 assert(pendN ? yaji.includes("待辑入新期") : !yaji.includes("待辑入新期"), `待辑提示与 pending(${pendN}) 不一致(应在雅集页)`);
 
 // —— 众注嵌入(P1) ——
