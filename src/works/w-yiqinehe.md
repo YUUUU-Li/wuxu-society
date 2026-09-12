@@ -2,6 +2,7 @@
 title: "忆秦娥·和答蓦流《小重山》"
 author: "lfk（谰予）"
 genre: "词"
+created: "2025-10-26"
 source: "公众号回忆文会《时间溯流》"
 imageries: ["秋景", "离愁"]
 related:

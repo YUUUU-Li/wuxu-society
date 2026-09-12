@@ -2,6 +2,7 @@
 title: "芙蓉王诗（并自序）"
 author: "lfk（谰予）"
 genre: "古风长诗"
+created: "2025-04-23"
 imageries: ["花", "梦"]
 fgenre: "古风长诗 · 附评二则"
 ---

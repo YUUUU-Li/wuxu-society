@@ -2,6 +2,7 @@
 title: "文艺b与地雷女"
 author: "txy（飞鸟）"
 genre: "短篇"
+created: "2026-06-02"
 imageries: ["网络世代", "恋慕"]
 ---
 

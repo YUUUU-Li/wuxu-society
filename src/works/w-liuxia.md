@@ -2,6 +2,7 @@
 title: "留夏"
 author: "lfk（谰予）"
 genre: "七言古风"
+created: "2025-07-12"
 source: "四季组诗"
 imageries: ["夏景", "雨", "离愁"]
 related:

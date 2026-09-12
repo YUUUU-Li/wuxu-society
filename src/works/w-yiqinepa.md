@@ -2,6 +2,7 @@
 title: "忆秦娥·怕秋语"
 author: "lfk（谰予）"
 genre: "词"
+created: "2025-11-06"
 source: "公众号回忆文会《时间溯流》"
 imageries: ["雨", "离愁"]
 ---

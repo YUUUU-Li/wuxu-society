@@ -2,6 +2,7 @@
 title: "我想去二次元"
 author: "txy（飞鸟）"
 genre: "科幻短篇"
+created: "2025-12-14"
 imageries: ["星", "恋慕"]
 ---
 
