@@ -12,10 +12,12 @@ const ROOT = path.join(__dirname, "..");
 const WORKS = path.join(ROOT, "src", "works");
 const read = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), "utf8"));
 
-const ORDER = read("src/_data/fulltext_order.json");
+// 名单来自作品目录(共享登记表已取消)
+const ORDER = fs.readdirSync(WORKS).filter((f) => f.endsWith(".md")).map((f) => f.slice(0, -3)).sort();
 const ISSUES = read("src/_data/issues.json");
-let PENDING = [];
-try { PENDING = read("src/_data/pending_issue.json"); } catch { /* 可选文件 */ }
+const PENDING = ORDER.filter((slug) =>
+  /^pending:\s*true\s*$/m.test(fs.readFileSync(path.join(WORKS, slug + ".md"), "utf8"))
+);
 
 // 干支 -> 公元(近一轮): 只给"待核"的线索, 不当作已定日期
 const GANZHI = { 癸卯: 2023, 甲辰: 2024, 乙巳: 2025, 丙午: 2026, 丁未: 2027 };

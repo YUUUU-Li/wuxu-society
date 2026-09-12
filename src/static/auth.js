@@ -69,8 +69,13 @@
       '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
       '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
       '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" maxlength="20" autocomplete="username" placeholder="社员建议用笔名" /></label>' +
-      '<label class="zz-f"><span>口令</span><input id="zz-a-pass" type="password" maxlength="64" autocomplete="' +
-        (isReg ? "new-password" : "current-password") + '" placeholder="' + (isReg ? "至少 8 位" : "") + '" /></label>' +
+      '<label class="zz-f"><span>口令</span><span class="zz-passwrap">' +
+        '<input id="zz-a-pass" type="password" maxlength="64" autocomplete="' +
+        (isReg ? "new-password" : "current-password") + '" placeholder="' + (isReg ? "至少 8 位" : "") + '" />' +
+        '<button class="zz-eye" type="button" id="zz-a-eye" aria-label="显示口令" aria-pressed="false" title="显示 / 隐藏口令">' +
+          '<svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>' +
+          '<svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.7 6.2A10.6 10.6 0 0 1 12 6.1c6 0 9.5 5.9 9.5 5.9a17.6 17.6 0 0 1-3.4 4M6.4 8A17.3 17.3 0 0 0 2.5 12S6 17.9 12 17.9c1.1 0 2.1-.2 3-.5"/></svg>' +
+        "</button></span></label>" +
       (isReg ? '<p class="zz-hint" id="zz-a-hint">昵称就是你的署名（会显示在标签与评论旁）。</p>' : "") +
       '<div class="zz-authacts"><button class="btn" type="button" id="zz-a-ok">' + (isReg ? "注册并登录" : "登录") + "</button>" +
       '<button class="btn" type="button" id="zz-a-switch">' + (isReg ? "已有账号，去登录" : "没有账号，去注册") + "</button></div>" +
@@ -81,6 +86,16 @@
     var msgEl = A("zz-a-msg");
     function say(t, cls) { msgEl.textContent = t || ""; msgEl.className = "zz-msgline" + (cls ? " " + cls : ""); }
     A("zz-a-cancel").addEventListener("click", function () { box.remove(); });
+    // 口令显示/隐藏(点一下在 ●●●● 与明文间切换)
+    var passEl = A("zz-a-pass"), eyeEl = A("zz-a-eye");
+    if (eyeEl) eyeEl.addEventListener("click", function () {
+      var show = passEl.type === "password";
+      passEl.type = show ? "text" : "password";
+      eyeEl.classList.toggle("on", show);
+      eyeEl.setAttribute("aria-pressed", show ? "true" : "false");
+      eyeEl.setAttribute("aria-label", show ? "隐藏口令" : "显示口令");
+      passEl.focus();
+    });
     A("zz-a-switch").addEventListener("click", function () { box.remove(); openAuth(isReg ? "login" : "register"); });
     A("zz-a-ok").addEventListener("click", async function () {
       var nick = A("zz-a-nick").value.trim();

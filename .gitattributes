@@ -1,9 +1,20 @@
-* text=auto
-*.md text
-*.njk text
-*.js text
-*.css text
-*.json text
-*.py text
-*.toml text
-*.html text
+# 统一换行: 源码在仓库内与检出时都用 LF
+# 缘由: 前端结构测试按 LF 写正则, Windows 默认 core.autocrlf=true 会让检出变 CRLF 而误报
+*.js    text eol=lf
+*.mjs   text eol=lf
+*.njk   text eol=lf
+*.json  text eol=lf
+*.css   text eol=lf
+*.md    text eol=lf
+*.sql   text eol=lf
+*.html  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+# 二进制(不做换行处理)
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary

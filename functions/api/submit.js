@@ -2,15 +2,14 @@
 // 需 Pages 环境变量(secret): GITHUB_TOKEN_SUBMIT
 //   (GitHub fine-grained token, 仅本仓库 Contents/Pull requests 读写)
 // 流程: 校验 -> 自动生成标识名(w-<创作日期>-序号) -> 建分支 submit/<slug>
-//       -> 提交 src/works/<slug>.md(含 created 创作时间) + 更新 src/_data/groups.json + fulltext_order.json
-//       -> 待辑登记 pending_issue.json(best-effort) -> 开 PR
+//       -> 提交 src/works/<slug>.md(含 created 创作时间 + pending: true 待辑标记) -> 开 PR
+// 注意(2026-09): 本 PR **只新增一个作品文件**, 不再改任何共享登记表
+//   (旧做法往 groups/fulltext_order/pending_issue 三个 JSON 各追加一行, 两个投稿 PR 合并其一后
+//    另一必冲突)。名单现在由构建期从 src/works 推导, 见 scripts/works-registry.js。
 // 正文排版: 行首 & = 楷体文段(前记/后记/序), 行首 > = 引文块, 单独一行 --- = 分割线
 const OWNER = "YUUUU-Li";
 const REPO = "wuxu-society";
 const BASE = "main";
-const GROUPS_PATH = "src/_data/groups.json";
-const ORDER_PATH = "src/_data/fulltext_order.json";
-const PENDING_PATH = "src/_data/pending_issue.json";
 const GH = "https://api.github.com";
 
 const POETIC = /诗|词|联句|古风|律|绝|曲|赋/;
@@ -244,6 +243,7 @@ async function doSubmit(context) {
   if (epigraph) fm.push('epigraph: "' + qm(epigraph) + '"');
   if (selfNote) fm.push('selfNote: "' + qm(selfNote) + '"');
   if (imageries.length) fm.push("imageries: [" + imageries.map((s) => JSON.stringify(s)).join(", ") + "]");
+  fm.push("pending: true");   // 待辑标记: 封期脚本清除; 名单由构建期推导, 不写共享文件
   fm.push("---", "");
   const md = fm.join("\n") + "<!-- 正文片段: 每段一个 <p>；改字请只动这里 -->\n" + bodyHtml + "\n";
 
@@ -253,46 +253,10 @@ async function doSubmit(context) {
       method: "POST",
       body: JSON.stringify({ ref: "refs/heads/" + branch, sha: head.object.sha }),
     });
-    const groupsRes = await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + GROUPS_PATH + "?ref=" + BASE);
-    const groups = JSON.parse(b64decode(groupsRes.content));
-    const bucket = groups.find((g) => g.key === "other");
-    if (!bucket) throw new Error("groups.json 缺少 other 分组");
-    if (!bucket.slugs.includes(slug)) bucket.slugs.push(slug);
-    const groupsB64 = b64encode(JSON.stringify(groups, null, 2));
-    const orderRes = await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + ORDER_PATH + "?ref=" + BASE);
-    const order = JSON.parse(b64decode(orderRes.content));
-    if (!order.includes(slug)) order.push(slug);
-    const orderB64 = b64encode(JSON.stringify(order, null, 2));
     await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/src/works/" + slug + ".md", {
       method: "PUT",
       body: JSON.stringify({ message: "投稿: " + title + "（" + author + "）", content: b64encode(md), branch }),
     });
-    await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + GROUPS_PATH, {
-      method: "PUT",
-      body: JSON.stringify({ message: "投稿: 登记 " + slug, content: groupsB64, sha: groupsRes.sha, branch }),
-    });
-    await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + ORDER_PATH, {
-      method: "PUT",
-      body: JSON.stringify({ message: "投稿: 登记全文库 " + slug, content: orderB64, sha: orderRes.sha, branch }),
-    });
-    try {
-      const pendRes = await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + PENDING_PATH + "?ref=" + BASE);
-      const pend = JSON.parse(b64decode(pendRes.content));
-      if (Array.isArray(pend) && !pend.includes(slug)) {
-        pend.push(slug);
-        await gh(token, "/repos/" + OWNER + "/" + REPO + "/contents/" + PENDING_PATH, {
-          method: "PUT",
-          body: JSON.stringify({
-            message: "投稿: 记待辑 " + slug,
-            content: b64encode(JSON.stringify(pend, null, 2)),
-            sha: pendRes.sha,
-            branch,
-          }),
-        });
-      }
-    } catch (e) {
-      // 待辑登记失败不影响投稿主流程
-    }
     const noteBody = editorNote
       ? "## 给编委的附言\n" + editorNote.split("\n").map((l) => "> " + l).join("\n") + "\n\n"
       : "";
@@ -311,6 +275,7 @@ async function doSubmit(context) {
           (epigraph ? "\n- 题记：" + epigraph.replace(/\n/g, " ⏎ ") : "") +
           (selfNote ? "\n- 自注：" + selfNote.replace(/\n/g, " ⏎ ") : "") +
           "\n- 文件标识（自动生成）：`" + slug + "`——如想要雅名，见《编委操作手册》「改名」一节（本地终端跑 `npm run rename-work`，合并前后皆可；已自动带 301 跳转，旧链接不失效）" +
+          "\n- 待辑：本稿带待辑标记（front matter `pending: true`），封期时自动收入新一期；名单由构建期推导，**本 PR 不修改任何共享登记文件**，因此多个投稿 PR 可任意顺序依次合并，不会互相冲突。" +
           "\n\nCloudflare Pages 预览链接会自动出现在本 PR 中。审核通过请点 **Merge pull request**；需修改可在文件里直接改，或让作者在网页重新提交。",
       }),
     });

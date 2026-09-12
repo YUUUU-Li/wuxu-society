@@ -1,6 +1,7 @@
 // 作品改名: node scripts/rename-work.js <旧slug> <新slug> [--dry-run]
-// 一次改全: 文件名 + groups.json + fulltext_order.json + pending_issue.json + issues.json
-//           + 其他作品 front matter 的 related[].to + members.json 作品链接
+// 一次改全: 文件名 + issues.json(若已入期) + 其他作品 front matter 的 related[].to
+//           + members.json 编委交叉链接 + src/static/_redirects 的 301
+// 说明: groups/fulltext_order/pending 三张共享登记表已取消(见 scripts/works-registry.js)
 //           + src/static/_redirects 补一条 301(旧网址自动跳新网址, 已发布的旧链接不会失效)
 // 合并前改名: 在 PR 分支上跑(网址一开始就是雅名)。
 // 合并后改名: 在 main 上跑亦可, 有了 _redirects 旧链接照常可用。
@@ -45,9 +46,6 @@ function renameWork(oldSlug, newSlug, opts = {}) {
       if (!dry) writeJson(p, next);
     }
   };
-  swap("src/_data/groups.json", (groups) => groups.map((g) => ({ ...g, slugs: (g.slugs || []).map((s) => (s === oldSlug ? newSlug : s)) })));
-  swap("src/_data/fulltext_order.json", (arr) => arr.map((s) => (s === oldSlug ? newSlug : s)));
-  swap("src/_data/pending_issue.json", (arr) => (Array.isArray(arr) ? arr.map((s) => (s === oldSlug ? newSlug : s)) : arr));
   swap("src/_data/issues.json", (issues) => issues.map((it) => ({ ...it, slugs: (it.slugs || []).map((s) => (s === oldSlug ? newSlug : s)) })));
 
   // 3) 其他作品的 related[].to

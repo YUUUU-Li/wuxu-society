@@ -289,7 +289,7 @@
         a.href = "#";
         a.className = "zz-seed";
         a.textContent = "初始化/更新标签词表";
-        a.title = "把 src/_data/tag_outline.json 的 94 个词写入数据库（幂等，只增不改）";
+        a.title = "把词表的 94 个词写入数据库（幂等）。与 sql/tags-v1/ 的 01~05 等价；正式流程以 SQL 为准，这里手机上顺手用";
         a.addEventListener("click", function (ev) {
           ev.preventDefault();
           adminTag("seed", {}).then(function (j) {
@@ -301,7 +301,7 @@
         a2.href = "#";
         a2.className = "zz-seed";
         a2.textContent = "整理历史标签";
-        a2.title = "把库里旧写法（思念/明月/夜…）按归并表并入大纲词，只做一次";
+        a2.title = "把库里旧写法按归并表并入大纲词（幂等）。与 sql/tags-v1/ 的 06~08 等价；正式流程以 SQL 为准";
         a2.addEventListener("click", function (ev) {
           ev.preventDefault();
           if (!window.confirm("把历史标签按归并表并入大纲词？（此操作会合并票数，幂等，可反复执行）")) return;
