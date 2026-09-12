@@ -16,7 +16,7 @@ const memberById = {};
 for (const sec of MEMBERS) for (const m of sec.members) memberById[m.id] = m;
 
 // 创作时间排序(口径见 scripts/work-order.js): created 升序; 模糊的(只到月/只到年)排在当月具体日子之前;
-// 未填(或写错认不出)者不猜日期, 统一排在已填者之后(组内保持 fulltext_order.json 原次序), 作品库里另立「年份待考」一节。
+// 未填(或写错认不出)者不猜日期, 统一排在已填者之后(同时点/未填者之间按标识名字母序, 见 scripts/works-registry.js), 作品库里另立「年份待考」一节。
 // 写法很宽松(20240911 / 2024.9.11 / 2024年9月11日 / 202409 / 2024-09 / 2024), 这里统一归一化后再排序与显示。
 const createdRawOf = { ...WORKS.created };
 const createdOf = {};

@@ -68,7 +68,7 @@
       '<div class="zz-authpanel" role="dialog" aria-label="登录或注册">' +
       '<div class="zz-authhd"><b id="zz-authtitle">' + (isReg ? "注册" : "登录") + "</b>" +
       '<button class="zz-x" type="button" id="zz-a-cancel" aria-label="关闭">×</button></div>' +
-      '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" maxlength="20" autocomplete="username" placeholder="社员建议用笔名" /></label>' +
+      '<label class="zz-f"><span>昵称</span><input id="zz-a-nick" type="text" maxlength="20" autocomplete="username" placeholder="社员建议用笔名" /></label>' +
       '<label class="zz-f"><span>口令</span><span class="zz-passwrap">' +
         '<input id="zz-a-pass" type="password" maxlength="64" autocomplete="' +
         (isReg ? "new-password" : "current-password") + '" placeholder="' + (isReg ? "至少 8 位" : "") + '" />' +

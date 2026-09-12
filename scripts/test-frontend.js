@@ -182,6 +182,27 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   }
   assert(build(true).includes("注册并登录") && build(false).includes('id="zz-a-ok">登录<'),
     "注册/登录两种模式的按钮文案应各自正确");
+  // 昵称栏曾经没写 type, 而样式是按 input[type=text] 写的 -> 整条规则漏掉它, 两栏一大一小。
+  // 现在样式已不挑 type, 但"写显式 type"仍作为硬规矩由第 9 条守着。
+  for (const tag of build(true).matchAll(/<input\b[^>]*>/g)) {
+    assert(/\stype\s*=/.test(tag[0]), "弹窗里的 <input> 都要写显式 type: " + tag[0]);
+  }
 }
 
-console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析)");
+// 9) 全站防呆: 任何 <input> 都必须写显式 type —— 否则按 type 写的样式会整条漏掉它,
+//    表现就是"两个输入框一个正常一个没样式"(昵称栏就这么坑过一次)
+{
+  const files = walk(path.join(ROOT, "src")).filter((f) => /\.(njk|js)$/.test(f));
+  const naked = [];
+  for (const f of files) {
+    const src = fs.readFileSync(f, "utf8");
+    for (const m of src.matchAll(/<input\b[^>]*>/g)) {
+      if (!/\stype\s*=/.test(m[0])) {
+        naked.push(path.relative(ROOT, f).replace(/\\/g, "/") + ": " + m[0].slice(0, 80));
+      }
+    }
+  }
+  assert.deepStrictEqual(naked, [], "这些 <input> 没写 type: " + naked.join(" ｜ "));
+}
+
+console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type)");
