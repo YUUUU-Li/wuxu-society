@@ -205,4 +205,49 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert.deepStrictEqual(naked, [], "这些 <input> 没写 type: " + naked.join(" ｜ "));
 }
 
-console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type)");
+// 10) 浏览量: 只在作品页题下给编委看 —— 页面里不留数字(默认 hidden), 由 auth.js 判定编委后才去向 /api/stats 取
+{
+  const statsNjk = readf("src/_includes/layouts/work.njk");
+  assert(/id="work-stats"[^>]*data-work="\{\{ page\.fileSlug \}\}"[^>]*hidden/.test(statsNjk),
+    "作品页题下应有 hidden 的 #work-stats 占位(带 data-work)");
+  assert(!/work-stats[^>]*>\s*\{/.test(statsNjk), "占位里不该在构建期渲染任何数字(普通读者看不到)");
+  assert(statsNjk.includes("work-stats"), "作品页要有浏览量占位");
+  assert(auth.includes('getElementById("work-stats")'), "auth.js 应负责填浏览量(全站脚本, 每页都有)");
+  assert(!/^\s*var\s+\w+\s*=\s*document\.getElementById\("work-stats"\)/m.test(auth),
+    "不许在脚本开头就抓 #work-stats —— auth.js 在导航里执行, 那时 <main> 还没解析, 抓到的永远是 null");
+  assert(/function statsNode\(\)/.test(auth) && /statsWhenReady/.test(auth) && auth.includes("DOMContentLoaded"),
+    "元素要现查 + DOM 解析完再补一次(否则作品页永远拉不到数字)");
+  assert(/statsOn\(\)[\s\S]{0,200}role === "编委"/.test(auth), "只有编委账号(或旧钥匙)才去取数字");
+  assert(auth.includes("/stats?work=") && auth.includes('"&key="'), "取数走 /api/stats, 且旧钥匙从 sessionStorage 带上");
+  assert(auth.includes("statsRefresh"), "对外要给 zhuzhu.js 一个刷新入口(开关旧钥匙后立即生效)");
+  assert(zhuzhu.includes("zzAuth.statsRefresh"), "编委开关旧钥匙时应叫 auth.js 刷新浏览量");
+  assert(/\.work-stats\{/.test(css) && /\.work-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .work-stats(含 hidden 兜底)");
+  // 后端两件套与建表脚本齐备
+  assert(fs.existsSync(path.join(ROOT, "functions", "_middleware.js")), "缺根中间件 functions/_middleware.js(全站计数)");
+  assert(fs.existsSync(path.join(ROOT, "functions", "api", "stats.js")), "缺读取接口 functions/api/stats.js");
+  assert(fs.existsSync(path.join(ROOT, "sql", "stats.sql")), "缺建表脚本 sql/stats.sql");
+  const mwSrc = fs.readFileSync(path.join(ROOT, "functions", "_middleware.js"), "utf8");
+  assert(mwSrc.includes("context.waitUntil"), "计数要走 waitUntil, 不能拖慢页面");
+  assert(/INSERT OR IGNORE INTO page_visitors/.test(mwSrc) && /ON CONFLICT\(path, day\) DO UPDATE/.test(mwSrc),
+    "中间件要写去重明细 + 日表累加");
+  assert(!/ip\s+TEXT|ip\s+NOT NULL/.test(mwSrc), "统计表不许存原始 IP");
+  const apiSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "stats.js"), "utf8");
+  assert(apiSrc.includes("isAdmin") && apiSrc.includes("403"), "读取接口必须做编委鉴权");
+}
+
+// 11) 外部前端脚本必须能解析(语法错会让整块功能静默失效, 浏览器里只报一行错)
+{
+  const dir = path.join(ROOT, "src", "static");
+  const scripts = fs.readdirSync(dir).filter((f) => f.endsWith(".js"));
+  assert(scripts.length >= 3, "src/static 下的前端脚本数不对: " + scripts.length);
+  for (const f of scripts) {
+    const code = fs.readFileSync(path.join(dir, f), "utf8");
+    try {
+      new Function(code);
+    } catch (e) {
+      throw new Error(`前端脚本语法错误: src/static/${f} — ${e.message}`);
+    }
+  }
+}
+
+console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见)");

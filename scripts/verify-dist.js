@@ -128,6 +128,9 @@ assert(libPool.every((w) => w.t && w.a && w.g && w.h), "池条目字段完整");
 // —— 作品详情页显示创作时间 ——
 const dated = read("w-20240306-01.html");
 assert(/<b>创作时间<\/b>\s*2024年3月6日/.test(dated), "详情页显示创作时间(中文格式)");
+// —— 浏览量: 作品页只留一个 hidden 占位, 构建产物里不许出现任何数字(普通读者看不到) ——
+assert(/id="work-stats"[^>]*data-work="[^"]+"[^>]*hidden/.test(dated), "作品页应有 hidden 的浏览量占位 #work-stats");
+assert(!dated.includes("本篇阅读") && !dated.includes("仅编委可见"), "构建产物里不该出现浏览量数字/标签(只有编委登录后由 JS 填)");
 const undated = read("w-wuti.html");
 assert(!undated.includes("<b>创作时间</b>"), "未填 created 的作品不显示创作时间");
 

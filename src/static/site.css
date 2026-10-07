@@ -223,6 +223,14 @@ a.plink:hover{color:var(--seal)}
   padding-left:14px;border-left:2px solid rgba(156,63,48,.35)}
 .work-selfnote{margin:26px 0 0;padding-top:14px;border-top:1px dotted var(--line,#d8d0c0);
   font-size:14px;line-height:1.9;color:var(--ink-soft,#4a453d)}
+/* 浏览量(只给编委看): 作品页题下一行小字; 未登录/非编委时整个元素 hidden, 不留空壳 */
+.work-stats{margin:12px 0 0;font-size:13.5px;line-height:1.7;color:var(--dim,#6e6a5e)}
+.work-stats b{color:var(--seal,#9c3f30);font-weight:600}
+.work-stats .ws-sep{margin:0 8px;opacity:.5}
+.work-stats .ws-since{margin-left:6px}
+.work-stats .ws-only{margin-left:10px;padding:1px 7px;border:1px solid var(--line,#cfc6b4);
+  border-radius:10px;font-size:12px;color:var(--dim,#6e6a5e)}
+.work-stats[hidden]{display:none}
 
 /* ---------- 页脚 ---------- */
 footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}

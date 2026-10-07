@@ -28,7 +28,54 @@
       state.me = (j && j.user) || null;
     } catch (e) { state.me = null; }   // 未部署/离线时当作未登录, 页面照常可用
     render();
+    loadStats();
     return state.me;
+  }
+
+  /* ---------- 作品页题下的浏览量(只给编委看; 读者与其它账号一律看不到) ----------
+     作品页里那块 #work-stats 默认 hidden, 这里判定「是否编委」通过后才去拉 /api/stats 填入。
+     编委 = 账号 role='编委'(state.me) 或过渡期的旧共享钥匙(sessionStorage 里的 zz_key)。
+     注意: 本脚本在导航里执行, 此时 <main> 还没解析 —— 元素必须**每次现查**(不能脚本一开头就抓,
+     否则永远是 null), 并且要在 DOMContentLoaded 后再试一次。 */
+  var statsLoaded = false;
+  function statsNode() { return document.getElementById("work-stats"); }
+  function legacyKey() { try { return sessionStorage.getItem("zz_key") || ""; } catch (e) { return ""; } }
+  function statsOn() { return !!(state.me && state.me.role === "编委") || !!legacyKey(); }
+  function fmtNum(n) {
+    try { return Number(n || 0).toLocaleString("zh-CN"); } catch (e) { return String(n || 0); }
+  }
+  function loadStats(force) {
+    var el = statsNode();
+    if (!el) return;                                       // 非作品页: 什么都不做
+    if (!statsOn()) { el.hidden = true; el.innerHTML = ""; statsLoaded = false; return; }
+    if (statsLoaded && !force) return;
+    statsLoaded = true;
+    var work = el.getAttribute("data-work") || "";
+    var key = legacyKey();
+    var q = api + "/stats?work=" + encodeURIComponent(work) + (key ? "&key=" + encodeURIComponent(key) : "");
+    fetch(q, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) { el.hidden = true; statsLoaded = false; return; }
+        var w = j.work || { views: 0, uniq: 0 };
+        var s = j.site || { views: 0, uniq: 0 };
+        el.innerHTML =
+          "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
+          '<span class="ws-sep">|</span>' +
+          "全站阅读 <b>" + fmtNum(s.views) + "</b> · 访客 <b>" + fmtNum(s.uniq) + "</b>" +
+          (s.since ? '<span class="ws-since">（自 ' + esc(s.since) + " 起统计）</span>" : "") +
+          '<span class="ws-only">仅编委可见</span>';
+        el.hidden = false;
+      })
+      .catch(function () { el.hidden = true; statsLoaded = false; });
+  }
+  // DOM 解析完再试一次(脚本在导航里, 首跑时 #work-stats 通常还不存在)
+  function statsWhenReady() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () { loadStats(true); });
+    } else {
+      loadStats(true);
+    }
   }
 
   function render() {
@@ -53,6 +100,7 @@
     } catch (e) { /* 忽略: 本地照样切回未登录 */ }
     state.me = null;
     render();
+    loadStats();
     emit();
   }
 
@@ -115,6 +163,7 @@
         }
         box.remove();
         render();
+        loadStats(true);
         emit();
       } catch (e) { say(e.message, "bad"); }
     });
@@ -127,10 +176,12 @@
     open: openAuth,
     refresh: load,
     logout: logout,
+    statsRefresh: function () { loadStats(true); },   // 编委开关旧钥匙后, 由 zhuzhu.js 叫一次刷新
     onChange: function (fn) {
       listeners.push(fn);
       return function () { var i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
     },
   };
   window.zzAuth.ready = load();
+  statsWhenReady();
 })();

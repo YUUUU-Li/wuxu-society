@@ -386,6 +386,7 @@
         adminKey = "";
         try { sessionStorage.removeItem("zz_key"); } catch (e) {}
         syncAdmin();
+        if (window.zzAuth && window.zzAuth.statsRefresh) window.zzAuth.statsRefresh();   // 关掉旧钥匙后, 浏览量也收起来
         speak(msg, "已退出编委模式。");
         await loadAll();
         return;
@@ -395,6 +396,7 @@
       adminKey = k.trim();
       try { sessionStorage.setItem("zz_key", adminKey); } catch (e) {}
       syncAdmin();
+      if (window.zzAuth && window.zzAuth.statsRefresh) window.zzAuth.statsRefresh();     // 开了旧钥匙, 顺手把浏览量拉出来
       await loadAll();
     });
   }
