@@ -157,12 +157,44 @@ async function main() {
   p = pageOf("/w-feng", "2026-09-12");
   assert.deepStrictEqual([p.sviews, p.suniq], [2, 1], "疑机: PV 加、UV 去重");
 
+  // 4.5) 入口页 vs 内容页: 首页/作品库这类"路过页"单独成桶, 不进真人阅读/访客
+  assert.strictEqual(mw.isContentPath("/w-feng"), true, "作品页是内容页");
+  assert.strictEqual(mw.isContentPath("/qingming-xu"), true, "雅集篇目是内容页");
+  assert.strictEqual(mw.isContentPath("/issue-qingming-ji"), true, "期页是内容页");
+  assert.strictEqual(mw.isContentPath("/concepts/lishe"), true, "概念页是内容页");
+  assert.strictEqual(mw.isContentPath("/_fulltext"), true, "全文库是内容页");
+  assert.strictEqual(mw.isContentPath("/"), false, "首页是入口页");
+  assert.strictEqual(mw.isContentPath("/library"), false, "作品库是入口页");
+  assert.strictEqual(mw.isContentPath("/submit"), false, "投稿页是入口页");
+  await mw.countView(env, req("/"), { now: T + 210 * SEC });                 // A 打开首页
+  const homeRow = pageOf("/", "2026-09-12");
+  assert.deepStrictEqual([homeRow.views, homeRow.uniq, homeRow.eviews, homeRow.euniq], [0, 0, 1, 1],
+    "首页只进「仅入口」桶, 不动真人阅读/访客");
+  s = siteOf("2026-09-12");
+  assert.deepStrictEqual([s.views, s.uniq, s.eviews, s.euniq], [5, 2, 1, 1], "入口页不污染全站真人数字");
+  // 一个新人 C: 先落首页, 再点进作品页 —— 站点级去重**按桶分**, 内页那次必须照算
+  const C = { "cf-connecting-ip": "198.51.100.12" };
+  await mw.countView(env, req("/", C), { now: T + 300 * SEC });
+  await mw.countView(env, req("/w-feng.html", C), { now: T + 310 * SEC });
+  const homeRow2 = pageOf("/", "2026-09-12");
+  assert.deepStrictEqual([homeRow2.eviews, homeRow2.euniq], [2, 2], "C 的首页访问计入入口桶");
+  p = pageOf("/w-feng", "2026-09-12");
+  assert.deepStrictEqual([p.views, p.uniq], [5, 3], "C 点进作品页: 内容页访客 +1(未被入口页面吃掉)");
+  // A 再回作品库(入口页) —— 入口桶按人按天去重
+  await mw.countView(env, req("/library"), { now: T + 320 * SEC });
+  const libRow = pageOf("/library", "2026-09-12");
+  assert.deepStrictEqual([libRow.eviews, libRow.euniq], [1, 1], "作品库也归入口桶");
+  const buckets = db._raw.prepare("SELECT day, bucket, COUNT(*) AS n FROM bucket_visits GROUP BY day, bucket ORDER BY day, bucket").all()
+    .map((x) => x.day + ":" + x.bucket + "=" + x.n);
+  assert.deepStrictEqual(buckets, ["2026-09-12:c=3", "2026-09-12:e=2", "2026-09-12:s=1"],
+    "站点级去重按桶分开记(c=内容页真人 / e=入口页 / s=疑机)");
+
   // 5) 跨天: 同一人再来 —— 人次口径 => 各天各算一次
   await mw.countView(env, req("/w-feng.html"), { now: T2 });
   const p2 = pageOf("/w-feng", "2026-09-13");
   assert.deepStrictEqual([p2.views, p2.uniq], [1, 1], "跨天重新计一个访客(人次口径)");
   const wTot = row(db, "SELECT SUM(views) AS v, SUM(uniq) AS u, SUM(sviews) AS sv, SUM(suniq) AS su FROM page_daily WHERE path = ?1", "/w-feng");
-  assert.deepStrictEqual([wTot.v, wTot.u, wTot.sv, wTot.su], [5, 3, 2, 1], "本篇累计: 真人 5/3, 疑机 2/1");
+  assert.deepStrictEqual([wTot.v, wTot.u, wTot.sv, wTot.su], [6, 4, 2, 1], "本篇累计: 真人 6/4, 疑机 2/1");
   assert.strictEqual(row(db, "SELECT v FROM stats_meta WHERE k = 'split_since'").v, "2026-09-12", "记下「真假可分辨」的起始日");
 
   // 6) 隐私: 只有指纹
@@ -271,11 +303,16 @@ async function main() {
     CREATE TABLE site_visitors (day TEXT NOT NULL, visitor TEXT NOT NULL, PRIMARY KEY (day, visitor));
   `);
   await mw.countView({ DB: oldDb }, req("/w-feng.html"), { now: T });
-  const oldRow = oldDb._raw.prepare("SELECT views, uniq, sviews, suniq FROM page_daily WHERE path = '/w-feng'").get();
-  assert.deepStrictEqual([oldRow.views, oldRow.uniq, oldRow.sviews, oldRow.suniq], [1, 1, 0, 0], "老库补列后照常计数");
+  await mw.countView({ DB: oldDb }, req("/"), { now: T + SEC });                 // 入口页也要能写进新列
+  const oldRow = oldDb._raw.prepare("SELECT views, uniq, sviews, suniq, eviews, euniq FROM page_daily WHERE path = '/w-feng'").get();
+  assert.deepStrictEqual([oldRow.views, oldRow.uniq, oldRow.sviews, oldRow.suniq, oldRow.eviews, oldRow.euniq],
+    [1, 1, 0, 0, 0, 0], "老库补列后照常计数");
+  const oldHome = oldDb._raw.prepare("SELECT eviews, euniq FROM page_daily WHERE path = '/'").get();
+  assert.deepStrictEqual([oldHome.eviews, oldHome.euniq], [1, 1], "老库也能记入口页(补列 + 补 bucket_visits)");
   assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM stats_meta").get().n, 1, "老库也会补出 stats_meta");
+  assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM bucket_visits").get().n, 2, "老库也会补出 bucket_visits");
 
-  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机分开 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
+  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

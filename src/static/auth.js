@@ -58,6 +58,10 @@
   function botBit(n) {
     return n > 0 ? '<span class="ws-bot">疑机 ' + fmtNum(n) + "</span>" : "";
   }
+  // 入口页（首页/作品库/社员/雅集/投稿）那一小段: 基本是爬虫与"只瞄一眼"的访问, 不算进访客数
+  function entryBit(n) {
+    return n > 0 ? '<span class="ws-bot">仅入口 ' + fmtNum(n) + "</span>" : "";
+  }
   function loadStats(force) {
     var el = statsNode();
     if (!el) return;                                       // 非作品页: 什么都不做
@@ -71,12 +75,13 @@
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) { el.hidden = true; statsLoaded = false; return; }
-        var w = j.work || { views: 0, uniq: 0, sviews: 0 };
-        var s = j.site || { views: 0, uniq: 0, sviews: 0 };
+        var w = j.work || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
+        var s = j.site || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
         el.innerHTML =
           "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" + botBit(w.sviews) +
           '<span class="ws-sep">|</span>' +
-          "全站阅读 <b>" + fmtNum(s.views) + "</b> · 访客 <b>" + fmtNum(s.uniq) + "</b>" + botBit(s.sviews) +
+          "全站阅读（内容页）<b>" + fmtNum(s.views) + "</b> · 访客 <b>" + fmtNum(s.uniq) + "</b>" +
+          botBit(s.sviews) + entryBit(s.eviews) +
           (s.since ? '<span class="ws-since">（自 ' + esc(s.since) + " 起统计" +
             (j.splitSince ? "，真假分辨自 " + esc(j.splitSince) + " 起" : "") + "）</span>" : "") +
           '<span class="ws-only">仅编委可见</span>';

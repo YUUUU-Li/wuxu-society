@@ -242,6 +242,15 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(auth.includes("zz_nostats"), "auth.js 要在编委态种/清 zz_nostats cookie(自己不计入统计)");
   assert(auth.includes("document.cookie"), "cookie 由前端 JS 种下/清除");
   assert(auth.includes("ws-bot") && /\.work-stats \.ws-bot\{/.test(css), "界面要如实标出「疑机 N 次」并配样式");
+  // 三桶口径: 内容页进真人数字, 入口页(首页/作品库…)单独显示, 不进访客数
+  assert(/export function isContentPath/.test(mwSrc) && /CONTENT_PATH_RE/.test(mwSrc),
+    "中间件要区分内容页与入口页(口径只在这一条正则里)");
+  assert(/eviews/.test(mwSrc) && /euniq/.test(mwSrc), "入口页要单独累计(eviews/euniq)");
+  assert(/bucket_visits/.test(mwSrc) && /PRIMARY KEY \(day, bucket, visitor\)/.test(mwSrc),
+    "站点级去重要按桶分开(否则先看首页再看内页的人会被吃掉)");
+  assert(/\.bind\(path, day, newPage\)/.test(mwSrc) && /\.bind\(day, newBucket\)/.test(mwSrc),
+    "单页访客按页去重(newPage), 站点访客按桶去重(newBucket) —— 两者不能混用");
+  assert(auth.includes("仅入口") && auth.includes("内容页"), "界面文案要写明「仅入口」与「内容页」口径");
 }
 
 // 11) 外部前端脚本必须能解析(语法错会让整块功能静默失效, 浏览器里只报一行错)

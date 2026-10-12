@@ -27,6 +27,8 @@ const SCHEMA_SQL = [
      uniq   INTEGER NOT NULL DEFAULT 0,
      sviews INTEGER NOT NULL DEFAULT 0,
      suniq  INTEGER NOT NULL DEFAULT 0,
+     eviews INTEGER NOT NULL DEFAULT 0,
+     euniq  INTEGER NOT NULL DEFAULT 0,
      PRIMARY KEY (path, day)
    )`,
   `CREATE INDEX IF NOT EXISTS idx_page_daily_day ON page_daily(day)`,
@@ -42,7 +44,15 @@ const SCHEMA_SQL = [
      views  INTEGER NOT NULL DEFAULT 0,
      uniq   INTEGER NOT NULL DEFAULT 0,
      sviews INTEGER NOT NULL DEFAULT 0,
-     suniq  INTEGER NOT NULL DEFAULT 0
+     suniq  INTEGER NOT NULL DEFAULT 0,
+     eviews INTEGER NOT NULL DEFAULT 0,
+     euniq  INTEGER NOT NULL DEFAULT 0
+   )`,
+  `CREATE TABLE IF NOT EXISTS bucket_visits (
+     day     TEXT NOT NULL,
+     bucket  TEXT NOT NULL,
+     visitor TEXT NOT NULL,
+     PRIMARY KEY (day, bucket, visitor)
    )`,
   `CREATE TABLE IF NOT EXISTS site_visitors (
      day     TEXT NOT NULL,
@@ -54,14 +64,24 @@ const SCHEMA_SQL = [
      v TEXT NOT NULL
    )`,
 ];
-// 老库补列（2026-10 改进之前建的库只有 views/uniq；已加过会报 duplicate column name，忽略）
+// 老库补列（已加过会报 duplicate column name，忽略）
 // 注意: stats_meta 用 CREATE IF NOT EXISTS —— 老库没有这张表, 而补列语句管不了"建表"
 const MIGRATE_SQL = [
   `CREATE TABLE IF NOT EXISTS stats_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS bucket_visits (
+     day     TEXT NOT NULL,
+     bucket  TEXT NOT NULL,
+     visitor TEXT NOT NULL,
+     PRIMARY KEY (day, bucket, visitor)
+   )`,
   `ALTER TABLE page_daily ADD COLUMN sviews INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE page_daily ADD COLUMN suniq INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE page_daily ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE page_daily ADD COLUMN euniq INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE site_daily ADD COLUMN sviews INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE site_daily ADD COLUMN suniq INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE site_daily ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE site_daily ADD COLUMN euniq INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE page_visitors ADD COLUMN ts INTEGER NOT NULL DEFAULT 0`,
 ];
 // 建表/补列每个数据库只做一次。用 WeakSet 按"库句柄"记，而不是一个全局布尔：
@@ -156,6 +176,17 @@ export function isSuspect(request) {
   return true;
 }
 
+// 内容页 vs 入口页：
+//   内容页 = 读者真的"读东西"的页面（作品页/期页/概念页/全文库）→ 计入 views/uniq（主口径）
+//   入口页 = 首页、作品库、社员、雅集、投稿、404 等"只是路过/被爬"的页面 → 单独记 eviews/euniq
+// 为什么这么分（2026-10-13 实据）：全站 247 个"访客"里 186 个只打了首页、225 个只看了一页就
+// 走 —— 那是爬虫/预览抓取/顺手点开的形状；真正读过作品的人次只有几十。
+// 想调整口径就改这一条正则（其余代码不用动）。
+const CONTENT_PATH_RE = /^\/(w-|qingming-|issue-|concepts\/|_fulltext)/;
+export function isContentPath(path) {
+  return CONTENT_PATH_RE.test(String(path || ""));
+}
+
 function changesOf(r) {
   const m = (r && (r.meta || r)) || {};
   return Number(m.changes || 0);
@@ -164,6 +195,7 @@ function changesOf(r) {
 const DEBOUNCE_MS = 30 * 1000;
 
 // 记一次页面访问（异步、可被 waitUntil 托管）
+// 分桶（bucket）：s=疑似机器；c=内容页（真人阅读，主口径）；e=入口页（只路过/被爬）
 export async function countView(env, request, opts = {}) {
   const db = env && env.DB;
   if (!db) return null;
@@ -173,38 +205,41 @@ export async function countView(env, request, opts = {}) {
   const now = opts.now === undefined ? Date.now() : opts.now;
   const day = beijingDay(now);
   const suspect = opts.suspect === undefined ? isSuspect(request) : !!opts.suspect;
+  const bucket = suspect ? "s" : (isContentPath(path) ? "c" : "e");
   const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "";
   const ua = request.headers.get("user-agent") || "";
   const salt = (env && env.STATS_SALT) || "wuxu-stats-v1";
   const visitor = (await sha256Hex(day + "|" + ip + "|" + ua + "|" + salt)).slice(0, 24);
 
   // 1) 去重明细 + 去抖时间戳 + 记下"真人/机器可分辨"从哪天开始
+  //    注意: 站点级去重按 bucket 分开记(bucket_visits) —— 同一个人先看首页(e)、再看作品页(c),
+  //    两边都该各算 1 个"人次", 用一张不分桶的表会把内页那次吃掉。
   const first = await db.batch([
     db.prepare(`INSERT OR IGNORE INTO page_visitors(day, path, visitor, ts) VALUES (?1, ?2, ?3, ?4)`).bind(day, path, visitor, now),
-    db.prepare(`INSERT OR IGNORE INTO site_visitors(day, visitor) VALUES (?1, ?2)`).bind(day, visitor),
+    db.prepare(`INSERT OR IGNORE INTO bucket_visits(day, bucket, visitor) VALUES (?1, ?2, ?3)`).bind(day, bucket, visitor),
     db.prepare(`UPDATE page_visitors SET ts = ?4 WHERE day = ?1 AND path = ?2 AND visitor = ?3 AND ts <= ?4 - ?5`)
       .bind(day, path, visitor, now, DEBOUNCE_MS),
     db.prepare(`INSERT OR IGNORE INTO stats_meta(k, v) VALUES ('split_since', ?1)`).bind(day),
   ]);
   const newPage = changesOf(first && first[0]) === 1 ? 1 : 0;
-  const newSite = changesOf(first && first[1]) === 1 ? 1 : 0;
+  const newBucket = changesOf(first && first[1]) === 1 ? 1 : 0;
   const afterGap = changesOf(first && first[2]) === 1 ? 1 : 0;
   // 同一个人同一页 30 秒内连续请求（预取/连点刷新/多标签）只算一次阅读
-  if (!newPage && !afterGap) return { path, day, suspect, counted: false };
+  if (!newPage && !afterGap) return { path, day, bucket, suspect, counted: false };
 
-  const vc = suspect ? "sviews" : "views";
-  const uc = suspect ? "suniq" : "uniq";
+  const vc = bucket === "s" ? "sviews" : bucket === "e" ? "eviews" : "views";
+  const uc = bucket === "s" ? "suniq" : bucket === "e" ? "euniq" : "uniq";
   await db.batch([
     db.prepare(
       `INSERT INTO page_daily(path, day, ${vc}, ${uc}) VALUES (?1, ?2, 1, ?3)
          ON CONFLICT(path, day) DO UPDATE SET ${vc} = ${vc} + 1, ${uc} = ${uc} + excluded.${uc}`
-    ).bind(path, day, newPage),
+    ).bind(path, day, newPage),        // 单页访客: 该访客当天第一次看"这一页"
     db.prepare(
       `INSERT INTO site_daily(day, ${vc}, ${uc}) VALUES (?1, 1, ?2)
          ON CONFLICT(day) DO UPDATE SET ${vc} = ${vc} + 1, ${uc} = ${uc} + excluded.${uc}`
-    ).bind(day, newSite),
+    ).bind(day, newBucket),            // 站点访客(按桶): 该访客当天第一次出现在这个桶里
   ]);
-  return { path, day, suspect, counted: true, newPage: !!newPage, newSite: !!newSite };
+  return { path, day, bucket, suspect, counted: true, newPage: !!newPage, newBucket: !!newBucket };
 }
 
 export async function onRequest(context) {

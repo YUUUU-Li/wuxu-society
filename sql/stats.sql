@@ -15,10 +15,12 @@
 CREATE TABLE IF NOT EXISTS page_daily (
   path   TEXT    NOT NULL,             -- 归一化路径, 如 '/w-feng'（/w-feng.html 也归到这里）
   day    TEXT    NOT NULL,             -- 北京时间的 'YYYY-MM-DD'
-  views  INTEGER NOT NULL DEFAULT 0,   -- 真人阅读次数
-  uniq   INTEGER NOT NULL DEFAULT 0,   -- 真人访客(人次)
+  views  INTEGER NOT NULL DEFAULT 0,   -- 内容页: 真人阅读次数(主口径)
+  uniq   INTEGER NOT NULL DEFAULT 0,   -- 内容页: 真人访客(人次)
   sviews INTEGER NOT NULL DEFAULT 0,   -- 疑似机器阅读次数
   suniq  INTEGER NOT NULL DEFAULT 0,   -- 疑似机器访客(人次)
+  eviews INTEGER NOT NULL DEFAULT 0,   -- 入口页(首页/作品库/社员/雅集/投稿…)打开次数
+  euniq  INTEGER NOT NULL DEFAULT 0,   -- 入口页访客(人次, 基本是爬虫/预览/路过)
   PRIMARY KEY (path, day)
 );
 CREATE INDEX IF NOT EXISTS idx_page_daily_day ON page_daily(day);
@@ -32,15 +34,27 @@ CREATE TABLE IF NOT EXISTS page_visitors (
   PRIMARY KEY (day, path, visitor)
 );
 
--- 全站按天（全站 UV = 每天在全站范围内去重的访客数）
+-- 站点级去重**按桶分**（c=内容页真人 / e=入口页 / s=疑机）：
+-- 同一个人先看首页(e)、再看作品页(c)，两边各算 1 个人次；不分桶会把内页那次吃掉。
+CREATE TABLE IF NOT EXISTS bucket_visits (
+  day     TEXT NOT NULL,
+  bucket  TEXT NOT NULL,
+  visitor TEXT NOT NULL,
+  PRIMARY KEY (day, bucket, visitor)
+);
+
+-- 全站按天（views/uniq = 内容页真人；eviews/euniq = 入口页；sviews/suniq = 疑机）
 CREATE TABLE IF NOT EXISTS site_daily (
   day    TEXT PRIMARY KEY,
   views  INTEGER NOT NULL DEFAULT 0,
   uniq   INTEGER NOT NULL DEFAULT 0,
   sviews INTEGER NOT NULL DEFAULT 0,
-  suniq  INTEGER NOT NULL DEFAULT 0
+  suniq  INTEGER NOT NULL DEFAULT 0,
+  eviews INTEGER NOT NULL DEFAULT 0,
+  euniq  INTEGER NOT NULL DEFAULT 0
 );
 
+-- 早期版本的站点级去重表（已被 bucket_visits 取代, 保留只为兼容旧数据）
 CREATE TABLE IF NOT EXISTS site_visitors (
   day     TEXT NOT NULL,
   visitor TEXT NOT NULL,
@@ -53,9 +67,16 @@ CREATE TABLE IF NOT EXISTS stats_meta (
   v TEXT NOT NULL
 );
 
--- 老库升级（2026-10 改进之前的库只有 views/uniq；已加过会报 duplicate column name，忽略即可）
+-- 老库升级（改进之前建的库缺列/缺表；已加过会报 duplicate column name，忽略即可）
+-- CREATE TABLE IF NOT EXISTS stats_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+-- CREATE TABLE IF NOT EXISTS bucket_visits (day TEXT NOT NULL, bucket TEXT NOT NULL, visitor TEXT NOT NULL,
+--   PRIMARY KEY (day, bucket, visitor));
 -- ALTER TABLE page_daily    ADD COLUMN sviews INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE page_daily    ADD COLUMN suniq  INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE page_daily    ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE page_daily    ADD COLUMN euniq  INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE site_daily    ADD COLUMN sviews INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE site_daily    ADD COLUMN suniq  INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE site_daily    ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE site_daily    ADD COLUMN euniq  INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE page_visitors ADD COLUMN ts     INTEGER NOT NULL DEFAULT 0;
