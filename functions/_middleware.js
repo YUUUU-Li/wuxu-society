@@ -184,7 +184,7 @@ export function isSuspect(request) {
 // 为什么这么分（2026-10-13 实据）：全站 247 个"访客"里 186 个只打了首页、225 个只看了一页就
 // 走 —— 那是爬虫/预览抓取/顺手点开的形状；真正读过作品的人次只有几十。
 // 想调整口径就改这一条正则（其余代码不用动）。
-const CONTENT_PATH_RE = /^\/(w-|qingming-|issue-|concepts\/|_fulltext)/;
+export const CONTENT_PATH_RE = /^\/(w-|qingming-|issue-|concepts\/|_fulltext)/;
 export function isContentPath(path) {
   return CONTENT_PATH_RE.test(String(path || ""));
 }
@@ -222,6 +222,7 @@ export async function countView(env, request, opts = {}) {
     db.prepare(`UPDATE page_visitors SET ts = ?4 WHERE day = ?1 AND path = ?2 AND visitor = ?3 AND ts <= ?4 - ?5`)
       .bind(day, path, visitor, now, DEBOUNCE_MS),
     db.prepare(`INSERT OR IGNORE INTO stats_meta(k, v) VALUES ('split_since', ?1)`).bind(day),
+    db.prepare(`INSERT OR IGNORE INTO stats_meta(k, v) VALUES ('buckets_since', ?1)`).bind(day),
   ]);
   const newPage = changesOf(first && first[0]) === 1 ? 1 : 0;
   const newBucket = changesOf(first && first[1]) === 1 ? 1 : 0;

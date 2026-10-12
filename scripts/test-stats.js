@@ -265,6 +265,31 @@ async function main() {
   assert.strictEqual(j.work.path, "/w-feng", "接口把标识名归一成路径");
   assert.strictEqual(j.work.since, "2026-09-12", "本篇起始日");
   assert.strictEqual(j.splitSince, "2026-09-12", "真假分辨起始日");
+  // 回溯重算: 把改版前的历史也按"内容页 / 入口页"分出来 —— 期望值直接取 SQL 真值, 逻辑与 SQL 互为印证
+  assert.ok(j.derived, "接口要带回溯重算结果 derived");
+  const sqlCV = db._raw.prepare("SELECT SUM(views) AS v FROM page_daily WHERE path LIKE '/w-%'").get().v;
+  const sqlEV = db._raw.prepare("SELECT SUM(views) + SUM(eviews) AS v FROM page_daily WHERE path NOT LIKE '/w-%'").get().v;
+  const sqlCU = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE path LIKE '/w-%')").get().n;
+  assert.strictEqual(j.derived.contentViews, sqlCV, "内容页阅读 = 内容页路径的 views 之和");
+  assert.strictEqual(j.derived.entryViews, sqlEV, "入口页阅读 = 非内容页路径的 views+eviews 之和");
+  assert.strictEqual(j.derived.contentUniq, sqlCU, "内容页访客 = 明细里碰过内容页的 (天,人) 去重数");
+  const day12 = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT visitor FROM page_visitors WHERE day = '2026-09-12' AND path LIKE '/w-%')").get().n;
+  assert.strictEqual(day12, 4, "09-12 碰过内容页的人：A/B/C/机器人 = 4（回溯口径不分机器）");
+  assert.deepStrictEqual(j.derived.contentDaily.map((x) => x.day), j.derived.contentDaily.map((x) => x.day).slice().sort().reverse(),
+    "逐日『真正读过内容的人次』按天倒序");
+  assert.ok(/回溯/.test(j.derived.note || ""), "回溯口径要带说明(改版前含少量伪装机器人)");
+  // 回溯用的 SQL 判据必须与中间件的 CONTENT_PATH_RE 同口径
+  const apiSrc2 = fs.readFileSync(path.join(ROOT, "functions", "api", "stats.js"), "utf8");
+  const sqlPrefixes = [...apiSrc2.matchAll(/path LIKE '([^']+)'/g)].map((m) => m[1].replace(/%$/, ""));
+  for (const pre of sqlPrefixes) {
+    const sample = pre.endsWith("/") ? pre + "x" : pre + "x";
+    assert.strictEqual(mw.isContentPath(sample), true, `回溯 SQL 的前缀 ${pre} 必须被 isContentPath 认作内容页`);
+  }
+  const jsPrefixes = mw.CONTENT_PATH_RE.source.match(/[a-z_]+/g) || [];
+  for (const p of jsPrefixes) {
+    assert.ok(sqlPrefixes.some((s) => s.includes(p)),
+      `中间件的内容页前缀 ${p} 也要出现在回溯 SQL 里(两边不能走样): ` + sqlPrefixes.join(" "));
+  }
   assert.ok(j.diagnose, "diagnose=1 应带诊断数据");
   const siteDays = db._raw.prepare("SELECT COUNT(*) AS n FROM site_daily").get().n;
   assert.strictEqual(j.diagnose.siteTrend.length, Math.min(siteDays, 30), "全站按天应含全部有数据的日期(≤30)");
@@ -346,7 +371,8 @@ async function main() {
     [1, 1, 0, 0, 0, 0], "老库补列后照常计数");
   const oldHome = oldDb._raw.prepare("SELECT eviews, euniq FROM page_daily WHERE path = '/'").get();
   assert.deepStrictEqual([oldHome.eviews, oldHome.euniq], [1, 1], "老库也能记入口页(补列 + 补 bucket_visits)");
-  assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM stats_meta").get().n, 1, "老库也会补出 stats_meta");
+  const metaKeys = oldDb._raw.prepare("SELECT k FROM stats_meta ORDER BY k").all().map((x) => x.k);
+  assert.deepStrictEqual(metaKeys, ["buckets_since", "split_since"], "老库也会补出 stats_meta, 并记下两个起算日");
   assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM bucket_visits").get().n, 2, "老库也会补出 bucket_visits");
 
   console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
