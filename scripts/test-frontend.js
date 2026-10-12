@@ -233,6 +233,15 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(!/ip\s+TEXT|ip\s+NOT NULL/.test(mwSrc), "统计表不许存原始 IP");
   const apiSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "stats.js"), "utf8");
   assert(apiSrc.includes("isAdmin") && apiSrc.includes("403"), "读取接口必须做编委鉴权");
+  assert(apiSrc.includes("diagnose") && apiSrc.includes("pagesPerVisitor"), "读取接口要带诊断(?diagnose=1)");
+  // 真人/疑机分开 + 去抖 + 编委不计入
+  assert(/export function isSuspect/.test(mwSrc) && /export function hasNoStatsCookie/.test(mwSrc),
+    "中间件要能判定疑机、并识别编委的 zz_nostats cookie");
+  assert(/sviews/.test(mwSrc) && /suniq/.test(mwSrc), "疑机要单独累计(sviews/suniq), 不污染真人数字");
+  assert(/DEBOUNCE_MS/.test(mwSrc) && /ts <= \?4 - \?5/.test(mwSrc), "要有 30 秒去抖(毫秒单位, 别写成 30)");
+  assert(auth.includes("zz_nostats"), "auth.js 要在编委态种/清 zz_nostats cookie(自己不计入统计)");
+  assert(auth.includes("document.cookie"), "cookie 由前端 JS 种下/清除");
+  assert(auth.includes("ws-bot") && /\.work-stats \.ws-bot\{/.test(css), "界面要如实标出「疑机 N 次」并配样式");
 }
 
 // 11) 外部前端脚本必须能解析(语法错会让整块功能静默失效, 浏览器里只报一行错)

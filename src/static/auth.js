@@ -28,6 +28,7 @@
       state.me = (j && j.user) || null;
     } catch (e) { state.me = null; }   // 未部署/离线时当作未登录, 页面照常可用
     render();
+    syncNoStats();
     loadStats();
     return state.me;
   }
@@ -41,8 +42,21 @@
   function statsNode() { return document.getElementById("work-stats"); }
   function legacyKey() { try { return sessionStorage.getItem("zz_key") || ""; } catch (e) { return ""; } }
   function statsOn() { return !!(state.me && state.me.role === "编委") || !!legacyKey(); }
+  // 编委自己不计入统计: 编委态时种 zz_nostats=1（中间件见到直接跳过），退出编委/登出即清掉。
+  // 说明: cookie 是 JS 种下的, 所以"登录后的第一个页面请求"仍会被算一次, 之后就不会了。
+  function syncNoStats() {
+    try {
+      var has = /(?:^|;\s*)zz_nostats=1(?:;|$)/.test(document.cookie || "");
+      if (statsOn() && !has) document.cookie = "zz_nostats=1; path=/; max-age=43200; SameSite=Lax";
+      else if (!statsOn() && has) document.cookie = "zz_nostats=; path=/; max-age=0; SameSite=Lax";
+    } catch (e) { /* 隐私模式等禁 cookie 的场景: 忽略 */ }
+  }
   function fmtNum(n) {
     try { return Number(n || 0).toLocaleString("zh-CN"); } catch (e) { return String(n || 0); }
+  }
+  // 疑似机器那一小段(为 0 就不显示)
+  function botBit(n) {
+    return n > 0 ? '<span class="ws-bot">疑机 ' + fmtNum(n) + "</span>" : "";
   }
   function loadStats(force) {
     var el = statsNode();
@@ -57,13 +71,14 @@
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) { el.hidden = true; statsLoaded = false; return; }
-        var w = j.work || { views: 0, uniq: 0 };
-        var s = j.site || { views: 0, uniq: 0 };
+        var w = j.work || { views: 0, uniq: 0, sviews: 0 };
+        var s = j.site || { views: 0, uniq: 0, sviews: 0 };
         el.innerHTML =
-          "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
+          "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" + botBit(w.sviews) +
           '<span class="ws-sep">|</span>' +
-          "全站阅读 <b>" + fmtNum(s.views) + "</b> · 访客 <b>" + fmtNum(s.uniq) + "</b>" +
-          (s.since ? '<span class="ws-since">（自 ' + esc(s.since) + " 起统计）</span>" : "") +
+          "全站阅读 <b>" + fmtNum(s.views) + "</b> · 访客 <b>" + fmtNum(s.uniq) + "</b>" + botBit(s.sviews) +
+          (s.since ? '<span class="ws-since">（自 ' + esc(s.since) + " 起统计" +
+            (j.splitSince ? "，真假分辨自 " + esc(j.splitSince) + " 起" : "") + "）</span>" : "") +
           '<span class="ws-only">仅编委可见</span>';
         el.hidden = false;
       })
@@ -100,7 +115,8 @@
     } catch (e) { /* 忽略: 本地照样切回未登录 */ }
     state.me = null;
     render();
-    loadStats();
+    syncNoStats();
+    loadStats(true);
     emit();
   }
 
@@ -163,6 +179,7 @@
         }
         box.remove();
         render();
+        syncNoStats();
         loadStats(true);
         emit();
       } catch (e) { say(e.message, "bad"); }
@@ -176,7 +193,8 @@
     open: openAuth,
     refresh: load,
     logout: logout,
-    statsRefresh: function () { loadStats(true); },   // 编委开关旧钥匙后, 由 zhuzhu.js 叫一次刷新
+    // 编委开关旧钥匙后, 由 zhuzhu.js 叫一次: 同步"不计入统计"的 cookie + 刷新数字
+    statsRefresh: function () { syncNoStats(); loadStats(true); },
     onChange: function (fn) {
       listeners.push(fn);
       return function () { var i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
