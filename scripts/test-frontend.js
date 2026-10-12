@@ -251,6 +251,11 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(/\.bind\(path, day, newPage\)/.test(mwSrc) && /\.bind\(day, newBucket\)/.test(mwSrc),
     "单页访客按页去重(newPage), 站点访客按桶去重(newBucket) —— 两者不能混用");
   assert(auth.includes("仅入口") && auth.includes("内容页"), "界面文案要写明「仅入口」与「内容页」口径");
+  // 线上出过的故障: 部署后还没有页面访问触发补列, 接口去查新列 -> 500 -> 界面空白
+  assert(/import \{ ensureStatsSchema \} from "\.\.\/_middleware\.js"/.test(apiSrc),
+    "读取接口必须复用中间件的建表函数(自己补表), 否则刚部署完会 500");
+  assert(apiSrc.includes("detail") || apiSrc.includes("String((e && e.message)"), "500 要带回真实原因(编委排错用)");
+  assert(auth.includes("统计暂不可用"), "取数失败时界面要如实说明, 不能静默消失");
 }
 
 // 11) 外部前端脚本必须能解析(语法错会让整块功能静默失效, 浏览器里只报一行错)

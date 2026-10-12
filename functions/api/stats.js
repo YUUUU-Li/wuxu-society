@@ -9,6 +9,8 @@
 //   sviews/suniq = 疑似**机器**（爬虫、脚本、AI 爬虫…）的同一口径 —— 分开记，界面只展示真人数字。
 // 展示：作品页题下那块小字，只有编委登录后由 src/static/auth.js 拉取填入；普通读者看不到。
 import { currentUser, isAdmin } from "./auth.js";
+// 建表/补列的口径与中间件**同一份**（import 复用，避免两处走样）
+import { ensureStatsSchema } from "../_middleware.js";
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {
@@ -49,6 +51,8 @@ async function doGet(context) {
   const wantDiagnose = ["1", "true", "yes"].includes((url.searchParams.get("diagnose") || "").toLowerCase());
 
   try {
+    // 读之前先把表建好/补齐（幂等）：这样"刚部署完还没人访问过"时接口也能正常工作
+    try { await ensureStatsSchema(db); } catch { /* 建表失败就让下面的查询自己报错 */ }
     const siteRow = await db.prepare(SITE_SUM).first();
     let splitSince = "";
     try {
@@ -103,8 +107,13 @@ async function doGet(context) {
       };
     }
     return json(200, out);
-  } catch {
-    return json(500, { ok: false, error: "读取统计失败。" });
+  } catch (e) {
+    // 这是**编委专属**接口, 把真实原因带回去, 排错时不用猜
+    return json(500, {
+      ok: false,
+      error: "读取统计失败。",
+      detail: String((e && e.message) || e || "未知错误"),
+    });
   }
 }
 

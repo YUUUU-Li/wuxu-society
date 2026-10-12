@@ -32,6 +32,10 @@ function statements(sql) {
 function makeDB(schemaSql) {
   const db = new DatabaseSync(":memory:");
   for (const s of statements(schemaSql)) db.exec(s);
+  return makeDBFrom(db);
+}
+// 把已有的 sqlite 句柄包成 D1 形状(全新库/旧库夹具用)
+function makeDBFrom(db) {
   const mk = (sql, args) => ({
     async first() { return db.prepare(sql).get(...args) || null; },
     async all() { return { results: db.prepare(sql).all(...args) }; },
@@ -284,6 +288,39 @@ async function main() {
   assert.strictEqual(wrongKey.status, 403, "钥匙不对: 403");
   const noTable = await statsApi.onRequest({ request: new Request("https://x.test/api/stats?work=w-feng"), env: {} });
   assert.strictEqual(noTable.status, 503, "没有 D1 绑定时给 503 提示");
+  // 8.5) 接口必须**自己会补表**: 否则"刚部署完、还没有任何页面访问触发中间件补列"时,
+  //      接口去查还不存在的列 -> 500 -> 界面什么都不显示（这就是线上出过的故障）
+  const emptyDb = new DatabaseSync(":memory:");   // 一张表都没有
+  const emptyShim = makeDBFrom(emptyDb);
+  const fresh = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=w-feng&diagnose=1"),
+    env: { DB: emptyShim, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  });
+  assert.strictEqual(fresh.status, 200, "全新库(没有表)时接口应自己建表并返回 200");
+  const freshJson = await fresh.json();
+  assert.deepStrictEqual([freshJson.site.views, freshJson.site.uniq, freshJson.site.eviews], [0, 0, 0], "空库返回 0 而不是报错");
+  const freshCols = emptyDb.prepare("SELECT name FROM pragma_table_info('site_daily')").all().map((c) => c.name);
+  assert.deepStrictEqual(freshCols.slice().sort(), ["day", "euniq", "eviews", "suniq", "sviews", "uniq", "views"], "接口把新列也建出来了");
+  // 旧库(有 views/uniq/sviews/suniq, 但缺 eviews/euniq/bucket_visits) -> 接口也要能读
+  const legacyDb = makeDB(`
+    CREATE TABLE page_daily (path TEXT NOT NULL, day TEXT NOT NULL, views INTEGER NOT NULL DEFAULT 0,
+      uniq INTEGER NOT NULL DEFAULT 0, sviews INTEGER NOT NULL DEFAULT 0, suniq INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (path, day));
+    CREATE TABLE page_visitors (day TEXT NOT NULL, path TEXT NOT NULL, visitor TEXT NOT NULL, ts INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, path, visitor));
+    CREATE TABLE site_daily (day TEXT PRIMARY KEY, views INTEGER NOT NULL DEFAULT 0, uniq INTEGER NOT NULL DEFAULT 0,
+      sviews INTEGER NOT NULL DEFAULT 0, suniq INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE site_visitors (day TEXT NOT NULL, visitor TEXT NOT NULL, PRIMARY KEY (day, visitor));
+  `);
+  legacyDb._raw.prepare("INSERT INTO site_daily(day, views, uniq) VALUES ('2026-10-01', 12, 7)").run();
+  const legacy = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=w-feng&diagnose=1"),
+    env: { DB: legacyDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  });
+  assert.strictEqual(legacy.status, 200, "缺新列的旧库, 接口应先补列再读");
+  const legacyJson = await legacy.json();
+  assert.deepStrictEqual([legacyJson.site.views, legacyJson.site.uniq], [12, 7], "旧数据照旧读得出来");
+  assert.deepStrictEqual(legacyJson.diagnose.siteTrend[0].eviews, 0, "补出来的新列默认 0");
 
   // 9) 建表口径: sql/stats.sql 与中间件内置 DDL 等价 + 老库能自动补列
   const src = fs.readFileSync(path.join(ROOT, "functions", "_middleware.js"), "utf8");

@@ -74,7 +74,13 @@
     fetch(q, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (!j || !j.ok) { el.hidden = true; statsLoaded = false; return; }
+        if (!j || !j.ok) {
+          // 编委专属的小字: 出错时**如实说明**, 不要静默消失(排错时能看见原因)
+          el.textContent = "统计暂不可用" + (j && j.error ? "（" + j.error + "）" : "");
+          el.hidden = false;
+          statsLoaded = false;
+          return;
+        }
         var w = j.work || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
         var s = j.site || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
         el.innerHTML =

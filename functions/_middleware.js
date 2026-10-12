@@ -87,7 +87,9 @@ const MIGRATE_SQL = [
 // 建表/补列每个数据库只做一次。用 WeakSet 按"库句柄"记，而不是一个全局布尔：
 // 一个 isolate 里正常只会用到 env.DB 这一个句柄，但测试里会拿多个内存库跑同一份代码。
 const SCHEMA_READY = new WeakSet();
-async function ensureStatsSchema(db) {
+// 建表/补列（幂等）。中间件在计数前调它；functions/api/stats.js 读之前也调一次 ——
+// **两处都要调**：否则"刚部署完、还没有任何页面访问"时，接口会去查还不存在的列而报 500。
+export async function ensureStatsSchema(db) {
   if (SCHEMA_READY.has(db)) return;
   try {
     await db.prepare(`SELECT day FROM site_daily LIMIT 1`).first();   // 表已在
