@@ -82,13 +82,45 @@ footerNote: "篇目按创作时间排列，未填时间者另列于后；录自�
   fill(imagery, Object.keys(imags).sort(function (a, b) { return a.localeCompare(b, "zh"); }));
   fill(source, Object.keys(sources));
 
-  // URL 参数预选(如 library.html?author=xx), 兼作可分享的筛选链接
-  var qs = new URLSearchParams(location.search);
+  // 筛选状态存在 URL 里(如 library.html?author=jwl&genre=七言古风): 既可分享, 也是"返回本页"时的唯一真相
+  var KEYS = ["author", "genre", "imagery", "source"];
   var bind = { author: author, genre: genre, imagery: imagery, source: source };
-  ["author", "genre", "imagery", "source"].forEach(function (k) {
-    var v = qs.get(k);
-    if (v && bind[k]) bind[k].value = v;
-  });
+
+  // 值对不上时再试"唯一前缀": 手写 ?author=jwl 也能落到「jwl（蓦流）」; 前缀撞车(有歧义)就当没写
+  function matchLoose(sel, v) {
+    var hit = "";
+    for (var i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i].value;
+      if (!o || o.indexOf(v) !== 0) continue;
+      if (hit) return "";
+      hit = o;
+    }
+    return hit;
+  }
+
+  function readURL() {
+    var qs = new URLSearchParams(location.search);
+    KEYS.forEach(function (k) {
+      var v = qs.get(k) || (k === "genre" ? qs.get("category") : null);   // category 为兼容别名
+      bind[k].value = v || "";                                            // 认不出的值落回"全部"(下拉框会自己回正)
+      if (v && !bind[k].value) bind[k].value = matchLoose(bind[k], v);
+    });
+  }
+
+  function writeURL() {
+    var qs = new URLSearchParams();
+    KEYS.forEach(function (k) { if (bind[k].value) qs.set(k, bind[k].value); });   // 固定顺序, 链接清爽
+    new URLSearchParams(location.search).forEach(function (v, k) {
+      if (KEYS.indexOf(k) === -1 && k !== "category") qs.append(k, v);            // 其余参数(如 utm_*)原样保留
+    });
+    var q = qs.toString();
+    try {
+      history.replaceState(history.state, "", location.pathname + (q ? "?" + q : "") + location.hash);
+    } catch (e) {
+      // 双击 dist/library.html 直接以 file:// 打开时, 浏览器不许脚本改地址栏(origin 为 null)会抛错;
+      // 那种情况下筛选照常生效, 只是地址栏不同步 —— 要验 URL 得走 http(见《编委操作手册》§1)。
+    }
+  }
 
   function apply() {
     var fa = author.value, fg = genre.value, fi = imagery.value, fs = source.value;
@@ -106,6 +138,7 @@ footerNote: "篇目按创作时间排列，未填时间者另列于后；录自�
     if (count) count.textContent = "显示 " + shown + " / " + total + " 篇";
     if (reset) reset.hidden = !any;
     if (empty) empty.hidden = shown !== 0;
+    writeURL();          // 每次筛选都写回地址栏(用 replaceState, 不往历史里堆条目)
   }
   [author, genre, imagery, source].forEach(function (s) {
     s.addEventListener("change", apply);
@@ -114,6 +147,10 @@ footerNote: "篇目按创作时间排列，未填时间者另列于后；录自�
     [author, genre, imagery, source].forEach(function (s) { s.value = ""; });
     apply();
   });
+  // 后退/前进回到本页时, 浏览器会自己还原下拉框的值, 却不会重算列表(也不触发 change),
+  // 于是出现"看着筛过了、内容却是全量"的对不上 —— 一律以 URL 为准重新对齐
+  window.addEventListener("pageshow", function () { readURL(); apply(); });
+  readURL();       // 进场先按 URL 预选(下拉框的选项此时已填好, 必须在 fill() 之后)
   apply();
 })();
 </script>

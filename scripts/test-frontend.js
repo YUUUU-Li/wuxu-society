@@ -250,4 +250,100 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   }
 }
 
-console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见)");
+// 12) 作品库筛选状态存 URL —— 四个下拉写回地址栏(?author=&genre=&imagery=&source=), 且"返回本页"时以 URL 为准重算。
+//     起因的 bug: 筛完进单篇再后退, 浏览器会自己还原下拉框的值却不重算列表(也不触发 change),
+//     于是"下拉框显示已筛、列表却是全量", 看着就是对不上。本地没浏览器, 所以把 readURL/writeURL 抠出来真跑。
+{
+  const lib = readf("src/library.njk");
+  for (const k of ["author", "genre", "imagery", "source"]) {
+    assert(lib.includes(`id="f-${k}"`), "作品库缺下拉框 #f-" + k);
+  }
+  assert(/var KEYS = \["author", "genre", "imagery", "source"\]/.test(lib),
+    "四个筛选维度的 URL 参数名与顺序应固定为 author/genre/imagery/source");
+  assert(/function apply\(\)[\s\S]*?writeURL\(\);/.test(lib), "apply() 里应把当前筛选写回地址栏");
+  assert(!lib.includes("history.pushState"), "改选筛选不该新增历史条目(否则要按很多次返回才出得去)");
+  assert(/try\s*\{[^}]*history\.replaceState/.test(lib),
+    "写地址栏要包 try/catch —— 直接双击 dist/library.html(file://) 时浏览器会拒绝改地址栏, 不该让它抛错");
+  assert(/addEventListener\("pageshow"[\s\S]{0,160}readURL\(\);\s*apply\(\);/.test(lib),
+    "pageshow(含 bfcache 恢复) 时应按 URL 重新对齐下拉框与列表");
+  // 进场那次调用必须在 pageshow 之外单独存在 —— 只在事件里调的话, 带参数的链接打开不会预选
+  assert(/^\s{2}readURL\(\);/m.test(lib.replace(/\n\s*window\.addEventListener\("pageshow"[\s\S]{0,200}?\}\);/g, "")),
+    "进场时应先调一次 readURL() 再 apply()(顺序: fill() → readURL() → apply())");
+
+  // 把 var KEYS … writeURL() 这段抠出来, 用造出来的假 <select> 与假 location/history 真跑一遍
+  const head = lib.slice(lib.indexOf("var KEYS = ["), lib.indexOf("  function apply() {"));
+  assert(head.includes("function readURL") && head.includes("function writeURL"), "应从库页脚本里抠到 readURL/writeURL");
+  const build = new Function("author", "genre", "imagery", "source", "location", "history", "URLSearchParams",
+    head + "return {readURL: readURL, writeURL: writeURL};");
+
+  // 假 <select>: options 是真 DOM 那个形状; 赋一个不存在的值会落回空(真 select 就是这样, selectedIndex = -1)
+  const mkSel = (opts) => {
+    const o = { options: opts.map((v) => ({ value: v })), _v: "" };
+    Object.defineProperty(o, "value", {
+      get: () => o._v,
+      set: (v) => { o._v = o.options.some((x) => x.value === v) ? v : ""; },
+    });
+    return o;
+  };
+  const nav = { urls: [] };
+  const fakeHistory = { state: null, replaceState: (s, t, u) => nav.urls.push(u) };
+
+  function run(search, hash, opts) {
+    const o = opts || {};
+    const sels = {
+      author: mkSel(o.author || ["ylj（济枫）", "jwl（蓦流）"]),
+      genre: mkSel(o.genre || ["七言古风", "五言律诗"]),
+      imagery: mkSel(o.imagery || ["山", "水"]),
+      source: mkSel(o.source || ["清明雅集", "(无出处)"]),
+    };
+    const loc = { search: search, pathname: "/library", hash: hash || "" };
+    const api = build(sels.author, sels.genre, sels.imagery, sels.source, loc, fakeHistory, URLSearchParams);
+    api.readURL();
+    return { api, sels, loc };
+  }
+
+  // 读: 参数预选下拉框(作者 + 体裁同时生效)
+  {
+    const { sels } = run("?author=jwl（蓦流）&genre=七言古风");
+    assert.strictEqual(sels.author.value, "jwl（蓦流）", "?author=… 应预选作者");
+    assert.strictEqual(sels.genre.value, "七言古风", "?genre=… 应预选体裁");
+    assert.strictEqual(sels.imagery.value, "", "没给的维度应保持「全部」");
+  }
+  // 读: 老写法 ?category= 也认; 认不出的值落回「全部」而不是筛成一空页
+  {
+    const { sels } = run("?category=七言古风&author=查无此人");
+    assert.strictEqual(sels.genre.value, "七言古风", "体裁的兼容别名 category 应同样生效");
+    assert.strictEqual(sels.author.value, "", "URL 里认不出的值应落回「全部」");
+  }
+  // 读: 手写的简写也能命中 —— ?author=jwl 落到唯一以 jwl 开头的「jwl（蓦流）」
+  {
+    const { sels } = run("?author=jwl&imagery=山");
+    assert.strictEqual(sels.author.value, "jwl（蓦流）", "?author=jwl 应唯一前缀命中「jwl（蓦流）」");
+    assert.strictEqual(sels.imagery.value, "山", "本来就是完整值的不受影响");
+  }
+  // 读: 前缀撞车(两个作者都以 jwl 开头)就不猜, 落回「全部」
+  {
+    const { sels } = run("?author=jwl", null, { author: ["jwl（蓦流）", "jwl2（某人）"] });
+    assert.strictEqual(sels.author.value, "", "前缀有歧义时应落回「全部」(不瞎猜某一个)");
+  }
+  // 写: 固定顺序、丢空值、别名归一、别的参数(如 utm_*)原样保留
+  {
+    const { api, sels } = run("?author=jwl&category=七言古风&utm_source=wx");
+    sels.imagery.value = "山";
+    api.writeURL();
+    assert.strictEqual(nav.urls[0],
+      "/library?author=" + encodeURIComponent("jwl（蓦流）") + "&genre=" + encodeURIComponent("七言古风") +
+      "&imagery=" + encodeURIComponent("山") + "&utm_source=wx",
+      "写回的 URL 应是 author→genre→imagery 固定顺序 + 原样保留的 utm_, 且老写法 category 归一成 genre");
+  }
+  // 写: 「清除筛选」把四个下拉清空 → 回到干净的 /library(不留 ?); 锚点不丢
+  {
+    const { api, sels } = run("?author=jwl&genre=七言古风", "#lib-list");
+    ["author", "genre", "imagery", "source"].forEach((k) => { sels[k].value = ""; });
+    api.writeURL();
+    assert.strictEqual(nav.urls[1], "/library#lib-list", "清空筛选后应回到不带参数的地址(锚点保留)");
+  }
+  console.log("（作品库筛选入 URL: 读写/别名/自愈/顺序 逐例通过）");
+}
+
+console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见/作品库筛选入 URL 且后退不错位)");
