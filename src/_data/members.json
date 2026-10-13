@@ -130,7 +130,7 @@
     "members": [
       {
         "id": "wzx",
-        "name": "wzx",
+        "name": "wzx · 麦篝",
         "role": "财务总监",
         "branch": "温州分部",
         "note": "打理社内账目与经费。"
@@ -138,15 +138,14 @@
     ]
   },
   {
-    "branch": "香港总部",
+    "branch": "香港分部",
     "members": [
       {
-        "id": "zhuxi696",
-        "name": "为何我是神",
+        "id": "zx",
+        "name": "zx · 为何我是神",
         "role": "社员",
-        "branch": "香港总部",
-        "note": "",
-        "links": []
+        "branch": "香港分部",
+        "note": ""
       }
     ]
   }
