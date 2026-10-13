@@ -48,7 +48,11 @@
    - 口径的单一真相在 **`scripts/work-order.js`**（`.eleventy.js` 与 `scripts/work-dates-report.js` 共用；单测 `scripts/test-work-order.js`）：`created` **升序**（早者在前），作品库/全文库/期页/关联组内同口径。**本条早期写的"倒序 + 按年分组"未采纳**（保持升序平铺 + 现有筛选）。
    - **未填者不猜日期**：一律排在已填者之后，作品库底部另立「**年份待考**」一节（标出篇数；被筛选筛空时标题自动收起）。旧口径"继承前一篇时点"已废弃——那份手工名单开头即 2024-04-04，会把 38 篇未填作品一律算作那天（含 2026 年两篇投稿）挤作一堆。同时间点或未填者按文件名稳定排列。
    - 待办只剩**收集数据**：照 `docs/作品时间收集表.md` 问作者，`npm run set-created` 写入即自动归位（2026 两篇已确认先不填）。
-   - **浏览量统计（2026-09 上线，只给编委看）**：`functions/_middleware.js`（根中间件，官方支持"对整站生效含静态文件"）在**页面请求**上异步记一笔（`context.waitUntil`，不拖慢访问）；表 `page_daily` / `page_visitors` / `site_daily` / `site_visitors`（`sql/stats.sql`，函数首次计数时自动建）；读取接口 `GET /api/stats?work=<标识名>` **仅编委**（账号 `role='编委'` 或旧钥匙），作品页题下 `#work-stats` 默认 hidden、只由 `src/static/auth.js` 在编委登录后填入。**口径：阅读=页面请求次数；访客=按天去重的人次（跨天各算一次）**；只记 HTML 页面，`/w-feng` 与 `/w-feng.html` 归一；**不存原始 IP**（只存每天更换的哈希指纹）。**自启用日起算，历史补不回来**。单测 `scripts/test-stats.js`（真 SQL：口径/过滤/鉴权/建表等价）。
+   - **浏览量统计（2026-09 上线；2026-10-13 改版为"三桶"口径，只给编委看）**：`functions/_middleware.js`（根中间件，官方支持"对整站生效含静态文件"）在**页面请求**上异步记一笔（`context.waitUntil`，不拖慢访问）。表：`page_daily`/`page_visitors`/`bucket_visits`/`site_daily`/`site_visitors`(旧)/`stats_meta`（`sql/stats.sql`，函数首次计数时自动建表并给老库补列）。
+   - **三个桶**（优先级从高到低）：`s` 疑机（UA 黑名单/无 UA/无 `Accept-Language`，含 Googlebot、GPTBot、ClaudeBot…）→ `sviews/suniq`；`c` **内容页**（`/w-*`、`/qingming-*`、`/issue-*`、`/concepts/*`、`/_fulltext`）→ **`views/uniq`＝界面上的"阅读/访客"，这才是真人读者**；`e` 入口页（首页/作品库/社员/雅集/投稿/404）→ `eviews/euniq`（显示为"仅入口"，**不算进访客数**）。改口径只需改 `CONTENT_PATH_RE`。
+   - **为什么改（实据 2026-10-13）**：旧口径下全站 247 个"访客"里 186 个只打了首页、225 个只看一页就走（每访客页数分布 1 页=225），首页占 75% —— 那是爬虫/预览抓取；按内容页口径真人只有几十人次/7 天。**"242" 从来不是读者数**。
+   - **口径**：阅读=页面请求次数（同人同页 30 秒内连刷只算一次）；访客=**按天去重的人次**，单页按 (天,路径,指纹) 去重、站点按 (天,桶,指纹) 去重（所以"先看首页再看作品页"的人两边各算 1 人次）；跨天各算一次；只记 HTML 且仅 200；`/w-feng` 与 `/w-feng.html` 归一；**不存原始 IP**（只存每天更换的指纹）。
+   - **编委自己不计入**（编委态前端种 `zz_nostats=1` cookie，中间件跳过）；**自启用日起算**，历史补不回；改版前三个桶混在一起、拆不开（面板标注"真假分辨自 Y 起"）。单测 `scripts/test-stats.js`。
 4. **D1 / 函数现状**
    - D1 数据库名 `wuxu-database`；四表已建；词表 94 词已落库并完成历史写法归并；D1 绑定 `DB` ✅ 已配置（`/api/tags`、`/api/related` 线上可用）
    - env：`GITHUB_TOKEN_SUBMIT`（Secret，需 Contents: Read and write；若 403 换 classic `repo` token）；`ZHUI_ADMIN_KEY` 为编委旧钥匙（账号化后仅过渡期使用）

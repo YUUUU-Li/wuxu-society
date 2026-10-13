@@ -233,6 +233,29 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(!/ip\s+TEXT|ip\s+NOT NULL/.test(mwSrc), "统计表不许存原始 IP");
   const apiSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "stats.js"), "utf8");
   assert(apiSrc.includes("isAdmin") && apiSrc.includes("403"), "读取接口必须做编委鉴权");
+  assert(apiSrc.includes("diagnose") && apiSrc.includes("pagesPerVisitor"), "读取接口要带诊断(?diagnose=1)");
+  // 真人/疑机分开 + 去抖 + 编委不计入
+  assert(/export function isSuspect/.test(mwSrc) && /export function hasNoStatsCookie/.test(mwSrc),
+    "中间件要能判定疑机、并识别编委的 zz_nostats cookie");
+  assert(/sviews/.test(mwSrc) && /suniq/.test(mwSrc), "疑机要单独累计(sviews/suniq), 不污染真人数字");
+  assert(/DEBOUNCE_MS/.test(mwSrc) && /ts <= \?4 - \?5/.test(mwSrc), "要有 30 秒去抖(毫秒单位, 别写成 30)");
+  assert(auth.includes("zz_nostats"), "auth.js 要在编委态种/清 zz_nostats cookie(自己不计入统计)");
+  assert(auth.includes("document.cookie"), "cookie 由前端 JS 种下/清除");
+  assert(auth.includes("ws-bot") && /\.work-stats \.ws-bot\{/.test(css), "界面要如实标出「疑机 N 次」并配样式");
+  // 三桶口径: 内容页进真人数字, 入口页(首页/作品库…)单独显示, 不进访客数
+  assert(/export function isContentPath/.test(mwSrc) && /CONTENT_PATH_RE/.test(mwSrc),
+    "中间件要区分内容页与入口页(口径只在这一条正则里)");
+  assert(/eviews/.test(mwSrc) && /euniq/.test(mwSrc), "入口页要单独累计(eviews/euniq)");
+  assert(/bucket_visits/.test(mwSrc) && /PRIMARY KEY \(day, bucket, visitor\)/.test(mwSrc),
+    "站点级去重要按桶分开(否则先看首页再看内页的人会被吃掉)");
+  assert(/\.bind\(path, day, newPage\)/.test(mwSrc) && /\.bind\(day, newBucket\)/.test(mwSrc),
+    "单页访客按页去重(newPage), 站点访客按桶去重(newBucket) —— 两者不能混用");
+  assert(auth.includes("首页围观") && auth.includes("全站真人阅读"), "界面要写明「全站真人阅读」与「首页围观」两段");
+  // 线上出过的故障: 部署后还没有页面访问触发补列, 接口去查新列 -> 500 -> 界面空白
+  assert(/import \{ ensureStatsSchema[^}]*\} from "\.\.\/_middleware\.js"/.test(apiSrc),
+    "读取接口必须复用中间件的建表函数(自己补表), 否则刚部署完会 500");
+  assert(apiSrc.includes("detail") || apiSrc.includes("String((e && e.message)"), "500 要带回真实原因(编委排错用)");
+  assert(auth.includes("统计暂不可用"), "取数失败时界面要如实说明, 不能静默消失");
 }
 
 // 11) 外部前端脚本必须能解析(语法错会让整块功能静默失效, 浏览器里只报一行错)
