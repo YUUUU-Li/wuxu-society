@@ -127,15 +127,42 @@
   /* 滴墨铺满画面, 铺满时回调 swap(); 返回整段用时(ms) */
   function bloom(to, swap) {
     var w = root.clientWidth, h = root.clientHeight;
-    var diag = Math.sqrt(w * w + h * h);
-    var size = diag * 0.30;   // 每滴的边长
-    // 终值缩放: 让每滴的"实心"部分正好涨到 0.30*diag(够盖住离它最远 0.25*diag 的画面边角)。
-    // 0.28 = site.css 那三层渐变里 56% 实心 × 半边长(两边是一对, 改一处得改两处)。
-    var k = (0.30 * diag) / (0.28 * size);   // ≈3.57
-    // 四角各一滴 + 正中一滴。画面任意一点离最近那滴都不超过 0.25*diag(位置随机抖 4% 也还在 0.30 内),
-    // 所以每滴涨到 0.30*diag 时画面必被盖满 —— 满之前绝不在墨底下换色, 免得透出旧底色。
-    var at = [[.25, .25], [.75, .25], [.25, .75], [.75, .75], [.5, .5]];
-    for (var i = at.length - 1; i > 0; i--) {          // 打乱先后: 每次切换的墨迹都不一样
+    // 三滴怎么摆: 长边方向均分(横屏 x 在 0.1/0.5/0.9 处, 竖屏 y 在 0.1/0.5/0.9 处), 抖 6%;
+    // 另一维**不排齐** —— 三滴分占低/中/高三档(每档 14% 宽, 共 0.30~0.70), 档位每次随机分配,
+    // 于是每回都是高低错落的一版墨迹, 又都离画面边缘 30% 以上, 不会贴着边。
+    var spread = [.1, .5, .9];
+    var bands = [[.30, .44], [.43, .57], [.56, .70]];
+    for (var b = bands.length - 1; b > 0; b--) {
+      var bi = Math.floor(Math.random() * (b + 1));
+      var bt = bands[b]; bands[b] = bands[bi]; bands[bi] = bt;
+    }
+    var wide = w >= h;
+    var at = spread.map(function (v, i) {
+      var along = (v + (Math.random() - .5) * .06) * (wide ? w : h);
+      var across = (bands[i][0] + Math.random() * (bands[i][1] - bands[i][0])) * (wide ? h : w);
+      return wide ? { x: along, y: across } : { x: across, y: along };
+    });
+    // 每滴要涨多大: 把画面切成 33×33 个采样点, 每个点记到"离它最近的那一滴"头上 ——
+    // 于是每滴只需盖住自己那一块里最远的点, 三滴合起来正好铺满。
+    // (若改成"每滴都要能单独盖住全屏", 三滴一错落就得各涨到 41% 对角线, 立刻糊成一片;
+    //  按块分摊后各涨 30% 上下, 才看得出是几滴墨。)
+    // 33×33 够密: 采样间隔(对角线 1/32)远小于下面留的 12% 余量, 漏不掉角。
+    var need = at.map(function () { return 0; });
+    for (var gx = 0; gx <= 32; gx++) {
+      for (var gy = 0; gy <= 32; gy++) {
+        var px = gx / 32 * w, py = gy / 32 * h, near = Infinity, who = 0;
+        for (var n = 0; n < at.length; n++) {
+          var dist = Math.sqrt(Math.pow(px - at[n].x, 2) + Math.pow(py - at[n].y, 2));
+          if (dist < near) { near = dist; who = n; }
+        }
+        if (near > need[who]) need[who] = near;
+      }
+    }
+    at.forEach(function (p, i) { p.size = need[i] * 1.12; });   // 各滴自己的实心半径 + 12% 余量
+    // 终值缩放 = 1/0.28: 边长涨到这么多倍时, 实心半径正好 = 边长(size)。
+    // 0.28 = site.css 那三层渐变里的 56% 实心 × 半边长(两边是一对, 改一处得改两处)。
+    var k = 1 / 0.28;          // ≈3.57
+    for (var i = at.length - 1; i > 0; i--) {          // 打乱先后: 每次切换落墨的次序都不同
       var j = Math.floor(Math.random() * (i + 1));
       var t = at[i]; at[i] = at[j]; at[j] = t;
     }
@@ -146,23 +173,28 @@
     at.forEach(function (p, i) {
       var d = document.createElement("span");
       d.className = "ink-drop";
-      d.style.left = (p[0] + (Math.random() - .5) * .04) * w + "px";
-      d.style.top = (p[1] + (Math.random() - .5) * .04) * h + "px";
-      d.style.width = d.style.height = size + "px";
-      // 曲线前端压得住: 前 1/5 时间墨还是一小滴(点下去那一下), 中段才猛地洇开, 末段慢慢收住。
-      // 早先用的 .2,.75,.25,1 太陡 —— 头 40ms 就涨成一大片, 看着像"一上来就糊满"。
+      d.style.left = p.x + "px";
+      d.style.top = p.y + "px";
+      d.style.width = d.style.height = p.size + "px";
+      // 三帧: 轮到自己之前"完全不可见"(否则后几滴会先以小黑点站在画面上等, 很突兀) →
+      // 露面时仍是一小滴(滴下来那一下) → 再照 S 形曲线洇开(前端压得住、中段猛地涨开、末段收住)。
       d.animate([
-        { transform: "translate(-50%,-50%) scale(.02)" },     // 先落成一小滴
-        { transform: "translate(-50%,-50%) scale(" + k + ")" } // 再晕开
-      ], { duration: DUR, delay: i * GAP, easing: "cubic-bezier(.5,0,.2,1)", fill: "both" });
+        { opacity: 0, transform: "translate(-50%,-50%) scale(.02)", offset: 0, easing: "linear" },
+        { opacity: 1, transform: "translate(-50%,-50%) scale(.02)", offset: .12, easing: "cubic-bezier(.5,0,.2,1)" },
+        { opacity: 1, transform: "translate(-50%,-50%) scale(" + k + ")", offset: 1 }
+      ], { duration: DUR, delay: i * GAP, fill: "both" });
       veil.appendChild(d);
     });
     document.body.appendChild(veil);
     var total = (at.length - 1) * GAP + DUR;
     setTimeout(function () {
-      swap();                       // 画面已被墨盖满, 此刻换色看不见
-      veil.classList.add("off");    // 墨色 == 新底色, 淡出只是把内容慢慢显出来
-      setTimeout(function () { if (veil.parentNode) veil.parentNode.removeChild(veil); }, FADE + 60);
+      try {
+        swap();                     // 画面已被墨盖满, 此刻换色看不见
+      } finally {
+        // 不管换色成没成, 墨都必须撤掉 —— 挡板留在页面上就是几个擦不掉的点
+        veil.classList.add("off");  // 墨色 == 新底色, 淡出只是把内容慢慢显出来
+        setTimeout(function () { if (veil.parentNode) veil.parentNode.removeChild(veil); }, FADE + 60);
+      }
     }, total + 40);                 // 多留 40ms: 万一主线程忙、动画收尾略晚, 边角也不至于透出旧底色
     return total + 40 + FADE + 60;
   }

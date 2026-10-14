@@ -387,8 +387,10 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(js.includes("prefers-reduced-motion") && js.includes("if (quiet()) { swap(); return; }"),
     "系统设了减动效就直接换色, 不滴墨");
   assert(js.includes("if (running) return;"), "墨没落定时连点要挡住(免得墨叠墨)");
-  assert(js.includes("0.30 * diag") && js.includes("0.28 * size"),
-    "终值缩放应由「纸色实心半径」反算, 与 site.css 里渐变的 56% 是一对(改一处要改两处)");
+  assert(js.includes("var k = 1 / 0.28") && js.includes("p.size = need[i] * 1.12"),
+    "终值缩放应由「纸色实心半径」反算(1/0.28 与 site.css 渐变的 56% 是一对), 且每滴按自己那一块留余量");
+  assert(js.includes("var spread = [.1, .5, .9]") && js.includes("var bands = [[.30, .44]"),
+    "三滴应沿长边均分、另一维分占低/中/高三档(错落但不贴边)");
 }
 
 console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见/作品库筛选入 URL 且后退不错位/滴墨换色)");
