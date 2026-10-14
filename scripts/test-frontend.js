@@ -369,4 +369,26 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   console.log("（作品库筛选入 URL: 读写/别名/自愈/顺序 逐例通过）");
 }
 
-console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见/作品库筛选入 URL 且后退不错位)");
+// 13) 换色不硬切: 滴墨晕开铺满 → 在墨底下换色 → 淡出
+//     要害是"墨色必须就是要去的那一色的纸色": 这样铺满时底色已经对了, 换色那一下看不见跳变, 也就不刺眼。
+{
+  const js = readf("src/static/site.js");
+  assert(css.includes(".ink-veil{position:fixed"), "site.css 缺 .ink-veil(滴墨挡板)");
+  assert(css.includes('.ink-veil[data-to="dark"]{--ink-c:var(--paper-dk)}') &&
+    css.includes('.ink-veil[data-to="light"]{--ink-c:var(--paper-lt)}'),
+    "墨色应取目标那一色的纸色(浅→深滴 --paper-dk, 深→浅滴 --paper-lt)");
+  assert(css.includes("--paper-lt:#eef0e6;") && css.includes("--paper-dk:#171512;"),
+    "两个纸色要各立一个变量(否则墨色会与底色各写一份, 迟早对不上)");
+  assert(/\[data-theme="dark"\]\{\s*[^}]*--paper:var\(--paper-dk\)/.test(css),
+    "深色的 --paper 应指向 --paper-dk(墨色与底色同一个真相)");
+  assert(css.includes(".ink-drop{") && css.includes("will-change:transform"), "滴墨应走 transform 动画");
+  assert(/@media \(prefers-reduced-motion:reduce\)\{\.ink-veil\{display:none\}\}/.test(css),
+    "系统设了「减少动态效果」时挡板不该出现");
+  assert(js.includes("prefers-reduced-motion") && js.includes("if (quiet()) { swap(); return; }"),
+    "系统设了减动效就直接换色, 不滴墨");
+  assert(js.includes("if (running) return;"), "墨没落定时连点要挡住(免得墨叠墨)");
+  assert(js.includes("0.30 * diag") && js.includes("0.28 * size"),
+    "终值缩放应由「纸色实心半径」反算, 与 site.css 里渐变的 56% 是一对(改一处要改两处)");
+}
+
+console.log("✅ test-frontend.js 全部通过 (元素引用一致/账号入口在导航/无自填昵称/账号化点位齐全/样式齐备/题记·自注贯通/创作时间整串日期/导航版式/弹窗结构/内联脚本可解析/input 必写 type/浏览量仅编委可见/作品库筛选入 URL 且后退不错位/滴墨换色)");

@@ -6,7 +6,9 @@
    ========================================================= */
 :root{
   color-scheme:light;      /* 原生控件跟随主题(下拉开列表/滚动条等) */
-  --paper:#eef0e6;          /* 微青纸色 */
+  --paper-lt:#eef0e6;       /* 浅色纸(滴墨换色时"深→浅"滴的就是这一色) */
+  --paper-dk:#171512;       /* 深色纸(滴墨换色时"浅→深"滴的就是这一色) */
+  --paper:var(--paper-lt);  /* 微青纸色 */
   --paper-deep:#e4e7d9;
   --ink:#26221a;            /* 墨色, 不用纯黑 */
   --ink-soft:#544e42;
@@ -500,11 +502,29 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   .nav-links{order:2;margin-left:auto}
   .theme-toggle{order:3;margin-left:12px}
 }
+
+/* ══ 换色: 滴墨晕开 ══
+   切换时几滴墨错开滴下、晕开铺满画面 → 满的那一刻在墨底下换色 → 墨淡出露出新内容。
+   墨滴的就是"要去的那一色的纸色"(浅→深滴 --paper-dk, 深→浅滴 --paper-lt),
+   所以铺满时底色已经对了, 换色一步看不见跳变, 也就不会刺眼。
+   位置/尺寸/节奏由 site.js 的 bloom() 算, 这里只管一滴墨长什么样。 */
+.ink-veil{position:fixed;inset:0;z-index:9999;pointer-events:none;transition:opacity .2s linear}
+.ink-veil.off{opacity:0}
+.ink-veil[data-to="dark"]{--ink-c:var(--paper-dk)}
+.ink-veil[data-to="light"]{--ink-c:var(--paper-lt)}
+/* 一滴墨不是正圆: 三个偏心圆叠出来的轮廓带点不规则, 像洇开的样子(每层淡出处就是"晕") */
+.ink-drop{position:absolute;border-radius:50%;will-change:transform;
+  background-image:
+    radial-gradient(circle closest-side at 50% 50%, var(--ink-c) 0 56%, transparent 80%),
+    radial-gradient(circle closest-side at 32% 60%, var(--ink-c) 0 46%, transparent 74%),
+    radial-gradient(circle closest-side at 66% 36%, var(--ink-c) 0 44%, transparent 72%);
+}
+@media (prefers-reduced-motion:reduce){.ink-veil{display:none}}   /* 系统设了"减少动态效果"就不滴墨 */
 /* 深色时手写 logo(黑墨)反白, 否则不可辨 */
 [data-theme="dark"] .brand-logo{filter:invert(1) brightness(1.02)}
 [data-theme="dark"]{
   color-scheme:dark;
-  --paper:#171512;--paper-deep:#1f1c18;--ink:#e9e4d7;--ink-soft:#c8c1b1;
+  --paper:var(--paper-dk);--paper-deep:#1f1c18;--ink:#e9e4d7;--ink-soft:#c8c1b1;
   --dim:#9c968a;--line:rgba(233,228,215,.20);--line-soft:rgba(233,228,215,.10);
   --seal:#c46552;--seal-ink:#171512;--nav-bg:rgba(31,28,24,.92);
   --input-bg:rgba(255,255,255,.06);
