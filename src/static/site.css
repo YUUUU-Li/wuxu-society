@@ -236,10 +236,17 @@ a.plink:hover{color:var(--seal)}
   border-radius:10px;font-size:12px;color:var(--dim,#6e6a5e)}
 .work-stats[hidden]{display:none}
 
-/* 首页社训下方：**全站唯一对所有人公开**的统计 —— 作品(内容页)累计阅读次数。
-   构建期不留数字，由 index.njk 的内联脚本去 /api/site-stats 现取；取不到则整行不显示。 */
-.site-stats{margin:18px 0 0;font-size:13.5px;letter-spacing:.04em;color:var(--dim,#6e6a5e)}
-.site-stats[hidden]{display:none}
+/* 首页社训落款右侧：**全站唯一对所有人公开**的统计 —— 作品(内容页)累计阅读次数。
+   构建期不留数字，由 index.njk 的内联脚本去 /api/site-stats 现取；取不到则整行不显示。
+
+   两个坑(都踩过, 别再改回去)：
+   1) 选择器**必须**比 `.motto cite` 更具体(这里用 `.motto cite .site-stats`), 否则字号被盖掉;
+   2) 元素**必须**是挂在 <cite> 里的 <span>, 不能是藏在 .motto 里的 <p> ——
+      `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);font-weight:700}` 优先级更高,
+      会把这一行撑成最大 43px 的粗体(线上真出过这个 bug: 首页那行变得比社训还大)。 */
+.motto cite .site-stats{margin-left:10px;font-size:13px;font-weight:400;letter-spacing:.04em;
+  color:var(--dim,#6e6a5e);white-space:nowrap}
+.motto cite .site-stats[hidden]{display:none}
 
 /* ---------- 页脚 ---------- */
 footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}

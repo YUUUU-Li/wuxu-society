@@ -222,7 +222,8 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(auth.includes("statsRefresh"), "对外要给 zhuzhu.js 一个刷新入口(开关旧钥匙后立即生效)");
   assert(zhuzhu.includes("zzAuth.statsRefresh"), "编委开关旧钥匙时应叫 auth.js 刷新浏览量");
   assert(/\.work-stats\{/.test(css) && /\.work-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .work-stats(含 hidden 兜底)");
-  assert(/\.site-stats\{/.test(css) && /\.site-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .site-stats(含 hidden 兜底)");
+  assert(/\.motto cite \.site-stats\{/.test(css), "首页统计的 CSS 选择器要比 `.motto cite` 具体, 否则字号被盖掉");
+  assert(/\.motto cite \.site-stats\[hidden\]\{display:none\}/.test(css), "首页统计要有 hidden 兜底");
   // 后端两件套与建表脚本齐备
   assert(fs.existsSync(path.join(ROOT, "functions", "_middleware.js")), "缺根中间件 functions/_middleware.js(全站计数)");
   assert(fs.existsSync(path.join(ROOT, "functions", "api", "stats.js")), "缺读取接口 functions/api/stats.js");
@@ -259,6 +260,11 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(/id="site-stats"[^>]*hidden/.test(homeNjk), "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");
   assert(homeNjk.includes("/site-stats"), "首页脚本要现取 /api/site-stats");
   assert(!/id="site-stats"[^>]*>[^<]/.test(homeNjk), "首页占位里不该在构建期渲染任何数字");
+  // 线上踩过的坑(2026-10-15): 把统计写成 .motto 里的 <p>, 被 `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);
+  // font-weight:700}` 盖成最大 43px 的粗体 —— 首页那行比社训还大。必须挂在 <cite> 里用 <span>。
+  assert(!/<p[^>]*id="site-stats"/.test(homeNjk), "首页统计不能用 <p>(会被 .motto p 撑成大字号)");
+  assert(/<cite>[^<]*<span class="site-stats" id="site-stats" hidden><\/span><\/cite>/.test(homeNjk),
+    "首页统计要挂在 <cite> 落款右侧的 <span> 里(小字, 和作品页那行同一档字号)");
   assert(!/全站真人|欢迎第|访问量/.test(homeNjk), "首页文案别用「全站」「访问量」这类会和人次混淆的说法");
   assert(fs.existsSync(path.join(ROOT, "functions", "api", "site-stats.js")), "缺公开接口 functions/api/site-stats.js");
   const pubSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "site-stats.js"), "utf8");

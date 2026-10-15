@@ -30,11 +30,14 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
   <section class="motto">
     <div class="wrap rv">
       <p class="motto-lines"><span>“文章千古事，</span><span>得失寸心知。”</span></p>
-      <cite>杜甫《偶题》句，引为社训</cite>
+      <cite>杜甫《偶题》句，引为社训<span class="site-stats" id="site-stats" hidden></span></cite>
       <!-- 全站公开的唯一统计口径: 作品(内容页)累计**阅读次数**。
            构建期不留数字, 由下面这段脚本去 /api/site-stats 现取; 取不到就整行不显示 ——
-           宁可没有, 也不能显示一个假的 0。口径说明见 functions/api/site-stats.js 顶部。 -->
-      <p class="site-stats rv" id="site-stats" hidden></p>
+           宁可没有, 也不能显示一个假的 0。口径说明见 functions/api/site-stats.js 顶部。
+
+           这里**必须**是挂在 <cite> 里的 <span>, 不能用 <p> 自占一行:
+           site.css 有 `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);font-weight:700}`,
+           它比 `.site-stats` 更具体, 会把字号整个盖成最大 43px 的粗体(线上出过这个 bug)。 -->
       <script>
       (function () {
         "use strict";
@@ -44,7 +47,7 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
           .then(function (r) { return r.json(); })
           .then(function (j) {
             if (!j || !j.ok || typeof j.reads !== "number" || j.reads <= 0) return;
-            el.textContent = "作品累计阅读 " + Number(j.reads).toLocaleString("zh-CN") + " 次";
+            el.textContent = "· 作品累计阅读 " + Number(j.reads).toLocaleString("zh-CN") + " 次";
             if (j.since) el.title = "自 " + j.since + " 起累计（内容页打开次数，非人数）";
             el.hidden = false;
           })
