@@ -16,6 +16,14 @@
 //   · **编委自己不计入**：编委登录后前端会种一个 zz_nostats=1 cookie（见 src/static/auth.js），
 //     中间件见到直接跳过 —— 免得我们自己调试把数字刷高。
 //
+// 明细表的分桶标记（2026-10-14 补，修掉一个回溯口径 bug）：
+//   page_visitors 这张"每天·每个人·看过哪一页"的明细表，原来**不分桶**，爬虫和真人写在一起。
+//   于是 functions/api/stats.js 的历史回溯（按内容页路径去重算"有多少人读过"）会把爬虫也算成人。
+//   现在每行都记下当次的桶：
+//     bucket='c' 内容页真人 / 'e' 入口页真人 / 's' 疑机 / 'u' 口径未知（本列存在之前的历史行）
+//   回溯只认 'c' 为"确定是真人"，把 'c'+'u' 当上界，'s' **一律排除**。
+//   注意：历史行无法追溯补标，所以改版前的数字永远是上界，不是测量值。
+//
 // 写入量：每次约写 5 行（两张去重明细 + 去抖时间戳 + 两张日表）。D1 免费额度 10 万行写/天。
 
 // —— 建表（与 sql/stats.sql 完全一致，幂等） ——
@@ -37,8 +45,10 @@ const SCHEMA_SQL = [
      path    TEXT    NOT NULL,
      visitor TEXT    NOT NULL,
      ts      INTEGER NOT NULL DEFAULT 0,
+     bucket  TEXT    NOT NULL DEFAULT 'u',
      PRIMARY KEY (day, path, visitor)
    )`,
+  `CREATE INDEX IF NOT EXISTS idx_page_visitors_path ON page_visitors(path)`,
   `CREATE TABLE IF NOT EXISTS site_daily (
      day    TEXT PRIMARY KEY,
      views  INTEGER NOT NULL DEFAULT 0,
@@ -83,6 +93,10 @@ const MIGRATE_SQL = [
   `ALTER TABLE site_daily ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE site_daily ADD COLUMN euniq INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE page_visitors ADD COLUMN ts INTEGER NOT NULL DEFAULT 0`,
+  // 补分桶标记: 老行没法追溯, 一律落成 'u'(口径未知), 由回溯把它当"上界"而不是"真人"
+  `ALTER TABLE page_visitors ADD COLUMN bucket TEXT NOT NULL DEFAULT 'u'`,
+  // 回溯按 path 过滤, 而主键是 (day, path, visitor) —— day 在最前, 索引不到 path
+  `CREATE INDEX IF NOT EXISTS idx_page_visitors_path ON page_visitors(path)`,
 ];
 // 建表/补列每个数据库只做一次。用 WeakSet 按"库句柄"记，而不是一个全局布尔：
 // 一个 isolate 里正常只会用到 env.DB 这一个句柄，但测试里会拿多个内存库跑同一份代码。
@@ -216,8 +230,10 @@ export async function countView(env, request, opts = {}) {
   // 1) 去重明细 + 去抖时间戳 + 记下"真人/机器可分辨"从哪天开始
   //    注意: 站点级去重按 bucket 分开记(bucket_visits) —— 同一个人先看首页(e)、再看作品页(c),
   //    两边都该各算 1 个"人次", 用一张不分桶的表会把内页那次吃掉。
+  //    明细行也带上 bucket: 回溯算"有多少人读过内容页"时要能排掉疑机(见 api/stats.js derived)。
   const first = await db.batch([
-    db.prepare(`INSERT OR IGNORE INTO page_visitors(day, path, visitor, ts) VALUES (?1, ?2, ?3, ?4)`).bind(day, path, visitor, now),
+    db.prepare(`INSERT OR IGNORE INTO page_visitors(day, path, visitor, ts, bucket) VALUES (?1, ?2, ?3, ?4, ?5)`)
+      .bind(day, path, visitor, now, bucket),
     db.prepare(`INSERT OR IGNORE INTO bucket_visits(day, bucket, visitor) VALUES (?1, ?2, ?3)`).bind(day, bucket, visitor),
     db.prepare(`UPDATE page_visitors SET ts = ?4 WHERE day = ?1 AND path = ?2 AND visitor = ?3 AND ts <= ?4 - ?5`)
       .bind(day, path, visitor, now, DEBOUNCE_MS),

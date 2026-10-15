@@ -31,6 +31,26 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
     <div class="wrap rv">
       <p class="motto-lines"><span>“文章千古事，</span><span>得失寸心知。”</span></p>
       <cite>杜甫《偶题》句，引为社训</cite>
+      <!-- 全站公开的唯一统计口径: 作品(内容页)累计**阅读次数**。
+           构建期不留数字, 由下面这段脚本去 /api/site-stats 现取; 取不到就整行不显示 ——
+           宁可没有, 也不能显示一个假的 0。口径说明见 functions/api/site-stats.js 顶部。 -->
+      <p class="site-stats rv" id="site-stats" hidden></p>
+      <script>
+      (function () {
+        "use strict";
+        var el = document.getElementById("site-stats");
+        if (!el) return;
+        fetch("{{ site.apiBase | default('/api') }}/site-stats", { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!j || !j.ok || typeof j.reads !== "number" || j.reads <= 0) return;
+            el.textContent = "作品累计阅读 " + Number(j.reads).toLocaleString("zh-CN") + " 次";
+            if (j.since) el.title = "自 " + j.since + " 起累计（内容页打开次数，非人数）";
+            el.hidden = false;
+          })
+          .catch(function () { /* 取不到就不显示 */ });
+      })();
+      </script>
     </div>
   </section>
 

@@ -77,21 +77,14 @@
           statsLoaded = false;
           return;
         }
-        var w = j.work || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
-        var s = j.site || { views: 0, uniq: 0, sviews: 0, eviews: 0 };
-        var d = j.derived || null;   // 回溯重算: 把历史也按"内容页/入口页"分开
-        // 真人读者 = 内容页口径（有回溯值就用回溯值, 否则用改版后的新列）
-        var readerViews = d ? d.contentViews : s.views;
-        var readerUniq = d ? d.contentUniq : s.uniq;
-        var crowdViews = d ? d.entryViews : s.eviews;   // 首页围观/爬虫（入口页）
+        var w = j.work || { views: 0, uniq: 0, sviews: 0, suniq: 0 };
+        // 作品页**只报本篇**。全站数字已移到首页（所有人可见，走 /api/site-stats）——
+        // 两处合一处的理由：作品页的跨页数字只有编委看得到，却要为此在每次打开时跑一遍
+        // 历史回溯（全表去重），既贵又和"读者想读什么"无关。
         el.innerHTML =
           "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
-          '<span class="ws-sep">|</span>' +
-          "全站真人阅读 <b>" + fmtNum(readerViews) + "</b> · 访客 <b>" + fmtNum(readerUniq) + "</b>" +
-          (crowdViews > 0 ? '<span class="ws-bot">首页围观 ' + fmtNum(crowdViews) + "</span>" : "") +
-          botBit(s.sviews) +
-          '<span class="ws-since">（阅读=打开次数，访客=按天去重的人次；全站只算内容页，自 ' +
-            esc(s.since || "?") + " 起）</span>" +
+          botBit(w.sviews) +
+          '<span class="ws-since">（阅读=打开次数；访客=按天去重的人次，≠人数）</span>' +
           '<span class="ws-only">仅编委可见</span>';
         el.hidden = false;
       })

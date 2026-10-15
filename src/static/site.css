@@ -234,6 +234,11 @@ a.plink:hover{color:var(--seal)}
   border-radius:10px;font-size:12px;color:var(--dim,#6e6a5e)}
 .work-stats[hidden]{display:none}
 
+/* 首页社训下方：**全站唯一对所有人公开**的统计 —— 作品(内容页)累计阅读次数。
+   构建期不留数字，由 index.njk 的内联脚本去 /api/site-stats 现取；取不到则整行不显示。 */
+.site-stats{margin:18px 0 0;font-size:13.5px;letter-spacing:.04em;color:var(--dim,#6e6a5e)}
+.site-stats[hidden]{display:none}
+
 /* ---------- 页脚 ---------- */
 footer{border-top:1px solid var(--line);padding:60px 0 54px;margin-top:20px}
 .foot{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:44px}

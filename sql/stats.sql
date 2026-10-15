@@ -9,6 +9,8 @@
 --   · 只统计 HTML 页面：静态资源(js/css/图片)、/api/*、预取请求、分支预览部署、非 200 错误页不计
 --   · 编委自己不计入：编委登录后前端种 zz_nostats=1 cookie，中间件见到直接跳过
 --   · 隐私：**不存原始 IP**——把 IP + UA 加"当天日期 + 盐"做 SHA-256 得到访客指纹（每天换，无法跨天追踪）
+--   · **改版前的历史数字是上界，不是测量值**：那时候明细表还没有机器标记，爬虫和真人混在一起、
+--     无法追溯分离。所以"全站真人阅读/人次"在 2026-10-14 之前只能读作"不超过 N"。
 --
 -- 幂等：可反复执行；函数第一次用到统计时会自动建表/补列（两边一致，由 scripts/test-stats.js 守着）
 
@@ -26,13 +28,20 @@ CREATE TABLE IF NOT EXISTS page_daily (
 CREATE INDEX IF NOT EXISTS idx_page_daily_day ON page_daily(day);
 
 -- 当天去重明细：只存指纹，不存原始 IP/UA；ts 用于"30 秒内连续请求只算一次"的去抖
+-- bucket = 当次访问属于哪个桶（c=内容页真人 / e=入口页真人 / s=疑机 / u=口径未知的历史行）。
+--   为什么明细也要记桶（2026-10-14 补）：回溯"有多少人读过内容页"全靠这张表，
+--   而它原来不分桶 —— 爬虫只要碰过作品页就被算成一个"读者"。历史行没法追溯补标，
+--   所以加列之前的行一律是 'u'，只配当上界。
 CREATE TABLE IF NOT EXISTS page_visitors (
   day     TEXT    NOT NULL,
   path    TEXT    NOT NULL,
   visitor TEXT    NOT NULL,
   ts      INTEGER NOT NULL DEFAULT 0,
+  bucket  TEXT    NOT NULL DEFAULT 'u',
   PRIMARY KEY (day, path, visitor)
 );
+-- 回溯按 path 过滤，而主键是 (day, path, visitor)：day 在最前，索引用不到 path
+CREATE INDEX IF NOT EXISTS idx_page_visitors_path ON page_visitors(path);
 
 -- 站点级去重**按桶分**（c=内容页真人 / e=入口页 / s=疑机）：
 -- 同一个人先看首页(e)、再看作品页(c)，两边各算 1 个人次；不分桶会把内页那次吃掉。
@@ -80,3 +89,9 @@ CREATE TABLE IF NOT EXISTS stats_meta (
 -- ALTER TABLE site_daily    ADD COLUMN eviews INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE site_daily    ADD COLUMN euniq  INTEGER NOT NULL DEFAULT 0;
 -- ALTER TABLE page_visitors ADD COLUMN ts     INTEGER NOT NULL DEFAULT 0;
+-- ALTER TABLE page_visitors ADD COLUMN bucket TEXT NOT NULL DEFAULT 'u';
+-- CREATE INDEX IF NOT EXISTS idx_page_visitors_path ON page_visitors(path);
+
+-- 口径修订（2026-10-14）：回溯"读过内容页的人次"时**排除 bucket='s'（疑机）**，
+-- 并把 'c'（改版后确定是真人）当可信值、'c'+'u' 当上界。修订前的数字把爬虫算成了读者。
+-- 历史行无法追溯补标 ⇒ 改版前的全站数字只能读作"不超过 N"，不是测量值。

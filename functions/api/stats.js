@@ -18,11 +18,18 @@ const CONTENT_SQL = `(path LIKE '/w-%' OR path LIKE '/qingming-%' OR path LIKE '
 // —— 回溯重算 ——
 // 为什么需要：改版（2026-10-13）之前，所有访问都记在老列里，"入口页围观"和"真读者"混在一起。
 // 但明细表 page_visitors 里存着「每天 · 每个人 · 看过哪一页」，于是可以按**页面路径**把历史重算一遍：
-//   · 内容页阅读次数 = page_daily 里路径属于内容页的行之和（精确）
-//   · 内容页访客(人次) = page_visitors 里"当天碰过至少一个内容页"的 (天,人) 去重计数（精确）
-//   · 只逛入口页的访客 = 全部 (天,人) − 上面那个（精确）
-// 注意：改版前没有存机器人标记，所以回溯数字**仍含少量伪装成浏览器的机器人**；
-//       改版后的数字（新列）才是真人/疑机分开的。
+//   · 内容页阅读次数 = page_daily 里路径属于内容页的行之和
+//   · 内容页访客(人次) = page_visitors 里"当天碰过至少一个内容页"的 (天,人) 去重计数
+//   · 只逛入口页的访客 = 全部 (天,人) − 上面那个
+//
+// **口径修订（2026-10-14）**：上面这套原来有个 bug —— page_visitors 当时**不分桶**，爬虫和真人写在
+// 同一批行里，于是"当天碰过内容页的人"里混着 GPTBot / Bytespider / 扫描器，被当成读者报出去。
+// 现在每行带 bucket 标记，本函数按它分三档：
+//   · bucket='c'  内容页真人          → **可信**（contentUniqKnown / contentViewsKnown）
+//   · bucket='u'  本列存在之前的历史行 → 只配当**上界**（无机器标记，无法分离）
+//   · bucket='s'  疑机                → **一律排除**，任何口径都不进
+// 所以对外的"全站真人"数字有两层：可信值，和不含疑机的上界。历史行无法追溯补标，
+// 改版前的上界就永远是上界 —— 界面上必须标成 "≤N"，不能当成测量值。
 async function derived(db, days) {
   const perPath = await db.prepare(
     `SELECT path, SUM(views) AS views, SUM(eviews) AS eviews, SUM(sviews) AS sviews FROM page_daily GROUP BY path`
@@ -35,33 +42,60 @@ async function derived(db, days) {
     if (isContentPath(r.path)) contentViews += v; else entryViews += v + ev;
     suspectViews += sv;
   }
-  const allVD = await db.prepare(`SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors)`).first();
-  const contentVD = await db.prepare(
-    `SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE ${CONTENT_SQL})`
-  ).first();
-  const contentUniq = num(contentVD && contentVD.n);
-  const totalVD = num(allVD && allVD.n);
-  // 逐日：真正读过内容的人次（这是"每天有多少人来看"最实在的一个数）
+
+  // 还有哪些天留着"口径未知"的历史行 —— 有 u 行的天，数字就只能是上界
+  const legacyRows = await db.prepare(
+    `SELECT day FROM page_visitors WHERE bucket = 'u' GROUP BY day`
+  ).all();
+  const legacyDays = new Set(((legacyRows && legacyRows.results) || []).map((r) => r.day));
+
+  // (天,人) 去重计数。**一律排除 bucket='s'（疑机）** —— 这就是本次修正的要点
+  const uniqWhere = async (where) => {
+    const r = await db.prepare(
+      `SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE ${where})`
+    ).first();
+    return num(r && r.n);
+  };
+  const contentUniqKnown = await uniqWhere(`${CONTENT_SQL} AND bucket = 'c'`);          // 可信
+  const contentUniq = await uniqWhere(`${CONTENT_SQL} AND bucket IN ('c','u')`);        // 上界(已排除疑机)
+  const totalKnown = await uniqWhere(`bucket IN ('c','e')`);
+  const totalUpper = await uniqWhere(`bucket IN ('c','e','u')`);
+
+  // 逐日：真正读过内容的人次（并标出这天是不是还夹着历史行）
   const cDaily = await db.prepare(
-    `SELECT day, COUNT(*) AS uniq FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE ${CONTENT_SQL})
-      GROUP BY day ORDER BY day DESC LIMIT ?1`
+    `SELECT day, COUNT(*) AS uniq, SUM(is_known) AS uniqKnown FROM (
+       SELECT day, visitor, MAX(CASE WHEN bucket = 'c' THEN 1 ELSE 0 END) AS is_known
+         FROM page_visitors
+        WHERE ${CONTENT_SQL} AND bucket IN ('c','u')
+        GROUP BY day, visitor
+     ) GROUP BY day ORDER BY day DESC LIMIT ?1`
   ).bind(Math.min(90, Math.max(1, days || 30))).all();
   const vDaily = await db.prepare(
     `SELECT day, SUM(views) AS views FROM page_daily WHERE ${CONTENT_SQL} GROUP BY day`
   ).all();
   const vByDay = {};
   for (const r of (vDaily && vDaily.results) || []) vByDay[r.day] = num(r.views);
-  const contentDaily = ((cDaily && cDaily.results) || []).map((r) => ({
-    day: r.day, uniq: num(r.uniq), views: vByDay[r.day] || 0,
-  }));
+  const contentDaily = ((cDaily && cDaily.results) || []).map((r) => {
+    const clean = !legacyDays.has(r.day);          // 这天没有历史残留行 ⇒ 数字可信
+    const v = vByDay[r.day] || 0;
+    return { day: r.day, uniq: num(r.uniq), uniqKnown: num(r.uniqKnown), views: v, viewsKnown: clean ? v : 0, clean };
+  });
+  // 阅读次数同理: 干净的天才计入"可信阅读"
+  let contentViewsKnown = 0;
+  for (const day of Object.keys(vByDay)) if (!legacyDays.has(day)) contentViewsKnown += vByDay[day];
+
   return {
-    contentViews,
+    contentViews,                        // 内容页阅读次数(全历史) —— 改版前含未识别机器人 ⇒ 上界
+    contentViewsKnown,                   // 只算"没有历史残留行"的天 ⇒ 可信
+    contentUniq,                         // 读过内容页的人次(上界; 已排除疑机)
+    contentUniqKnown,                    // 读过内容页的人次(只算改版后的 c 行 ⇒ 可信)
     entryViews,
+    entryOnlyUniq: Math.max(0, totalUpper - contentUniq),                 // 只逛入口页的人次(上界)
+    entryOnlyUniqKnown: Math.max(0, totalKnown - contentUniqKnown),       // 同上(可信)
     suspectViews,
-    contentUniq,                       // 内容页访客(人次, 回溯)
-    entryOnlyUniq: Math.max(0, totalVD - contentUniq),   // 只逛过入口页的访客(人次, 回溯)
     contentDaily,
-    note: "回溯口径按页面路径区分；改版前的数字仍含少量伪装成浏览器的机器人",
+    legacyDayCount: legacyDays.size,     // >0 就说明还有历史残留行 ⇒ 界面要标 "≤"
+    note: "改版前的历史行没有机器标记、无法分离，只能当上界；改版后的数字才是真人/疑机分开的",
   };
 }
 
@@ -134,13 +168,17 @@ async function doGet(context) {
       trend = (t && t.results) || [];
     }
 
-    // 回溯重算（把改版前的历史也按"内容页 / 入口页"分出来）——编委每次看都算一遍:
-    // 数据量很小（明细一页一行, 现在几百行）, 换来"历史也能看懂"。
-    const retro = await derived(db, days).catch(() => null);
+    // 回溯重算（把改版前的历史也按"内容页 / 入口页"分出来）
+    // 2026-10-15 起**改成按需**：全站数字已移到首页（所有人可见，走 /api/site-stats），
+    // 作品页不再显示跨页数字 —— 那就没必要求每次打开作品页都跑一遍全表去重，
+    // 那是这个接口里最贵的一次查询（page_visitors 上的 DISTINCT）。
+    // 编委的诊断入口照旧：?diagnose=1 或 ?derived=1 时返回。
+    const wantDerived = wantDiagnose || ["1", "true", "yes"].includes((url.searchParams.get("derived") || "").toLowerCase());
+    const retro = wantDerived ? await derived(db, days).catch(() => null) : null;
 
     const out = {
       ok: true, work, site: totals(siteRow), trend, splitSince, bucketsSince,
-      derived: retro,     // { contentViews, contentUniq, entryViews, entryOnlyUniq, contentDaily, … }
+      derived: retro,     // 仅 ?diagnose=1 / ?derived=1 时有值；{ contentViews, contentUniq, … }
     };
 
     if (wantDiagnose) {

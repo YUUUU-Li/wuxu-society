@@ -222,6 +222,7 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(auth.includes("statsRefresh"), "对外要给 zhuzhu.js 一个刷新入口(开关旧钥匙后立即生效)");
   assert(zhuzhu.includes("zzAuth.statsRefresh"), "编委开关旧钥匙时应叫 auth.js 刷新浏览量");
   assert(/\.work-stats\{/.test(css) && /\.work-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .work-stats(含 hidden 兜底)");
+  assert(/\.site-stats\{/.test(css) && /\.site-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .site-stats(含 hidden 兜底)");
   // 后端两件套与建表脚本齐备
   assert(fs.existsSync(path.join(ROOT, "functions", "_middleware.js")), "缺根中间件 functions/_middleware.js(全站计数)");
   assert(fs.existsSync(path.join(ROOT, "functions", "api", "stats.js")), "缺读取接口 functions/api/stats.js");
@@ -250,7 +251,19 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
     "站点级去重要按桶分开(否则先看首页再看内页的人会被吃掉)");
   assert(/\.bind\(path, day, newPage\)/.test(mwSrc) && /\.bind\(day, newBucket\)/.test(mwSrc),
     "单页访客按页去重(newPage), 站点访客按桶去重(newBucket) —— 两者不能混用");
-  assert(auth.includes("首页围观") && auth.includes("全站真人阅读"), "界面要写明「全站真人阅读」与「首页围观」两段");
+  // 2026-10-15: 全站数字**移出作品页** —— 首页公开(所有人可见), 作品页只留本篇(仅编委)
+  assert(!auth.includes("全站真人阅读") && !auth.includes("首页围观"),
+    "作品页不该再显示跨页数字(全站口径已挪到首页)");
+  assert(auth.includes("本篇阅读") && auth.includes("仅编委可见"), "作品页只留本篇, 且仍仅编委可见");
+  const homeNjk = readf("src/index.njk");
+  assert(/id="site-stats"[^>]*hidden/.test(homeNjk), "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");
+  assert(homeNjk.includes("/site-stats"), "首页脚本要现取 /api/site-stats");
+  assert(!/id="site-stats"[^>]*>[^<]/.test(homeNjk), "首页占位里不该在构建期渲染任何数字");
+  assert(!/全站真人|欢迎第|访问量/.test(homeNjk), "首页文案别用「全站」「访问量」这类会和人次混淆的说法");
+  assert(fs.existsSync(path.join(ROOT, "functions", "api", "site-stats.js")), "缺公开接口 functions/api/site-stats.js");
+  const pubSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "site-stats.js"), "utf8");
+  assert(!/isAdmin|currentUser/.test(pubSrc), "公开接口不许带鉴权(所有人都能看)");
+  assert(pubSrc.includes("isContentPath"), "公开接口要用中间件同一个 isContentPath 判内容页, 不许另抄一份 SQL 前缀");
   // 线上出过的故障: 部署后还没有页面访问触发补列, 接口去查新列 -> 500 -> 界面空白
   assert(/import \{ ensureStatsSchema[^}]*\} from "\.\.\/_middleware\.js"/.test(apiSrc),
     "读取接口必须复用中间件的建表函数(自己补表), 否则刚部署完会 500");

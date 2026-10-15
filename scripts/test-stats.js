@@ -7,6 +7,11 @@
 //   · 归一化: /w-feng.html 与 /w-feng 同一篇; 不同作品各自独立; 全站按人按天去重
 //   · 过滤: 静态资源 / /api/* / 非 GET / 预取 / 分支预览部署 / 非 200 都记账前的门槛之外
 //   · 隐私: 只存指纹(不存原始 IP), 指纹每天更换
+//   · 回溯口径(2026-10-14 修正): 明细表带 bucket 标记; 疑机行**不进**任何真人数字;
+//     无标记的历史行只当"上界"(legacyDayCount>0 ⇒ 界面标 ≤), 新行才给可信值
+//   · 明细表仍不含 IP/UA 列(只有 天/路径/指纹/去抖时间/分桶)
+//   · 公开口径(2026-10-15): 作品页只报本篇(编委可见); 全站数字移到首页, 走公开接口
+//     /api/site-stats —— 只吐"内容页累计阅读次数"一个聚合数, 不带人次/疑机/入口页
 //   · 鉴权: /api/stats 只给编委(账号 role='编委' 或旧钥匙), 读者/未登录一律 403
 //   · 诊断: ?diagnose=1 给出按天趋势 / 路径排行 / 每访客页数分布 / 疑机占比
 //   · 建表: sql/stats.sql 与中间件内置 DDL 逐条等价; 老库(只有 views/uniq)能被自动补列
@@ -82,6 +87,7 @@ const SEC = 1000;
 async function main() {
   const mw = await import(pathToFileURL(path.join(ROOT, "functions", "_middleware.js")).href);
   const statsApi = await import(pathToFileURL(path.join(ROOT, "functions", "api", "stats.js")).href);
+  const siteStatsApi = await import(pathToFileURL(path.join(ROOT, "functions", "api", "site-stats.js")).href);
   const schemaSql = fs.readFileSync(path.join(ROOT, "sql", "stats.sql"), "utf8");
   const db = makeDB(schemaSql);
   const env = { DB: db };
@@ -206,7 +212,8 @@ async function main() {
   assert(/^[0-9a-f]{24}$/.test(v.visitor), "访客是 24 位哈希指纹");
   assert(!/203\.0\.113\.7/.test(v.visitor) && !/198\.51\.100\.9/.test(v.visitor), "指纹里不该出现原始 IP");
   const cols = db._raw.prepare("SELECT name FROM pragma_table_info('page_visitors')").all().map((c) => c.name);
-  assert.deepStrictEqual(cols, ["day", "path", "visitor", "ts"], "去重表只有 天/路径/指纹/去抖时间 四列");
+  assert.deepStrictEqual(cols, ["day", "path", "visitor", "ts", "bucket"],
+    "去重表只有 天/路径/指纹/去抖时间/分桶 五列(仍然**不含**原始 IP/UA)");
 
   // 7) 中间件: 响应原样返回、编委不计入、出错不炸站、404 不计
   const viewSum = () => row(db, "SELECT COALESCE(SUM(views), 0) AS v FROM page_daily WHERE path = ?1", "/w-feng").v;
@@ -266,18 +273,34 @@ async function main() {
   assert.strictEqual(j.work.since, "2026-09-12", "本篇起始日");
   assert.strictEqual(j.splitSince, "2026-09-12", "真假分辨起始日");
   // 回溯重算: 把改版前的历史也按"内容页 / 入口页"分出来 —— 期望值直接取 SQL 真值, 逻辑与 SQL 互为印证
+  // 2026-10-15: 作品页那一路**不再默认**跑回溯(全站数字已移到首页公开), 但编委诊断入口保留
+  const plain = await (await statsApi.onRequest(apiReq("?work=w-feng", ADMIN))).json();
+  assert.strictEqual(plain.derived, null, "?work= 默认不带 derived(作品页已不显示全站数字, 省掉最贵的全表去重)");
+  const wantD = await (await statsApi.onRequest(apiReq("?work=w-feng&derived=1", ADMIN))).json();
+  assert.ok(wantD.derived && wantD.derived.contentViews > 0, "?derived=1 仍能拿到回溯(编委诊断用)");
   assert.ok(j.derived, "接口要带回溯重算结果 derived");
   const sqlCV = db._raw.prepare("SELECT SUM(views) AS v FROM page_daily WHERE path LIKE '/w-%'").get().v;
   const sqlEV = db._raw.prepare("SELECT SUM(views) + SUM(eviews) AS v FROM page_daily WHERE path NOT LIKE '/w-%'").get().v;
-  const sqlCU = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE path LIKE '/w-%')").get().n;
+  // 旧口径(不分桶) vs 新口径(排除疑机) —— 两个都算出来, 差值就是被修正掉的那部分
+  const sqlCUall = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE path LIKE '/w-%')").get().n;
+  const sqlCUhuman = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE path LIKE '/w-%' AND bucket <> 's')").get().n;
   assert.strictEqual(j.derived.contentViews, sqlCV, "内容页阅读 = 内容页路径的 views 之和");
   assert.strictEqual(j.derived.entryViews, sqlEV, "入口页阅读 = 非内容页路径的 views+eviews 之和");
-  assert.strictEqual(j.derived.contentUniq, sqlCU, "内容页访客 = 明细里碰过内容页的 (天,人) 去重数");
+  assert.strictEqual(j.derived.contentUniq, sqlCUhuman, "内容页人次 = 明细里碰过内容页的 (天,人) 去重数, **不含疑机**");
+  assert.strictEqual(sqlCUall - sqlCUhuman, 1, "旧口径会多算 1 个: 那个碰过作品页的爬虫(本次修正掉的就是它)");
   const day12 = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT visitor FROM page_visitors WHERE day = '2026-09-12' AND path LIKE '/w-%')").get().n;
-  assert.strictEqual(day12, 4, "09-12 碰过内容页的人：A/B/C/机器人 = 4（回溯口径不分机器）");
+  assert.strictEqual(day12, 4, "09-12 碰过内容页的人：A/B/C/机器人 = 4(这是**旧口径**, 已不再对外报出)");
+  const day12human = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT visitor FROM page_visitors WHERE day = '2026-09-12' AND path LIKE '/w-%' AND bucket <> 's')").get().n;
+  assert.strictEqual(day12human, 3, "同样这天, 新口径只认 A/B/C = 3");
+  // 本夹具里的行全是新代码写的, 所以都是分桶行: 可信值 == 上界, 没有历史残留
+  assert.strictEqual(j.derived.contentUniqKnown, j.derived.contentUniq, "没有历史行时, 可信人次 == 上界");
+  assert.strictEqual(j.derived.legacyDayCount, 0, "本夹具没有口径未知的历史行");
+  assert.strictEqual(j.derived.contentViewsKnown, j.derived.contentViews, "没有历史行时, 可信阅读 == 上界");
+  assert.ok(j.derived.contentDaily.every((x) => x.clean === true), "逐日的 clean 标记: 全是干净的天");
+  assert.strictEqual(j.derived.contentDaily[0].uniqKnown, j.derived.contentDaily[0].uniq, "干净的天: 逐日可信值 == 上界");
   assert.deepStrictEqual(j.derived.contentDaily.map((x) => x.day), j.derived.contentDaily.map((x) => x.day).slice().sort().reverse(),
     "逐日『真正读过内容的人次』按天倒序");
-  assert.ok(/回溯/.test(j.derived.note || ""), "回溯口径要带说明(改版前含少量伪装机器人)");
+  assert.ok(/上界/.test(j.derived.note || ""), "回溯口径要如实说明: 历史行只能当上界");
   // 回溯用的 SQL 判据必须与中间件的 CONTENT_PATH_RE 同口径
   const apiSrc2 = fs.readFileSync(path.join(ROOT, "functions", "api", "stats.js"), "utf8");
   const sqlPrefixes = [...apiSrc2.matchAll(/path LIKE '([^']+)'/g)].map((m) => m[1].replace(/%$/, ""));
@@ -313,6 +336,103 @@ async function main() {
   assert.strictEqual(wrongKey.status, 403, "钥匙不对: 403");
   const noTable = await statsApi.onRequest({ request: new Request("https://x.test/api/stats?work=w-feng"), env: {} });
   assert.strictEqual(noTable.status, 503, "没有 D1 绑定时给 503 提示");
+
+  // 8.6) 回溯口径修正(2026-10-14): 疑机行**不进**任何真人数字; 无机器标记的历史行只当"上界"
+  //      手工造三档行: 'u'=加列之前的历史行(人机混在一起, 无法分辨) / 'c'=改版后真人 / 's'=明确疑机
+  const pv24 = (s) => (s + "000000000000000000000000").slice(0, 24);
+  const retroDb = makeDB(schemaSql);
+  const rp = retroDb._raw;
+  const putPv = (day, path, visitor, bucket) =>
+    rp.prepare("INSERT INTO page_visitors(day, path, visitor, ts, bucket) VALUES (?1,?2,?3,?4,?5)")
+      .run(day, path, visitor, T, bucket);
+  putPv("2026-10-01", "/w-a", pv24("a1"), "u");     // 历史行: 真人
+  putPv("2026-10-01", "/w-a", pv24("a2"), "u");     // 历史行: 真人
+  putPv("2026-10-01", "/w-a", pv24("bf"), "u");     // 历史行: 其实是爬虫 —— 但当时没标记, 无法分辨
+  putPv("2026-10-01", "/", pv24("e1"), "u");        // 历史行: 只逛过入口页的人
+  putPv("2026-10-14", "/w-a", pv24("n1"), "c");     // 改版后: 真人
+  putPv("2026-10-14", "/w-a", pv24("b5"), "s");     // 改版后: 明确疑机(爬虫) → 必须被排除
+  putPv("2026-10-14", "/", pv24("n1"), "e");        // 同一个人还看了首页(入口页)
+  const putPd = (path, day, views, uniq, sviews, suniq, eviews, euniq) =>
+    rp.prepare(`INSERT INTO page_daily(path, day, views, uniq, sviews, suniq, eviews, euniq)
+                VALUES (?1,?2,?3,?4,?5,?6,?7,?8)`).run(path, day, views, uniq, sviews, suniq, eviews, euniq);
+  putPd("/w-a", "2026-10-01", 3, 3, 0, 0, 0, 0);    // 历史那天: 3 次阅读(人机混在一起)
+  putPd("/w-a", "2026-10-14", 1, 1, 1, 1, 0, 0);    // 新那天: 1 次真人 + 1 次疑机
+  putPd("/", "2026-10-14", 0, 0, 0, 0, 1, 1);       // 入口页
+  const retroRes = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=w-a&diagnose=1"),
+    env: { DB: retroDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  });
+  assert.strictEqual(retroRes.status, 200, "回溯夹具: 接口应返回 200");
+  const rd = (await retroRes.json()).derived;
+  const rawContentUniq = rp.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT day, visitor FROM page_visitors WHERE path LIKE '/w-%')").get().n;
+  assert.strictEqual(rawContentUniq, 5, "不排疑机的旧算法会给出 5(= a1/a2/bf/n1/爬虫)");
+  assert.strictEqual(rd.contentUniq, 4, "新口径: 上界 4 —— 爬虫那 1 个被排掉了");
+  assert.strictEqual(rd.contentUniqKnown, 1, "可信值: 只有改版后的 c 行(n1)= 1");
+  assert.strictEqual(rd.legacyDayCount, 1, "有一天还留着历史残留行 ⇒ 界面必须把数字标成 ≤");
+  assert.strictEqual(rd.contentViews, 4, "内容页阅读(上界) = 3 + 1");
+  assert.strictEqual(rd.contentViewsKnown, 1, "可信阅读: 只算没有历史残留的那天 = 1");
+  assert.strictEqual(rd.entryOnlyUniq, 1, "只逛入口页的人次(上界): e1 那一个");
+  assert.strictEqual(rd.entryOnlyUniqKnown, 0, "可信口径下没有「只逛入口页」的历史行可确认");
+  assert.strictEqual(rd.suspectViews, 1, "疑机阅读单独计数, 不混进真人数字");
+  const d0101 = rd.contentDaily.find((x) => x.day === "2026-10-01");
+  const d0114 = rd.contentDaily.find((x) => x.day === "2026-10-14");
+  assert.deepStrictEqual([d0101.clean, d0101.uniqKnown, d0101.viewsKnown], [false, 0, 0], "历史那天: 标为不干净, 可信值为 0");
+  assert.deepStrictEqual([d0114.clean, d0114.uniqKnown, d0114.viewsKnown], [true, 1, 1], "分桶后那天: 干净, 可信值 = 上界");
+
+  // 8.7) 老库补列后, 原有历史行必须落成 bucket='u'(口径未知), 而不是被当成真人
+  const oldRetro = makeDB(`
+    CREATE TABLE page_daily (path TEXT NOT NULL, day TEXT NOT NULL, views INTEGER NOT NULL DEFAULT 0,
+      uniq INTEGER NOT NULL DEFAULT 0, sviews INTEGER NOT NULL DEFAULT 0, suniq INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (path, day));
+    CREATE TABLE page_visitors (day TEXT NOT NULL, path TEXT NOT NULL, visitor TEXT NOT NULL, ts INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, path, visitor));
+    CREATE TABLE site_daily (day TEXT PRIMARY KEY, views INTEGER NOT NULL DEFAULT 0, uniq INTEGER NOT NULL DEFAULT 0,
+      sviews INTEGER NOT NULL DEFAULT 0, suniq INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE site_visitors (day TEXT NOT NULL, visitor TEXT NOT NULL, PRIMARY KEY (day, visitor));
+  `);
+  oldRetro._raw.prepare("INSERT INTO page_visitors(day, path, visitor, ts) VALUES ('2026-10-05','/w-old',?1,0)").run(pv24("old"));
+  oldRetro._raw.prepare("INSERT INTO page_daily(path, day, views, uniq) VALUES ('/w-old','2026-10-05',9,1)").run();
+  const oldRetroRes = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=w-old&derived=1"),
+    env: { DB: oldRetro, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  });
+  const od = (await oldRetroRes.json()).derived;
+  assert.strictEqual(od.contentUniq, 1, "老库的历史行算进上界(不丢信息)");
+  assert.strictEqual(od.contentUniqKnown, 0, "但它**不能**被当成确定是真人");
+  assert.strictEqual(od.legacyDayCount, 1, "老库那天标记为「口径未知」");
+  const bl = oldRetro._raw.prepare("SELECT bucket FROM page_visitors WHERE path = '/w-old'").get();
+  assert.strictEqual(bl.bucket, "u", "补列后老行落成 'u'");
+
+  // 8.8) 首页公开接口 /api/site-stats: **全站唯一对所有人公开**的统计
+  //      只吐「内容页(作品/雅集篇目/期页/概念页/全文库)累计阅读次数」一个聚合数, 无需鉴权
+  const pubDb = makeDB(schemaSql);
+  pubDb._raw.prepare(`INSERT INTO page_daily(path, day, views, uniq, sviews, suniq, eviews, euniq) VALUES
+    ('/w-a',         '2026-10-01', 10, 10, 0, 0, 0, 0),
+    ('/qingming-x',  '2026-10-01',  2,  2, 0, 0, 0, 0),
+    ('/',            '2026-10-01', 99, 50, 0, 0, 0, 0),
+    ('/library',     '2026-10-01',  7,  7, 0, 0, 0, 0)`).run();
+  const pubRes = await siteStatsApi.onRequest({
+    request: new Request("https://x.test/api/site-stats"), env: { DB: pubDb },
+  });
+  assert.strictEqual(pubRes.status, 200, "公开接口: 无需登录, 200");
+  const pub = await pubRes.json();
+  assert.deepStrictEqual(Object.keys(pub).sort(), ["ok", "reads", "since"], "公开接口只吐 ok/reads/since 三个键");
+  assert.strictEqual(pub.reads, 12, "公开数 = 内容页(作品 10 + 雅集篇目 2); 首页 99 与作品库 7 都是入口页, 不算");
+  assert.strictEqual(pub.since, "2026-10-01", "公开接口带上起算日(前端放进 title, 免得「累计」被读成「自古以来」)");
+  assert.ok(/max-age=/.test(pubRes.headers.get("cache-control") || ""), "公开接口要可缓存(首页访问量远大于内页)");
+  assert.strictEqual((await siteStatsApi.onRequest({
+    request: new Request("https://x.test/api/site-stats", { method: "POST" }), env: { DB: pubDb },
+  })).status, 405, "公开接口只接受 GET");
+  const pubNoDb = await siteStatsApi.onRequest({
+    request: new Request("https://x.test/api/site-stats"), env: {},
+  });
+  assert.strictEqual((await pubNoDb.json()).ok, false, "没有 D1 绑定时给 ok:false —— 宁可首页不显示, 也不能显示假的 0");
+  // 公开接口与编委接口的"内容页阅读"必须是同一个数(两边都用中间件的 isContentPath)
+  const authReads = (await (await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?derived=1"), env: { DB: pubDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  })).json()).derived.contentViews;
+  assert.strictEqual(pub.reads, authReads, "公开数与编委看到的 contentViews 必须一致(同一口径)");
+  assert.strictEqual(pub.reads, 12, "编委口径也只认内容页");
   // 8.5) 接口必须**自己会补表**: 否则"刚部署完、还没有任何页面访问触发中间件补列"时,
   //      接口去查还不存在的列 -> 500 -> 界面什么都不显示（这就是线上出过的故障）
   const emptyDb = new DatabaseSync(":memory:");   // 一张表都没有
@@ -375,7 +495,7 @@ async function main() {
   assert.deepStrictEqual(metaKeys, ["buckets_since", "split_since"], "老库也会补出 stats_meta, 并记下两个起算日");
   assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM bucket_visits").get().n, 2, "老库也会补出 bucket_visits");
 
-  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
+  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页公开单口径 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });
