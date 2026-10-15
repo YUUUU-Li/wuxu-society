@@ -260,6 +260,15 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(!auth.includes("全站真人阅读") && !auth.includes("首页围观"),
     "作品页不该再显示跨页数字(全站口径已挪到首页)");
   assert(auth.includes("本篇阅读") && auth.includes("仅编委可见"), "作品页只留本篇, 且仍仅编委可见");
+  // 口径说明**不占版面**: 两处都放进元素的 title, 鼠标悬停才显示(2026-10-15 起)
+  assert(!auth.includes("（阅读=打开次数"), "作品页不该把口径说明直接印在页面上(改用 title 悬停)");
+  assert(/el\.title = "阅读=打开次数/.test(auth), "作品页的口径说明要进 title");
+  assert(!/ws-since/.test(auth) && !/ws-since/.test(css), "旧的 .ws-since 常驻说明应已清掉(说明改走 title)");
+  // 「仅编委可见」徽章: 作品页那行与首页那行共用同一款
+  assert(/\.work-stats \.ws-only,\s*\n\.hero-copy \.site-stats \.ws-only\{/.test(css),
+    "「仅编委可见」徽章样式要同时覆盖作品页与首页(共用一款)");
+  assert(/renderSiteStats[\s\S]{0,700}ws-only/.test(auth), "首页那行也要带「仅编委可见」徽章");
+  assert(/el\.title = "全站内容页/.test(auth), "首页那行的口径说明要在 title 里");
   const homeNjk = readf("src/index.njk");
   assert(/<p class="site-stats" id="site-stats" hidden><\/p>/.test(homeNjk),
     "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");

@@ -63,24 +63,28 @@
   function botBit(n) {
     return n > 0 ? '<span class="ws-bot">疑机 ' + fmtNum(n) + "</span>" : "";
   }
-  // 作品页题下: **只报本篇**（阅读次数 + 按天去重人次），另标本篇的疑机
+  // 作品页题下: **只报本篇**（阅读次数 + 按天去重人次），另标本篇的疑机。
+  // 口径说明**不占版面** —— 放进 title, 鼠标悬停才显示(和首页那行同一套做法)。
   function renderWorkStats(el, j) {
     var w = j.work || { views: 0, uniq: 0, sviews: 0 };
     el.innerHTML =
       "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
       botBit(w.sviews) +
-      '<span class="ws-since">（阅读=打开次数；访客=按天去重的人次，≠人数）</span>' +
       '<span class="ws-only">仅编委可见</span>';
+    el.title = "阅读=打开次数；访客=按天去重的人次（≠人数）。" +
+      "【疑机】= 疑似机器人的阅读（爬虫/脚本/AI 爬虫），单独记，不混进上面两个数。";
     el.hidden = false;
   }
-  // 首页 Hero: **只报全站**（内容页口径）。数字小、放不进括号说明, 所以口径与"上界"写进 title。
+  // 首页 Hero: **只报全站**（内容页口径）。数字小、放不进括号说明, 所以口径与"上界"也写进 title。
   function renderSiteStats(el, j) {
     var d = j.derived;
     if (!d) return;
     var upper = Number(d.legacyDayCount || 0) > 0;      // 还有改版前的历史行 ⇒ 只能当上界
-    el.textContent = "网站累计阅读 " + fmtNum(d.contentViews) + " · 访客 " + fmtNum(d.contentUniq);
-    el.title = "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次 —— 人次≠人数。" +
-      (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是**上界**（不超过这么多）。" : "");
+    el.innerHTML =
+      "网站累计阅读 <b>" + fmtNum(d.contentViews) + "</b> · 访客 <b>" + fmtNum(d.contentUniq) + "</b>" +
+      '<span class="ws-only">仅编委可见</span>';
+    el.title = "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次（≠人数）。" +
+      (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是上界（不超过这么多）。" : "");
     el.hidden = false;
   }
   function hideStats(el) { if (el) { el.hidden = true; el.innerHTML = ""; el.textContent = ""; } }
