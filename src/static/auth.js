@@ -33,13 +33,18 @@
     return state.me;
   }
 
-  /* ---------- 作品页题下的浏览量(只给编委看; 读者与其它账号一律看不到) ----------
-     作品页里那块 #work-stats 默认 hidden, 这里判定「是否编委」通过后才去拉 /api/stats 填入。
+  /* ---------- 浏览量(只给编委看; 读者与其它账号一律看不到) ----------
+     两个点位, 都默认 hidden, 判定「是否编委」通过后才去拉 /api/stats 填入：
+       · 作品页题下 #work-stats(带 data-work) → 只报**本篇**: /api/stats?work=<slug>
+       · 首页 Hero  #site-stats             → 只报**全站**: /api/stats?derived=1
+     全站数字**不公开**(2026-10-15 收回): 一度做过公开接口 /api/site-stats 放在首页给所有人看,
+     但"访客"这个词在公开场合站不住 —— 指纹按天更换、且改版前的历史行没有机器标记, 只能当上界。
      编委 = 账号 role='编委'(state.me) 或过渡期的旧共享钥匙(sessionStorage 里的 zz_key)。
      注意: 本脚本在导航里执行, 此时 <main> 还没解析 —— 元素必须**每次现查**(不能脚本一开头就抓,
      否则永远是 null), 并且要在 DOMContentLoaded 后再试一次。 */
   var statsLoaded = false;
-  function statsNode() { return document.getElementById("work-stats"); }
+  function workStatsNode() { return document.getElementById("work-stats"); }
+  function siteStatsNode() { return document.getElementById("site-stats"); }
   function legacyKey() { try { return sessionStorage.getItem("zz_key") || ""; } catch (e) { return ""; } }
   function statsOn() { return !!(state.me && state.me.role === "编委") || !!legacyKey(); }
   // 编委自己不计入统计: 编委态时种 zz_nostats=1（中间件见到直接跳过），退出编委/登出即清掉。
@@ -58,39 +63,59 @@
   function botBit(n) {
     return n > 0 ? '<span class="ws-bot">疑机 ' + fmtNum(n) + "</span>" : "";
   }
+  // 作品页题下: **只报本篇**（阅读次数 + 按天去重人次），另标本篇的疑机
+  function renderWorkStats(el, j) {
+    var w = j.work || { views: 0, uniq: 0, sviews: 0 };
+    el.innerHTML =
+      "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
+      botBit(w.sviews) +
+      '<span class="ws-since">（阅读=打开次数；访客=按天去重的人次，≠人数）</span>' +
+      '<span class="ws-only">仅编委可见</span>';
+    el.hidden = false;
+  }
+  // 首页 Hero: **只报全站**（内容页口径）。数字小、放不进括号说明, 所以口径与"上界"写进 title。
+  function renderSiteStats(el, j) {
+    var d = j.derived;
+    if (!d) return;
+    var upper = Number(d.legacyDayCount || 0) > 0;      // 还有改版前的历史行 ⇒ 只能当上界
+    el.textContent = "网站累计阅读 " + fmtNum(d.contentViews) + " · 访客 " + fmtNum(d.contentUniq);
+    el.title = "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次 —— 人次≠人数。" +
+      (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是**上界**（不超过这么多）。" : "");
+    el.hidden = false;
+  }
+  function hideStats(el) { if (el) { el.hidden = true; el.innerHTML = ""; el.textContent = ""; } }
   function loadStats(force) {
-    var el = statsNode();
-    if (!el) return;                                       // 非作品页: 什么都不做
-    if (!statsOn()) { el.hidden = true; el.innerHTML = ""; statsLoaded = false; return; }
+    var workEl = workStatsNode();
+    var siteEl = siteStatsNode();
+    if (!workEl && !siteEl) return;                        // 这页没有统计点位: 什么都不做
+    if (!statsOn()) { hideStats(workEl); hideStats(siteEl); statsLoaded = false; return; }
     if (statsLoaded && !force) return;
     statsLoaded = true;
-    var work = el.getAttribute("data-work") || "";
     var key = legacyKey();
-    var q = api + "/stats?work=" + encodeURIComponent(work) + (key ? "&key=" + encodeURIComponent(key) : "");
+    var tail = key ? "&key=" + encodeURIComponent(key) : "";
+    // 作品页只要本篇(不跑回溯, 省掉最贵的全表去重); 首页只要全站聚合(要回溯, 所以带 derived=1)
+    var q = workEl
+      ? api + "/stats?work=" + encodeURIComponent(workEl.getAttribute("data-work") || "") + tail
+      : api + "/stats?derived=1" + tail;
     fetch(q, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) {
-          // 编委专属的小字: 出错时**如实说明**, 不要静默消失(排错时能看见原因)
-          el.textContent = "统计暂不可用" + (j && j.error ? "（" + j.error + "）" : "");
-          el.hidden = false;
+          // 作品页那块小字是编委排错用的, 出错就**如实说明**, 不要静默消失;
+          // 首页那行在 Hero 里, 出错只藏起来(不能在那里留一行报错)
+          if (workEl) {
+            workEl.textContent = "统计暂不可用" + (j && j.error ? "（" + j.error + "）" : "");
+            workEl.hidden = false;
+          }
           statsLoaded = false;
           return;
         }
-        var w = j.work || { views: 0, uniq: 0, sviews: 0, suniq: 0 };
-        // 作品页**只报本篇**。全站数字已移到首页（所有人可见，走 /api/site-stats）——
-        // 两处合一处的理由：作品页的跨页数字只有编委看得到，却要为此在每次打开时跑一遍
-        // 历史回溯（全表去重），既贵又和"读者想读什么"无关。
-        el.innerHTML =
-          "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
-          botBit(w.sviews) +
-          '<span class="ws-since">（阅读=打开次数；访客=按天去重的人次，≠人数）</span>' +
-          '<span class="ws-only">仅编委可见</span>';
-        el.hidden = false;
+        if (workEl) renderWorkStats(workEl, j);
+        if (siteEl) renderSiteStats(siteEl, j);
       })
-      .catch(function () { el.hidden = true; statsLoaded = false; });
+      .catch(function () { hideStats(workEl); hideStats(siteEl); statsLoaded = false; });
   }
-  // DOM 解析完再试一次(脚本在导航里, 首跑时 #work-stats 通常还不存在)
+  // DOM 解析完再试一次(脚本在导航里, 首跑时两个点位通常都还不存在)
   function statsWhenReady() {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", function () { loadStats(true); });

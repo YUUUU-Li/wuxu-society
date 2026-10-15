@@ -11,6 +11,12 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
   <section class="hero wrap">
     <div class="hero-copy">
       <p class="tagline rv">同人结社 · 以诗会友，以文养心</p>
+      <!-- 全站统计（仅编委可见）：夹在社名标语与社名之间的一行小字。
+           **构建期不留数字**，由 auth.js 判定编委后去 /api/stats?derived=1 填入；
+           读者与其它账号这里永远是空的（元素 hidden）。
+           注意 site.css 用 `.hero-copy .site-stats` 这种比父级更具体的选择器兜底 ——
+           上一版把它放进了 .motto，被那里的 `.motto p{...2.7rem/700}` 撑成了 43px 粗体。 -->
+      <p class="site-stats" id="site-stats" hidden></p>
       <h1 class="rv">婺需文学社</h1>
       <p class="sub rv">甲辰清明，婺州风雨中，我们立社。以古典诗词为根基，也写现代诗与随笔。</p>
       <div class="hero-actions rv">
@@ -30,30 +36,7 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
   <section class="motto">
     <div class="wrap rv">
       <p class="motto-lines"><span>“文章千古事，</span><span>得失寸心知。”</span></p>
-      <cite>杜甫《偶题》句，引为社训<span class="site-stats" id="site-stats" hidden></span></cite>
-      <!-- 全站公开的唯一统计口径: 作品(内容页)累计**阅读次数**。
-           构建期不留数字, 由下面这段脚本去 /api/site-stats 现取; 取不到就整行不显示 ——
-           宁可没有, 也不能显示一个假的 0。口径说明见 functions/api/site-stats.js 顶部。
-
-           这里**必须**是挂在 <cite> 里的 <span>, 不能用 <p> 自占一行:
-           site.css 有 `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);font-weight:700}`,
-           它比 `.site-stats` 更具体, 会把字号整个盖成最大 43px 的粗体(线上出过这个 bug)。 -->
-      <script>
-      (function () {
-        "use strict";
-        var el = document.getElementById("site-stats");
-        if (!el) return;
-        fetch("{{ site.apiBase | default('/api') }}/site-stats", { cache: "no-store" })
-          .then(function (r) { return r.json(); })
-          .then(function (j) {
-            if (!j || !j.ok || typeof j.reads !== "number" || j.reads <= 0) return;
-            el.textContent = "· 作品累计阅读 " + Number(j.reads).toLocaleString("zh-CN") + " 次";
-            if (j.since) el.title = "自 " + j.since + " 起累计（内容页打开次数，非人数）";
-            el.hidden = false;
-          })
-          .catch(function () { /* 取不到就不显示 */ });
-      })();
-      </script>
+      <cite>杜甫《偶题》句，引为社训</cite>
     </div>
   </section>
 

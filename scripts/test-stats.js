@@ -10,8 +10,8 @@
 //   · 回溯口径(2026-10-14 修正): 明细表带 bucket 标记; 疑机行**不进**任何真人数字;
 //     无标记的历史行只当"上界"(legacyDayCount>0 ⇒ 界面标 ≤), 新行才给可信值
 //   · 明细表仍不含 IP/UA 列(只有 天/路径/指纹/去抖时间/分桶)
-//   · 公开口径(2026-10-15): 作品页只报本篇(编委可见); 全站数字移到首页, 走公开接口
-//     /api/site-stats —— 只吐"内容页累计阅读次数"一个聚合数, 不带人次/疑机/入口页
+//   · 首页口径(2026-10-15): 作品页只报本篇(编委可见); 全站数字在首页 Hero, **仅编委**可见,
+//     走 /api/stats?derived=1 —— 没有公开统计接口
 //   · 鉴权: /api/stats 只给编委(账号 role='编委' 或旧钥匙), 读者/未登录一律 403
 //   · 诊断: ?diagnose=1 给出按天趋势 / 路径排行 / 每访客页数分布 / 疑机占比
 //   · 建表: sql/stats.sql 与中间件内置 DDL 逐条等价; 老库(只有 views/uniq)能被自动补列
@@ -87,7 +87,6 @@ const SEC = 1000;
 async function main() {
   const mw = await import(pathToFileURL(path.join(ROOT, "functions", "_middleware.js")).href);
   const statsApi = await import(pathToFileURL(path.join(ROOT, "functions", "api", "stats.js")).href);
-  const siteStatsApi = await import(pathToFileURL(path.join(ROOT, "functions", "api", "site-stats.js")).href);
   const schemaSql = fs.readFileSync(path.join(ROOT, "sql", "stats.sql"), "utf8");
   const db = makeDB(schemaSql);
   const env = { DB: db };
@@ -403,36 +402,33 @@ async function main() {
   const bl = oldRetro._raw.prepare("SELECT bucket FROM page_visitors WHERE path = '/w-old'").get();
   assert.strictEqual(bl.bucket, "u", "补列后老行落成 'u'");
 
-  // 8.8) 首页公开接口 /api/site-stats: **全站唯一对所有人公开**的统计
-  //      只吐「内容页(作品/雅集篇目/期页/概念页/全文库)累计阅读次数」一个聚合数, 无需鉴权
-  const pubDb = makeDB(schemaSql);
-  pubDb._raw.prepare(`INSERT INTO page_daily(path, day, views, uniq, sviews, suniq, eviews, euniq) VALUES
+  // 8.8) 首页 Hero 那行「网站累计阅读 X · 访客 Y」用的是**编委接口** /api/stats?derived=1
+  //      2026-10-15: 一度做过公开接口 /api/site-stats 放首页给所有人看, 已删除 ——
+  //      "访客"在公开场合站不住(指纹按天更换 + 改版前历史行没有机器标记 ⇒ 只能当上界)。
+  const homeDb = makeDB(schemaSql);
+  homeDb._raw.prepare(`INSERT INTO page_daily(path, day, views, uniq, sviews, suniq, eviews, euniq) VALUES
     ('/w-a',         '2026-10-01', 10, 10, 0, 0, 0, 0),
     ('/qingming-x',  '2026-10-01',  2,  2, 0, 0, 0, 0),
     ('/',            '2026-10-01', 99, 50, 0, 0, 0, 0),
     ('/library',     '2026-10-01',  7,  7, 0, 0, 0, 0)`).run();
-  const pubRes = await siteStatsApi.onRequest({
-    request: new Request("https://x.test/api/site-stats"), env: { DB: pubDb },
+  homeDb._raw.prepare(`INSERT INTO page_visitors(day, path, visitor, ts, bucket) VALUES
+    ('2026-10-01','/w-a', ?1, 0, 'c'),
+    ('2026-10-01','/w-a', ?2, 0, 's'),
+    ('2026-10-01','/',    ?3, 0, 'e')`).run(pv24("h1"), pv24("hb"), pv24("he"));
+  const homeReq = (q) => ({
+    request: new Request("https://x.test/api/stats" + q),
+    env: { DB: homeDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
   });
-  assert.strictEqual(pubRes.status, 200, "公开接口: 无需登录, 200");
-  const pub = await pubRes.json();
-  assert.deepStrictEqual(Object.keys(pub).sort(), ["ok", "reads", "since"], "公开接口只吐 ok/reads/since 三个键");
-  assert.strictEqual(pub.reads, 12, "公开数 = 内容页(作品 10 + 雅集篇目 2); 首页 99 与作品库 7 都是入口页, 不算");
-  assert.strictEqual(pub.since, "2026-10-01", "公开接口带上起算日(前端放进 title, 免得「累计」被读成「自古以来」)");
-  assert.ok(/max-age=/.test(pubRes.headers.get("cache-control") || ""), "公开接口要可缓存(首页访问量远大于内页)");
-  assert.strictEqual((await siteStatsApi.onRequest({
-    request: new Request("https://x.test/api/site-stats", { method: "POST" }), env: { DB: pubDb },
-  })).status, 405, "公开接口只接受 GET");
-  const pubNoDb = await siteStatsApi.onRequest({
-    request: new Request("https://x.test/api/site-stats"), env: {},
+  const homeAnon = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?derived=1"), env: { DB: homeDb },
   });
-  assert.strictEqual((await pubNoDb.json()).ok, false, "没有 D1 绑定时给 ok:false —— 宁可首页不显示, 也不能显示假的 0");
-  // 公开接口与编委接口的"内容页阅读"必须是同一个数(两边都用中间件的 isContentPath)
-  const authReads = (await (await statsApi.onRequest({
-    request: new Request("https://x.test/api/stats?derived=1"), env: { DB: pubDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
-  })).json()).derived.contentViews;
-  assert.strictEqual(pub.reads, authReads, "公开数与编委看到的 contentViews 必须一致(同一口径)");
-  assert.strictEqual(pub.reads, 12, "编委口径也只认内容页");
+  assert.strictEqual(homeAnon.status, 403, "首页那行的数据源也必须编委才能读(不另开公开接口)");
+  const hd = (await (await statsApi.onRequest(homeReq("?derived=1"))).json()).derived;
+  assert.strictEqual(hd.contentViews, 12, "『网站累计阅读』= 内容页(作品 10 + 雅集篇目 2); 首页 99 与作品库 7 都是入口页, 不算");
+  assert.strictEqual(hd.contentUniq, 1, "『访客』= 碰过内容页的 (天,人) 去重, 且排除疑机(hb 不算)");
+  assert.strictEqual(hd.legacyDayCount, 0, "这个夹具没有历史残留行 ⇒ 数字可信, 前端不加「上界」");
+  assert.strictEqual(hd.contentUniqKnown, 1, "可信口径同样只认真人那一行");
+  assert.strictEqual(hd.contentViewsKnown, 12, "干净的天: 可信阅读 == 上界");
   // 8.5) 接口必须**自己会补表**: 否则"刚部署完、还没有任何页面访问触发中间件补列"时,
   //      接口去查还不存在的列 -> 500 -> 界面什么都不显示（这就是线上出过的故障）
   const emptyDb = new DatabaseSync(":memory:");   // 一张表都没有
@@ -495,7 +491,7 @@ async function main() {
   assert.deepStrictEqual(metaKeys, ["buckets_since", "split_since"], "老库也会补出 stats_meta, 并记下两个起算日");
   assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM bucket_visits").get().n, 2, "老库也会补出 bucket_visits");
 
-  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页公开单口径 · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
+  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页全站口径(仅编委) · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

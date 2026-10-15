@@ -24,7 +24,10 @@ function walk(dir) {
     return e.isDirectory() ? walk(p) : [p];
   });
 }
-const tplFiles = walk(path.join(ROOT, "src", "_includes")).filter((f) => f.endsWith(".njk"));
+// 模板里定义过的 id。范围是**整个 src**(不只是 _includes): auth.js 是每页都加载的全站脚本,
+// 它引用的元素可能定义在某个页面模板里(如首页 src/index.njk 的 #site-stats),
+// 只扫 _includes 会把它误报成"引用了不存在的元素"。
+const tplFiles = walk(path.join(ROOT, "src")).filter((f) => f.endsWith(".njk"));
 const tplIds = new Set(tplFiles.flatMap((f) => [...fs.readFileSync(f, "utf8").matchAll(/id="([^"]+)"/g)].map((m) => m[1])));
 // 脚本自己动态创建的 id(innerHTML 里的 id="..." 与 xxx.id = "...")
 const jsIds = new Set(
@@ -215,15 +218,16 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   assert(auth.includes('getElementById("work-stats")'), "auth.js 应负责填浏览量(全站脚本, 每页都有)");
   assert(!/^\s*var\s+\w+\s*=\s*document\.getElementById\("work-stats"\)/m.test(auth),
     "不许在脚本开头就抓 #work-stats —— auth.js 在导航里执行, 那时 <main> 还没解析, 抓到的永远是 null");
-  assert(/function statsNode\(\)/.test(auth) && /statsWhenReady/.test(auth) && auth.includes("DOMContentLoaded"),
-    "元素要现查 + DOM 解析完再补一次(否则作品页永远拉不到数字)");
+  assert(/function workStatsNode\(\)/.test(auth) && /function siteStatsNode\(\)/.test(auth) &&
+    /statsWhenReady/.test(auth) && auth.includes("DOMContentLoaded"),
+    "两个点位都要现查(脚本在导航里跑, 那时 <main> 还没解析)且 DOM 解析完再补一次");
   assert(/statsOn\(\)[\s\S]{0,200}role === "编委"/.test(auth), "只有编委账号(或旧钥匙)才去取数字");
   assert(auth.includes("/stats?work=") && auth.includes('"&key="'), "取数走 /api/stats, 且旧钥匙从 sessionStorage 带上");
   assert(auth.includes("statsRefresh"), "对外要给 zhuzhu.js 一个刷新入口(开关旧钥匙后立即生效)");
   assert(zhuzhu.includes("zzAuth.statsRefresh"), "编委开关旧钥匙时应叫 auth.js 刷新浏览量");
   assert(/\.work-stats\{/.test(css) && /\.work-stats\[hidden\]\{display:none\}/.test(css), "site.css 要有 .work-stats(含 hidden 兜底)");
-  assert(/\.motto cite \.site-stats\{/.test(css), "首页统计的 CSS 选择器要比 `.motto cite` 具体, 否则字号被盖掉");
-  assert(/\.motto cite \.site-stats\[hidden\]\{display:none\}/.test(css), "首页统计要有 hidden 兜底");
+  assert(/\.hero-copy \.site-stats\{/.test(css), "首页统计的 CSS 选择器要比父级更具体(.hero-copy .site-stats)");
+  assert(/\.hero-copy \.site-stats\[hidden\]\{display:none\}/.test(css), "首页统计要有 hidden 兜底");
   // 后端两件套与建表脚本齐备
   assert(fs.existsSync(path.join(ROOT, "functions", "_middleware.js")), "缺根中间件 functions/_middleware.js(全站计数)");
   assert(fs.existsSync(path.join(ROOT, "functions", "api", "stats.js")), "缺读取接口 functions/api/stats.js");
@@ -252,24 +256,32 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
     "站点级去重要按桶分开(否则先看首页再看内页的人会被吃掉)");
   assert(/\.bind\(path, day, newPage\)/.test(mwSrc) && /\.bind\(day, newBucket\)/.test(mwSrc),
     "单页访客按页去重(newPage), 站点访客按桶去重(newBucket) —— 两者不能混用");
-  // 2026-10-15: 全站数字**移出作品页** —— 首页公开(所有人可见), 作品页只留本篇(仅编委)
+  // 2026-10-15: 全站数字**移出作品页** —— 首页 Hero 里给编委看, 作品页只留本篇(也仅编委)
   assert(!auth.includes("全站真人阅读") && !auth.includes("首页围观"),
     "作品页不该再显示跨页数字(全站口径已挪到首页)");
   assert(auth.includes("本篇阅读") && auth.includes("仅编委可见"), "作品页只留本篇, 且仍仅编委可见");
   const homeNjk = readf("src/index.njk");
-  assert(/id="site-stats"[^>]*hidden/.test(homeNjk), "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");
-  assert(homeNjk.includes("/site-stats"), "首页脚本要现取 /api/site-stats");
+  assert(/<p class="site-stats" id="site-stats" hidden><\/p>/.test(homeNjk),
+    "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");
+  // 位置: 夹在「同人结社 · 以诗会友，以文养心」标语与 <h1>婺需文学社</h1> 之间的一行小字
+  const iTag = homeNjk.indexOf("tagline");   // 模板里是 class="tagline rv", 别按带闭合引号的串找
+  const iStat = homeNjk.indexOf('id="site-stats"');
+  const iH1 = homeNjk.indexOf("<h1");
+  assert(iTag > -1 && iStat > iTag && iH1 > iStat,
+    "首页统计要夹在 Hero 的「标语」与「社名 h1」之间");
   assert(!/id="site-stats"[^>]*>[^<]/.test(homeNjk), "首页占位里不该在构建期渲染任何数字");
-  // 线上踩过的坑(2026-10-15): 把统计写成 .motto 里的 <p>, 被 `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);
-  // font-weight:700}` 盖成最大 43px 的粗体 —— 首页那行比社训还大。必须挂在 <cite> 里用 <span>。
-  assert(!/<p[^>]*id="site-stats"/.test(homeNjk), "首页统计不能用 <p>(会被 .motto p 撑成大字号)");
-  assert(/<cite>[^<]*<span class="site-stats" id="site-stats" hidden><\/span><\/cite>/.test(homeNjk),
-    "首页统计要挂在 <cite> 落款右侧的 <span> 里(小字, 和作品页那行同一档字号)");
-  assert(!/全站真人|欢迎第|访问量/.test(homeNjk), "首页文案别用「全站」「访问量」这类会和人次混淆的说法");
-  assert(fs.existsSync(path.join(ROOT, "functions", "api", "site-stats.js")), "缺公开接口 functions/api/site-stats.js");
-  const pubSrc = fs.readFileSync(path.join(ROOT, "functions", "api", "site-stats.js"), "utf8");
-  assert(!/isAdmin|currentUser/.test(pubSrc), "公开接口不许带鉴权(所有人都能看)");
-  assert(pubSrc.includes("isContentPath"), "公开接口要用中间件同一个 isContentPath 判内容页, 不许另抄一份 SQL 前缀");
+  // 线上踩过的坑(2026-10-15): 曾把它放进 .motto 当 <p>, 被 `.motto p{font-size:clamp(1.7rem,4vw,2.7rem);
+  // font-weight:700}` 盖成最大 43px 的粗体 —— 那行比社训还大。别再放回 .motto 里。
+  assert(!/class="motto"[\s\S]*?site-stats/.test(homeNjk), "首页统计不许放回 .motto 区块(字号会被父级 p 规则盖掉)");
+  // 全站数字**收回编委可见**（2026-10-15）：一度做过公开接口 /api/site-stats 放首页给所有人看,
+  // 但"访客"在公开场合站不住(指纹按天更换 + 历史行没有机器标记 ⇒ 只能当上界), 于是删掉那个接口。
+  assert(!fs.existsSync(path.join(ROOT, "functions", "api", "site-stats.js")),
+    "不该再有公开统计接口 functions/api/site-stats.js(全站数字只给编委)");
+  assert(auth.includes('getElementById("site-stats")'), "auth.js 要负责填首页那行(同一套编委判定)");
+  assert(/statsOn\(\)[\s\S]{0,80}hideStats/.test(auth) || /!statsOn\(\)[\s\S]{0,120}hideStats/.test(auth),
+    "非编委时首页那行必须藏起来");
+  assert(auth.includes("derived=1"), "首页走编委接口 /api/stats?derived=1(不另开公开接口)");
+  assert(!/全站真人|欢迎第|访问量/.test(homeNjk), "首页文案别用「全站真人」这类会和人次混淆的说法");
   // 线上出过的故障: 部署后还没有页面访问触发补列, 接口去查新列 -> 500 -> 界面空白
   assert(/import \{ ensureStatsSchema[^}]*\} from "\.\.\/_middleware\.js"/.test(apiSrc),
     "读取接口必须复用中间件的建表函数(自己补表), 否则刚部署完会 500");

@@ -169,10 +169,10 @@ async function doGet(context) {
     }
 
     // 回溯重算（把改版前的历史也按"内容页 / 入口页"分出来）
-    // 2026-10-15 起**改成按需**：全站数字已移到首页（所有人可见，走 /api/site-stats），
-    // 作品页不再显示跨页数字 —— 那就没必要求每次打开作品页都跑一遍全表去重，
+    // 2026-10-15 起**改成按需**：作品页已不再显示跨页数字（全站数字挪到首页 Hero，仅编委可见，
+    // 由 auth.js 带 derived=1 来取），所以作品页那一路没必要求每次打开都跑一遍全表去重 ——
     // 那是这个接口里最贵的一次查询（page_visitors 上的 DISTINCT）。
-    // 编委的诊断入口照旧：?diagnose=1 或 ?derived=1 时返回。
+    // 编委的诊断入口照旧：?diagnose=1 或 ?derived=1 时返回（首页那行也走这条）。
     const wantDerived = wantDiagnose || ["1", "true", "yes"].includes((url.searchParams.get("derived") || "").toLowerCase());
     const retro = wantDerived ? await derived(db, days).catch(() => null) : null;
 
