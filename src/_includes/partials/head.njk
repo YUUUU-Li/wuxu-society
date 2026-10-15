@@ -1,5 +1,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- 本站的根在哪 —— 必须放在任何带 URL 的元素(link/script/img)之前，且全站只能有一个。
+     为什么需要它：全站的导航/页脚/面包屑都写的是**相对链接**(index.html / yaji.html …),
+     这对根目录的页面成立；而概念页在子目录 /concepts/ 下, 相对链接会解析成
+     /concepts/yaji.html → 线上 404(2026-10-15 实际发生过: 概念页成了死胡同, 点哪都 404)。
+     <base href="/"> 一次性把"相对链接从站点根解析"这件事说清楚, 子目录页面也就跟着对了。
+     注意: 若将来改成部署在子路径, 这一行要跟着改(目前 .eleventy.js 没设 pathPrefix, 即根路径)。 -->
+<base href="/" />
 <title>{% if seoTitle %}{{ seoTitle }}{% else %}{{ site.name }} | {{ site.slogan }}{% endif %}</title>
 <meta name="description" content="{{ desc | default(site.slogan) }}" />
 <meta property="og:type" content="website" />

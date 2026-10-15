@@ -239,6 +239,24 @@ assert(read("issue-qingming-ji.html").includes('concepts/qingming.html'), "期�
 assert(read("qingming-xu.html").includes("本期概念") && read("qingming-xu.html").includes('concepts/lishe.html'), "作品页本期概念入口");
 assert(!read("w-feng.html").includes("本期概念"), "未入期作品无概念入口");
 
+// —— 子目录页面必须有 <base href="/">（2026-10-15 线上真出过）——
+// 概念页是全站唯一在子目录里的页面(/concepts/)，而导航/页脚/面包屑写的都是**相对链接**
+// (index.html / yaji.html …)。没有 <base> 时它们会解析成 /concepts/yaji.html → 404，
+// 于是概念页成了死胡同：从作品页点得进去，点哪儿都出不来。
+// 当时我只验证了"概念页能不能打开"，没验证"它上面的链接通不通"，所以漏了 —— 这条补上。
+{
+  const subHtml = fs.readdirSync(D, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .flatMap((e) => fs.readdirSync(path.join(D, e.name))
+      .filter((f) => f.endsWith(".html"))
+      .map((f) => e.name + "/" + f));
+  assert(subHtml.includes("concepts/qingming.html"),
+    "dist 里应有子目录页面(概念页) —— 否则下面这条检查是空转, 等于没查");
+  const noBase = subHtml.filter((f) => !/<base[^>]*href="\/"/.test(read(f)));
+  assert.deepStrictEqual(noBase, [],
+    "子目录页面必须有 <base href=\"/\">（否则站内相对链接会解析到子目录里 → 线上 404: " + noBase.join("、") + "）");
+}
+
 // —— 投稿页字段 ——
 const sub = read("submit.html");
 for (const x of ['id="sub-created-year"', 'id="sub-created-month"', 'id="sub-excerpt"', 'id="sub-note"', 'id="sub-imagery"', 'name="website"', '"/api/submit"']) {
