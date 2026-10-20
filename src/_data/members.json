@@ -148,12 +148,11 @@
         "note": ""
       },
       {
-        "id": "pending-vb",
-        "name": "天衡",
+        "id": "lsz",
+        "name": "lsz · 天衡",
         "role": "社员",
         "branch": "香港分部",
-        "note": "",
-        "links": []
+        "note": ""
       }
     ]
   }
