@@ -148,5 +148,18 @@
         "note": ""
       }
     ]
+  },
+  {
+    "branch": "滕州",
+    "members": [
+      {
+        "id": "pending-gj",
+        "name": "倚天之藤",
+        "role": "社员",
+        "branch": "滕州",
+        "note": "",
+        "links": []
+      }
+    ]
   }
 ]
