@@ -76,6 +76,36 @@ CREATE TABLE IF NOT EXISTS stats_meta (
   v TEXT NOT NULL
 );
 
+-- —— 有效阅读（2026-10-31 加）——
+-- 上面那些表记的是「到达」：服务端看到一个像真浏览器的 HTML 页面 GET 就记一次，
+-- 它含"点开就退"，也没法跨天认人。这张表记的是「有效阅读」：页面里的 beacon 自报
+-- 停留时长/滚动深度/有无交互，**服务端复算**后够门槛才落库（判定见 functions/api/hit.js）。
+--   · vid   = 浏览器 localStorage 里的随机 UUID（不是 IP、不连账号、不跨站）
+--   · ref   = 来源分类 direct/internal/wechat/search/external（服务端按 Referer 判，不信前端）
+--   · 主键(day, vid, path) ⇒ 同一人同一天同一页只记一次；又因此能算出跨天的**人数**
+--     （到达层的指纹里掺了 day，天生只能算人次）
+CREATE TABLE IF NOT EXISTS reads (
+  day      TEXT    NOT NULL,
+  vid      TEXT    NOT NULL,
+  path     TEXT    NOT NULL,
+  dwell_ms INTEGER NOT NULL DEFAULT 0,
+  scrolled INTEGER NOT NULL DEFAULT 0,
+  ref      TEXT    NOT NULL DEFAULT '',
+  country  TEXT,
+  ts       INTEGER NOT NULL,
+  PRIMARY KEY (day, vid, path)
+);
+CREATE INDEX IF NOT EXISTS idx_reads_path ON reads(path);
+CREATE INDEX IF NOT EXISTS idx_reads_vid ON reads(vid);
+
+-- 被拒绝的 beacon 按原因累计（原因是个封闭枚举；不许静默失败而不留痕）
+CREATE TABLE IF NOT EXISTS hit_reject (
+  day    TEXT    NOT NULL,
+  reason TEXT    NOT NULL,
+  n      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, reason)
+);
+
 -- 老库升级（改进之前建的库缺列/缺表；已加过会报 duplicate column name，忽略即可）
 -- CREATE TABLE IF NOT EXISTS stats_meta (k TEXT PRIMARY KEY, v TEXT NOT NULL);
 -- CREATE TABLE IF NOT EXISTS bucket_visits (day TEXT NOT NULL, bucket TEXT NOT NULL, visitor TEXT NOT NULL,

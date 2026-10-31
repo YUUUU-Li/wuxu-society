@@ -63,28 +63,48 @@
   function botBit(n) {
     return n > 0 ? '<span class="ws-bot">疑机 ' + fmtNum(n) + "</span>" : "";
   }
-  // 作品页题下: **只报本篇**（阅读次数 + 按天去重人次），另标本篇的疑机。
+  // 作品页题下: **只报本篇**。有 beacon 数据就报「有效阅读 · 读者」，否则退回「到达 · 人次」。
   // 口径说明**不占版面** —— 放进 title, 鼠标悬停才显示(和首页那行同一套做法)。
   function renderWorkStats(el, j) {
     var w = j.work || { views: 0, uniq: 0, sviews: 0 };
-    el.innerHTML =
-      "本篇阅读 <b>" + fmtNum(w.views) + "</b> · 访客 <b>" + fmtNum(w.uniq) + "</b>" +
-      botBit(w.sviews) +
-      '<span class="ws-only">仅编委可见</span>';
-    el.title = "阅读=打开次数；访客=按天去重的人次（≠人数）。" +
-      "【疑机】= 疑似机器人的阅读（爬虫/脚本/AI 爬虫），单独记，不混进上面两个数。";
+    var eng = Number(w.reads || 0), ppl = Number(w.readers || 0);
+    var useEng = eng > 0;                                  // 这篇有有效阅读数据了吗
+    el.innerHTML = useEng
+      ? "本篇有效阅读 <b>" + fmtNum(eng) + "</b> · 读者 <b>" + fmtNum(ppl) + "</b>" +
+        botBit(w.sviews) + '<span class="ws-only">仅编委可见</span>'
+      : "本篇到达 <b>" + fmtNum(w.views) + "</b> · 人次 <b>" + fmtNum(w.uniq) + "</b>" +
+        botBit(w.sviews) + '<span class="ws-only">仅编委可见</span>';
+    el.title = useEng
+      ? "有效阅读 = 页面里报了停留/滚动/交互、并经**服务端复算**够门槛才记一次（≥8 秒；或 ≥4 秒且滚过半/有交互）。" +
+        "读者 = 跨天去重的访客标识（≠账号、不等于人数上限）。" +
+        "本篇到达 " + fmtNum(w.views) + " 次（服务端看到打开就算，含点开就退）。" +
+        "【疑机】= 爬虫/脚本/AI 爬虫，单独记，不混进上面两个数。"
+      : "本篇还没有有效阅读数据（beacon 刚上线，或还没人真的读完这一篇）。" +
+        "到达 = 服务端看到的页面打开次数（含点开就退）；人次 = 按天去重（≠人数）。" +
+        "【疑机】= 疑似机器人的访问，单独记。";
     el.hidden = false;
   }
   // 首页 Hero: **只报全站**（内容页口径）。数字小、放不进括号说明, 所以口径与"上界"也写进 title。
   function renderSiteStats(el, j) {
     var d = j.derived;
     if (!d) return;
-    var upper = Number(d.legacyDayCount || 0) > 0;      // 还有改版前的历史行 ⇒ 只能当上界
-    el.innerHTML =
-      "网站累计阅读 <b>" + fmtNum(d.contentViews) + "</b> · 访客 <b>" + fmtNum(d.contentUniq) + "</b>" +
-      '<span class="ws-only">仅编委可见</span>';
-    el.title = "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次（≠人数）。" +
-      (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是上界（不超过这么多）。" : "");
+    var r = j.reads || null;
+    var upper = Number(d.legacyDayCount || 0) > 0;         // 还有改版前的历史行 ⇒ 只能当上界
+    var useEng = !!(r && Number(r.total) > 0);
+    el.innerHTML = useEng
+      ? "网站累计有效阅读 <b>" + fmtNum(r.total) + "</b> · 读者 <b>" + fmtNum(r.readers) + "</b>" +
+        '<span class="ws-only">仅编委可见</span>'
+      : "网站累计到达 <b>" + fmtNum(d.contentViews) + "</b> · 人次 <b>" + fmtNum(d.contentUniq) + "</b>" +
+        '<span class="ws-only">仅编委可见</span>';
+    el.title = useEng
+      ? "全站内容页（作品 / 期页 / 概念页 / 全文库）的**有效阅读**与**读者**。" +
+        "有效阅读经服务端复算（≥8 秒；或 ≥4 秒且滚过半/有交互）；读者 = 跨天去重的访客标识（≠账号）。" +
+        "同口径下另有「到达」" + fmtNum(d.contentViews) + " 次（服务端看到打开就算，含点开就退）；" +
+        "有效/到达 = " + (r.rate || 0) + "%，健康区间约 25%–45%。" +
+        (upper ? "改版前的历史行没有机器标记、无法分离，到达那一层只能当上界。" : "")
+      : "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次（≠人数）。" +
+        "有效阅读还没有数据（beacon 刚上线，要等真有人读完才算）。" +
+        (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是上界（不超过这么多）。" : "");
     el.hidden = false;
   }
   function hideStats(el) { if (el) { el.hidden = true; el.innerHTML = ""; el.textContent = ""; } }

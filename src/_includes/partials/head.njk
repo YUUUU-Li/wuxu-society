@@ -24,3 +24,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <script>(function(){try{var t=localStorage.getItem("theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
 <script>document.documentElement.classList.add("js");</script>
+<!-- 有效阅读上报（口径见 functions/api/hit.js 与 docs/网站自定义指南.md「浏览量统计」）。
+     只有正文页加载；404 页在 front matter 里设 noBeacon: true —— 它本身不计入到达，
+     也没有"读了多久"可言。defer: 不阻塞渲染；脚本内任何异常都不影响页面。 -->
+{% if not noBeacon %}<script defer src="beacon.js?v={{ assetVer }}"></script>{% endif %}

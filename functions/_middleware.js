@@ -73,6 +73,34 @@ const SCHEMA_SQL = [
      k TEXT PRIMARY KEY,
      v TEXT NOT NULL
    )`,
+  // —— 有效阅读（2026-10-31 加）——
+  // 上面那些表记的是「到达」：服务端看到一个像真浏览器的 HTML 页面 GET 就记一次。
+  // 它含"点开就退"，也没法跨天认人。这张表记的是「有效阅读」：由页面里的 beacon 自报
+  // 停留时长/滚动深度/有无交互，**服务端复算**后够门槛才落库（判定见 functions/api/hit.js）。
+  //   · vid   = 浏览器 localStorage 里的随机 UUID（不是 IP、不连账号、不跨站）
+  //   · ref   = 来源分类 direct/internal/wechat/search/external（服务端按 Referer 判，不信前端）
+  //   · 主键(day, vid, path) ⇒ 同一人同一天同一页只记一次；又因此能算出跨天的**人数**
+  //     （到达层的指纹里掺了 day，天生只能算人次）。
+  `CREATE TABLE IF NOT EXISTS reads (
+     day      TEXT    NOT NULL,
+     vid      TEXT    NOT NULL,
+     path     TEXT    NOT NULL,
+     dwell_ms INTEGER NOT NULL DEFAULT 0,
+     scrolled INTEGER NOT NULL DEFAULT 0,
+     ref      TEXT    NOT NULL DEFAULT '',
+     country  TEXT,
+     ts       INTEGER NOT NULL,
+     PRIMARY KEY (day, vid, path)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_reads_path ON reads(path)`,
+  `CREATE INDEX IF NOT EXISTS idx_reads_vid ON reads(vid)`,
+  // 被拒绝的 beacon 按原因累计（规格要求：不许静默失败而不留痕）
+  `CREATE TABLE IF NOT EXISTS hit_reject (
+     day    TEXT    NOT NULL,
+     reason TEXT    NOT NULL,
+     n      INTEGER NOT NULL DEFAULT 0,
+     PRIMARY KEY (day, reason)
+   )`,
 ];
 // 老库补列（已加过会报 duplicate column name，忽略）
 // 注意: stats_meta 用 CREATE IF NOT EXISTS —— 老库没有这张表, 而补列语句管不了"建表"
@@ -97,6 +125,28 @@ const MIGRATE_SQL = [
   `ALTER TABLE page_visitors ADD COLUMN bucket TEXT NOT NULL DEFAULT 'u'`,
   // 回溯按 path 过滤, 而主键是 (day, path, visitor) —— day 在最前, 索引不到 path
   `CREATE INDEX IF NOT EXISTS idx_page_visitors_path ON page_visitors(path)`,
+  // 有效阅读 + 拒绝原因（2026-10-31 加）。**必须在 MIGRATE 里也建一遍**：
+  // 线上库早就有表了，ensureStatsSchema 探测到 site_daily 存在就跳过 SCHEMA_SQL，
+  // 只跑 MIGRATE_SQL —— 只写在 SCHEMA_SQL 里的话，这两张表在老库上永远不会被创建。
+  `CREATE TABLE IF NOT EXISTS reads (
+     day      TEXT    NOT NULL,
+     vid      TEXT    NOT NULL,
+     path     TEXT    NOT NULL,
+     dwell_ms INTEGER NOT NULL DEFAULT 0,
+     scrolled INTEGER NOT NULL DEFAULT 0,
+     ref      TEXT    NOT NULL DEFAULT '',
+     country  TEXT,
+     ts       INTEGER NOT NULL,
+     PRIMARY KEY (day, vid, path)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_reads_path ON reads(path)`,
+  `CREATE INDEX IF NOT EXISTS idx_reads_vid ON reads(vid)`,
+  `CREATE TABLE IF NOT EXISTS hit_reject (
+     day    TEXT    NOT NULL,
+     reason TEXT    NOT NULL,
+     n      INTEGER NOT NULL DEFAULT 0,
+     PRIMARY KEY (day, reason)
+   )`,
 ];
 // 建表/补列每个数据库只做一次。用 WeakSet 按"库句柄"记，而不是一个全局布尔：
 // 一个 isolate 里正常只会用到 env.DB 这一个句柄，但测试里会拿多个内存库跑同一份代码。
@@ -123,7 +173,7 @@ export async function ensureStatsSchema(db) {
 }
 
 // —— 工具 ——
-async function sha256Hex(s) {
+export async function sha256Hex(s) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s)));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -138,7 +188,7 @@ const BOT_RE = /bot|crawler|spider|crawl|slurp|bingpreview|facebookexternalhit|e
 // 分支预览部署（abc123.wuxu-society.pages.dev）不计数；生产用的 pages.dev 域名与自定义域名照常算
 const PROD_PAGES_HOST = "wuxu-society.pages.dev";
 
-function canonPath(pathname) {
+export function canonPath(pathname) {
   let p = String(pathname || "/").split("?")[0];
   p = p.replace(/\/+$/, "");
   p = p.replace(/\/index\.html?$/i, "");
@@ -207,6 +257,24 @@ function changesOf(r) {
   const m = (r && (r.meta || r)) || {};
   return Number(m.changes || 0);
 }
+// 日期平移（'YYYY-MM-DD' 加减天数，纯 UTC 运算避免时区借位）
+function shiftDay(day, delta) {
+  const t = Date.parse(day + "T00:00:00Z");
+  return new Date(t + delta * 86400000).toISOString().slice(0, 10);
+}
+// —— 保留策略（只有"运维遥测"会被清，测量数据一律不动）——
+// 为什么要分两种：
+//   · hit_reject 是**拒绝原因计数**（原因是个封闭枚举，正常每天 ≤10 行），90 天后没诊断价值 → 清掉；
+//   · reads / page_visitors 是**测量数据**：清掉就等于把"累计阅读""读者人数""改版前上界"一起删了。
+//     而且它们本来就不是原始事件流 —— reads 已经是 (天,人,页) 去重后的行，量级只随"真有人读"增长
+//     （小站一年也就千行级），没有非清不可的理由。所以不做"90 天清明细"那一步，并如实写进文档。
+// D1 没有 cron：Pages Functions 只能被动响应请求，所以用「约每 500 次计数顺手清一次」摊掉成本。
+export async function pruneOldRejects(db, day, keepDays = 90) {
+  const cut = shiftDay(day, -keepDays);
+  await db.prepare(`DELETE FROM hit_reject WHERE day < ?1`).bind(cut).run();
+  return cut;
+}
+const PRUNE_EVERY = 500;   // 平均每 500 次页面计数触发一次
 // 去抖窗口: 同一访客对同一路径, 30 秒内的连续请求只算一次阅读（时间戳是毫秒!）
 const DEBOUNCE_MS = 30 * 1000;
 
@@ -220,6 +288,10 @@ export async function countView(env, request, opts = {}) {
   const path = canonPath(u.pathname);
   const now = opts.now === undefined ? Date.now() : opts.now;
   const day = beijingDay(now);
+  // 顺手清理过期遥测（平均每 500 次才真做一次；失败无所谓，绝不冒泡）
+  if (opts.prune !== false && Math.random() < 1 / PRUNE_EVERY) {
+    try { await pruneOldRejects(db, day); } catch { /* 清理失败不影响计数 */ }
+  }
   const suspect = opts.suspect === undefined ? isSuspect(request) : !!opts.suspect;
   const bucket = suspect ? "s" : (isContentPath(path) ? "c" : "e");
   const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "";

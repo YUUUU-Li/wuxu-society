@@ -1,7 +1,15 @@
 // 浏览量统计读取接口（Cloudflare Pages Functions 原生 ESM）
-//   GET /api/stats?work=<标识名>[&days=7][&diagnose=1][&key=<旧编委钥匙>]
-//     -> { ok, work:{path,views,uniq,sviews,suniq,since,last}, site:{...}, trend:[{day,views,uniq,sviews,suniq}],
-//          splitSince:"YYYY-MM-DD", diagnose?:{ siteTrend, topPaths, pagesPerVisitor, botRate } }
+//   GET /api/stats?work=<标识名>[&days=7][&diagnose=1][&derived=1][&csv=1][&key=<旧编委钥匙>]
+//     -> { ok, work:{path,views,uniq,…,reads,readers}, site:{...}, trend:[…],
+//          splitSince, bucketsSince,
+//          derived?:{ contentViews, contentUniq, … },   // 到达层（含改版前上界）
+//          reads?:{ total, readers, recent30, byDay, byPath, byRef, rejects, rate } }
+//   GET /api/stats?key=…&csv=1[&days=90][&from=&to=]  -> text/csv（社刊年报用）
+//
+// 两层口径的关系（**别把任何一个当成另一个**）：
+//   到达（derived / work.views）= 服务端看到像真浏览器的 HTML 页面 GET，不依赖 JS ⇒ 分母、上界；
+//   有效阅读（reads）= beacon 报停留/滚动/交互、服务端复算够门槛 ⇒ 年报数字、下界；
+//   读者（reads.readers）= 跨天去重的 vid ⇒ 这才是"多少人"。
 //
 // 权限：**只给编委**（账号 role='编委'，或过渡期的旧钥匙 ZHUI_ADMIN_KEY）；其它一律 403。
 // 口径（与 functions/_middleware.js、sql/stats.sql 一致）：
@@ -99,6 +107,58 @@ async function derived(db, days) {
   };
 }
 
+function beijingDay(now) {
+  return new Date(now + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+function shiftDay(day, delta) {
+  return new Date(Date.parse(day + "T00:00:00Z") + delta * 86400000).toISOString().slice(0, 10);
+}
+
+// —— 有效阅读（reads 表）——
+// 与"到达"层（page_daily / derived）严格分开：这里的每一行都是 beacon 报了停留/滚动/交互、
+// 且**服务端复算**够门槛之后才落库的，所以它回答的是"真的有人读"；到达层回答的是"来过"。
+//   · total    = 有效阅读次数（全历史）
+//   · readers  = 跨天去重的 vid 数 ⇒ **这才是"多少人"**（到达层的指纹掺了 day，永远算不出人数）
+//   · recent30 = 近 30 天出现过的人
+//   · byDay / byPath / byRef = 趋势、篇目、来源
+//   · rejects  = 近 7 天被拒的原因分布（规格要求：不许静默失败而不留痕）
+async function readsSummary(db, days) {
+  const span = Math.min(90, Math.max(1, days || 30));
+  const today = beijingDay(Date.now());
+  const d30 = shiftDay(today, -30);
+  const d7 = shiftDay(today, -7);
+
+  const totalRow = await db.prepare(`SELECT COUNT(*) AS n, MIN(day) AS since, MAX(day) AS until FROM reads`).first();
+  const readersRow = await db.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM reads`).first();
+  const recentRow = await db.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM reads WHERE day >= ?1`).bind(d30).first();
+  const byDay = await db.prepare(
+    `SELECT day, COUNT(*) AS n, COUNT(DISTINCT vid) AS people FROM reads
+       GROUP BY day ORDER BY day DESC LIMIT ?1`
+  ).bind(span).all();
+  const byPath = await db.prepare(
+    `SELECT path, COUNT(*) AS n, COUNT(DISTINCT vid) AS people FROM reads
+       GROUP BY path ORDER BY n DESC LIMIT 20`
+  ).all();
+  const byRef = await db.prepare(
+    `SELECT ref, COUNT(*) AS n FROM reads GROUP BY ref ORDER BY n DESC`
+  ).all();
+  const rejects = await db.prepare(
+    `SELECT reason, SUM(n) AS n FROM hit_reject WHERE day >= ?1 GROUP BY reason ORDER BY n DESC`
+  ).bind(d7).all();
+
+  return {
+    total: num(totalRow && totalRow.n),
+    since: (totalRow && totalRow.since) || "",
+    until: (totalRow && totalRow.until) || "",
+    readers: num(readersRow && readersRow.n),
+    recent30: num(recentRow && recentRow.n),
+    byDay: (byDay && byDay.results) || [],
+    byPath: (byPath && byPath.results) || [],
+    byRef: (byRef && byRef.results) || [],
+    rejects: (rejects && rejects.results) || [],
+  };
+}
+
 function json(status, body) {
   return new Response(JSON.stringify(body), {
     status,
@@ -162,6 +222,14 @@ async function doGet(context) {
            FROM page_daily WHERE path = ?1`
       ).bind(path).first();
       work = Object.assign({ path }, totals(row));
+      // 这一篇的**有效阅读**（beacon 口径）。表很小，多这两列查询不影响速度。
+      try {
+        const rr = await db.prepare(
+          `SELECT COUNT(*) AS n, COUNT(DISTINCT vid) AS people FROM reads WHERE path = ?1`
+        ).bind(path).first();
+        work.reads = num(rr && rr.n);
+        work.readers = num(rr && rr.people);
+      } catch { work.reads = 0; work.readers = 0; }
       const t = await db.prepare(
         `SELECT day, views, uniq, sviews, suniq, eviews, euniq FROM page_daily WHERE path = ?1 ORDER BY day DESC LIMIT ?2`
       ).bind(path, days).all();
@@ -175,10 +243,47 @@ async function doGet(context) {
     // 编委的诊断入口照旧：?diagnose=1 或 ?derived=1 时返回（首页那行也走这条）。
     const wantDerived = wantDiagnose || ["1", "true", "yes"].includes((url.searchParams.get("derived") || "").toLowerCase());
     const retro = wantDerived ? await derived(db, days).catch(() => null) : null;
+    const reads = wantDerived ? await readsSummary(db, days).catch(() => null) : null;
+    // 有效阅读 / 到达 的比值：健康度就靠它判（详见 docs/编委操作手册.md §5.6）
+    // 低于 5% 先查 beacon 是不是 404/被拦；接近 100% 说明还有会跑 JS 的爬虫。
+    if (reads && retro) {
+      reads.rate = retro.contentViews ? Math.round((reads.total / retro.contentViews) * 1000) / 10 : 0;
+    }
+
+    // —— CSV 导出（社刊年报要用；不新建后台页面，直接从这里下）——
+    if (["1", "true", "yes"].includes((url.searchParams.get("csv") || "").toLowerCase())) {
+      const span = Math.min(365, Math.max(1, Number(url.searchParams.get("days")) || 90));
+      const today = beijingDay(Date.now());
+      const from = url.searchParams.get("from") || shiftDay(today, -(span - 1));
+      const to = url.searchParams.get("to") || today;
+      const arr = await db.prepare(
+        `SELECT day, SUM(views) AS v FROM page_daily WHERE ${CONTENT_SQL} AND day >= ?1 AND day <= ?2 GROUP BY day`
+      ).bind(from, to).all();
+      const eng = await db.prepare(
+        `SELECT day, COUNT(*) AS n, COUNT(DISTINCT vid) AS people FROM reads
+           WHERE day >= ?1 AND day <= ?2 GROUP BY day`
+      ).bind(from, to).all();
+      const aBy = {}, eBy = {}, pBy = {};
+      for (const r of (arr && arr.results) || []) aBy[r.day] = num(r.v);
+      for (const r of (eng && eng.results) || []) { eBy[r.day] = num(r.n); pBy[r.day] = num(r.people); }
+      const daysSet = Array.from(new Set(Object.keys(aBy).concat(Object.keys(eBy)))).sort();
+      // BOM: 让 Excel 直接认 UTF-8，不然中文表头会成乱码
+      const lines = ["日期,到达（内容页）,有效阅读,读者（去重）"];
+      for (const d of daysSet) lines.push([d, aBy[d] || 0, eBy[d] || 0, pBy[d] || 0].join(","));
+      return new Response("\uFEFF" + lines.join("\r\n") + "\r\n", {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": 'attachment; filename="wuxu-stats-' + from + "_" + to + '.csv"',
+          "Cache-Control": "no-store",
+        },
+      });
+    }
 
     const out = {
       ok: true, work, site: totals(siteRow), trend, splitSince, bucketsSince,
       derived: retro,     // 仅 ?diagnose=1 / ?derived=1 时有值；{ contentViews, contentUniq, … }
+      reads,              // 同上；{ total, readers, recent30, byDay, byPath, byRef, rejects, rate }
     };
 
     if (wantDiagnose) {

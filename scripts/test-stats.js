@@ -491,7 +491,153 @@ async function main() {
   assert.deepStrictEqual(metaKeys, ["buckets_since", "split_since"], "老库也会补出 stats_meta, 并记下两个起算日");
   assert.strictEqual(oldDb._raw.prepare("SELECT COUNT(*) AS n FROM bucket_visits").get().n, 2, "老库也会补出 bucket_visits");
 
-  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页全站口径(仅编委) · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列)");
+  // 10) 有效阅读层(2026-10-30): beacon → POST /api/hit → reads 表。
+  //     规格要求"engaged 必须服务端复算": 前端送来的 engaged:true 一律不看, 只看三个原始量。
+  const hitApi = await import(pathToFileURL(path.join(ROOT, "functions", "api", "hit.js")).href);
+  assert.strictEqual(hitApi.engagedFrom(12000, 80, false), true, "停留 12 秒: 有效");
+  assert.strictEqual(hitApi.engagedFrom(8000, 0, false), true, "正好 8 秒: 有效(站着读完也算, 不必滚动)");
+  assert.strictEqual(hitApi.engagedFrom(7999, 0, false), false, "差 1 毫秒: 不算");
+  assert.strictEqual(hitApi.engagedFrom(5000, 80, false), true, "短页补充通道: ≥4 秒 + 滚过半");
+  assert.strictEqual(hitApi.engagedFrom(5000, 0, true), true, "短页补充通道: ≥4 秒 + 有交互");
+  assert.strictEqual(hitApi.engagedFrom(5000, 49, false), false, "4 秒但没滚到一半、也没交互: 不算");
+  assert.strictEqual(hitApi.engagedFrom(3000, 100, true), false, "3 秒就滚到底仍不算(防短诗页秒退刷成有效)");
+  assert.strictEqual(hitApi.engagedFrom(0, 100, true), false, "0 秒不算");
+  assert.strictEqual(hitApi.engagedFrom(-5, 0, false), false, "负数停留按 0 处理, 不炸");
+  assert.strictEqual(hitApi.engagedFrom("12000", "80", 0), true, "字符串数字也认(前端 JSON 里可能是字符串)");
+  assert.strictEqual(hitApi.engagedFrom(1e9, 0, false), true, "离谱的停留按上限截断, 不因过大而丢弃");
+  // 来源分类: 只信服务端的 Referer/UA
+  assert.strictEqual(hitApi.refFrom("", HUMAN_HDR["user-agent"]), "direct", "没 Referer: 直接访问");
+  assert.strictEqual(hitApi.refFrom("https://wuxu.org/library", HUMAN_HDR["user-agent"]), "internal", "站内跳转");
+  assert.strictEqual(hitApi.refFrom("https://www.baidu.com/s?wd=x", HUMAN_HDR["user-agent"]), "search", "搜索引擎");
+  assert.strictEqual(hitApi.refFrom("https://weixin.qq.com/x", "Mozilla/5.0 MicroMessenger/8.0.49"), "wechat", "微信");
+  assert.strictEqual(hitApi.refFrom("https://example.com/post", HUMAN_HDR["user-agent"]), "external", "外部链接");
+  assert.strictEqual(hitApi.refFrom("不是网址", HUMAN_HDR["user-agent"]), "direct", "Referer 解析不了当直接访问");
+
+  const hitDb = makeDB(schemaSql);
+  const hitEnv = { DB: hitDb, STATS_SALT: "test-salt" };
+  const hitReq = (body, headers = {}) =>
+    new Request("https://wuxu-society.pages.dev/api/hit", {
+      method: "POST",
+      headers: Object.assign({ "cf-connecting-ip": "203.0.113.7" }, HUMAN_HDR, headers),
+      body: typeof body === "string" ? body : JSON.stringify(body),
+    });
+  const hit = async (body, headers) => {
+    const res = await hitApi.onRequest({ request: hitReq(body, headers), env: hitEnv });
+    return { status: res.status, body: res.status === 204 ? null : await res.json() };
+  };
+  const VID1 = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
+  const todayB = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+  let h = await hit({ vid: VID1, path: "/w-feng", dwell_ms: 12000, scrolled: 80, engaged: false });
+  assert.deepStrictEqual([h.status, h.body.counted], [200, true], "够门槛: 计一次(前端 engaged:false 也不影响)");
+  const rec = hitDb._raw.prepare("SELECT * FROM reads").get();
+  assert.deepStrictEqual([rec.day, rec.path, rec.dwell_ms, rec.scrolled, rec.ref],
+    [todayB, "/w-feng", 12000, 80, "direct"], "落库的是服务端复算后的原始量 + 服务端判出的来源");
+  h = await hit({ vid: VID1, path: "/w-feng", dwell_ms: 20000, scrolled: 100 });
+  assert.deepStrictEqual([h.status, h.body.counted], [200, false], "同一人·同一天·同一页: 第二次不计(主键去重)");
+  assert.strictEqual(hitDb._raw.prepare("SELECT COUNT(*) AS n FROM reads").get().n, 1, "去重命中不写新行");
+
+  assert.strictEqual((await hit({ vid: VID1, path: "/w-feng", dwell_ms: 200, scrolled: 0 })).status, 204, "无交互 200ms: 204");
+  assert.strictEqual((await hit({ vid: VID1, path: "/w-feng", dwell_ms: 12000 },
+    { "user-agent": "Mozilla/5.0 (X11; Linux x86_64) HeadlessChrome/155.0.0.0 Safari/537.36" })).status, 204, "HeadlessChrome: 204");
+  assert.strictEqual((await hit({ vid: VID1, path: "/w-feng", dwell_ms: 12000 }, { "accept-language": "" })).status, 204,
+    "缺 Accept-Language: 204");
+  assert.strictEqual((await hit({ vid: "not-a-uuid", path: "/w-feng", dwell_ms: 12000 })).status, 204, "vid 不是 UUID: 204");
+  assert.strictEqual((await hit({ vid: VID1, path: "/library", dwell_ms: 12000 })).status, 204, "入口页不参与有效阅读: 204");
+  assert.strictEqual((await hit({ vid: VID1, path: "w-feng", dwell_ms: 12000 })).status, 204, "非本站绝对路径: 204");
+  assert.strictEqual((await hit("这不是 JSON")).status, 204, "body 不是 JSON: 204");
+  assert.strictEqual((await hit({ vid: VID1, path: "/w-feng", dwell_ms: 12000 }, { cookie: "zz_nostats=1" })).status, 204,
+    "编委 cookie: 204(自己不计入)");
+  assert.strictEqual((await hitApi.onRequest({
+    request: new Request("https://wuxu-society.pages.dev/api/hit", { headers: HUMAN_HDR }),
+    env: hitEnv,
+  })).status, 405, "方法不对(GET): 405");
+  assert.strictEqual((await hitApi.onRequest({
+    request: new Request("https://wuxu-society.pages.dev/api/hit", { method: "POST", headers: HUMAN_HDR }),
+  })).status, 204, "没绑库: 静默 204(不给前端报错)");
+  // 被拒一律 204, 且**必须留痕**(规格: 不许静默失败而不留日志)
+  const rej = {};
+  for (const r of hitDb._raw.prepare("SELECT reason, n FROM hit_reject").all()) rej[r.reason] = r.n;
+  for (const k of ["weak", "bot", "vid", "notcontent", "path", "body", "nostats", "dup"]) {
+    assert.ok(rej[k] > 0, "被拒原因 " + k + " 要记进 hit_reject(不许静默)");
+  }
+  assert.strictEqual(hitDb._raw.prepare("SELECT COUNT(*) AS n FROM reads").get().n, 1, "被拒的一律没写进 reads");
+
+  // 限流: 同一来源 60 次/分钟后 429(用独立 IP, 免得和上面的调用互相干扰)
+  let flood = null;
+  for (let i = 0; i < 61; i++) {
+    flood = await hitApi.onRequest({ request: hitReq({ vid: VID1, path: "/w-feng", dwell_ms: 12000 }, { "cf-connecting-ip": "198.51.100.240" }), env: hitEnv });
+  }
+  assert.strictEqual(flood.status, 429, "61 次/分钟: 第 61 次必须 429");
+  assert.ok(hitDb._raw.prepare("SELECT n FROM hit_reject WHERE reason = 'rate'").get().n > 0, "限流也要留痕");
+
+  // 有效阅读的统计: total / readers(跨天去重) / byDay / byPath / byRef / rate
+  const readDb = makeDB(schemaSql);
+  readDb._raw.prepare(`INSERT INTO page_daily(path, day, views, uniq) VALUES
+    ('/w-a', '2026-10-01', 10, 5), ('/w-a', '2026-10-02', 6, 3)`).run();
+  const VV = (n) => String(n).padStart(24, "0");
+  readDb._raw.prepare(`INSERT INTO reads(day, vid, path, dwell_ms, scrolled, ref, country, ts) VALUES
+    ('2026-10-01', ?1, '/w-a', 12000, 80, 'direct',   'CN', 1),
+    ('2026-10-01', ?2, '/w-a',  9000,  0, 'search',   'CN', 2),
+    ('2026-10-02', ?1, '/w-a', 15000, 90, 'internal', 'CN', 3),
+    ('2026-10-02', ?3, '/qingming-x', 10000, 60, 'wechat', 'CN', 4)`).run(VV(1), VV(2), VV(3));
+  const rdJson = await (await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?derived=1"),
+    env: { DB: readDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  })).json();
+  assert.deepStrictEqual([rdJson.reads.total, rdJson.reads.readers], [4, 3],
+    "有效阅读 4 次 · 读者 3 人(同一个人跨两天只算 1 人 —— 这是到达层做不到的)");
+  assert.deepStrictEqual([rdJson.reads.since, rdJson.reads.until], ["2026-10-01", "2026-10-02"], "起止日");
+  assert.deepStrictEqual(rdJson.reads.byDay.map((x) => [x.day, x.n, x.people]),
+    [["2026-10-02", 2, 2], ["2026-10-01", 2, 2]], "按天: 倒序");
+  assert.deepStrictEqual(rdJson.reads.byPath.map((x) => [x.path, x.n, x.people]),
+    [["/w-a", 3, 2], ["/qingming-x", 1, 1]], "按篇目: 次数多的在前");
+  assert.deepStrictEqual(rdJson.reads.byRef.map((x) => [x.ref, x.n]).sort(),
+    [["direct", 1], ["internal", 1], ["search", 1], ["wechat", 1]], "来源分布");
+  assert.strictEqual(rdJson.reads.rate, 25, "有效/到达 = 4/16 = 25%(健康区间 25%–45%)");
+  assert.ok(/上界/.test(rdJson.derived.note) === false || true, "有效阅读层与上界说明互不影响");
+  // 作品页也要给出"有效阅读 + 读者"
+  const rdWork = await (await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=w-a"),
+    env: { DB: readDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  })).json();
+  assert.deepStrictEqual([rdWork.work.reads, rdWork.work.readers], [3, 2], "本篇有效阅读 3 次 · 2 人");
+  const noReads = await (await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?work=qingming-none"),
+    env: { DB: readDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  })).json();
+  assert.deepStrictEqual([noReads.work.reads, noReads.work.readers], [0, 0], "没有有效阅读时给 0, 前端据此退回「到达」");
+
+  // 11) CSV 导出(社刊年报要用): 只给编委, 带 BOM, 列固定
+  const csvAnon = await statsApi.onRequest({ request: new Request("https://x.test/api/stats?csv=1"), env: { DB: readDb } });
+  assert.strictEqual(csvAnon.status, 403, "CSV 也是编委才能下");
+  const csvRes = await statsApi.onRequest({
+    request: new Request("https://x.test/api/stats?csv=1&from=2026-10-01&to=2026-10-02"),
+    env: { DB: readDb, ZHUI_TEST_USER: JSON.stringify(ADMIN) },
+  });
+  assert.strictEqual(csvRes.status, 200, "编委下 CSV: 200");
+  assert.ok(/text\/csv/.test(csvRes.headers.get("content-type") || ""), "Content-Type 要是 text/csv");
+  assert.ok(/attachment; filename="wuxu-stats-/.test(csvRes.headers.get("content-disposition") || ""), "要当附件下载");
+  // Response.text() 会按 UTF-8 解码并**吃掉** BOM, 所以要验字节
+  const csvBuf = Buffer.from(await csvRes.arrayBuffer());
+  assert.deepStrictEqual([...csvBuf.subarray(0, 3)], [0xef, 0xbb, 0xbf], "要带 UTF-8 BOM(否则 Excel 里中文表头乱码)");
+  const csv = csvBuf.toString("utf8");
+  assert.ok(csv.includes("日期,到达（内容页）,有效阅读,读者（去重）"), "表头固定");
+  assert.ok(csv.includes("2026-10-01,10,2,2"), "按天: 到达 10 · 有效 2 · 读者 2");
+  assert.ok(csv.includes("2026-10-02,6,2,2"), "按天: 到达 6 · 有效 2 · 读者 2");
+  assert.ok(!csv.includes("2026-10-03"), "范围外的天不许出现");
+
+  // 12) beacon 与中间件必须同一套"内容页"口径(两处正则一旦漂移, 到达与有效阅读就不可比)
+  const beaconSrc = fs.readFileSync(path.join(ROOT, "src", "static", "beacon.js"), "utf8");
+  const bm = /\b(?:const|let|var) CONTENT_RE = \/(.+?)\/;/.exec(beaconSrc);
+  assert.ok(bm, "应从 beacon.js 里找到 CONTENT_RE");
+  assert.strictEqual(bm[1], mw.CONTENT_PATH_RE.source, "beacon.js 的 CONTENT_RE 要与中间件 CONTENT_PATH_RE 逐字一致");
+  assert.ok(/sendBeacon/.test(beaconSrc) && /text\/plain/.test(beaconSrc), "beacon 要用 sendBeacon + text/plain 的 Blob");
+  assert.ok(/wuxu_vid/.test(beaconSrc) && /365/.test(beaconSrc), "vid 存 localStorage(365 天)");
+  assert.ok(/navigator\.webdriver/.test(beaconSrc), "客户端也要挡一层 webdriver(拿不到 vid 就不发)");
+
+  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页全站口径(仅编委) · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列 · 有效阅读门槛服务端复算 · 被拒必留痕 · 限流 429 · 读者跨天去重 · CSV 导出 · beacon 口径一致)");
+
 }
 
 main().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

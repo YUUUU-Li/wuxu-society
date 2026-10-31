@@ -259,16 +259,24 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   // 2026-10-15: 全站数字**移出作品页** —— 首页 Hero 里给编委看, 作品页只留本篇(也仅编委)
   assert(!auth.includes("全站真人阅读") && !auth.includes("首页围观"),
     "作品页不该再显示跨页数字(全站口径已挪到首页)");
-  assert(auth.includes("本篇阅读") && auth.includes("仅编委可见"), "作品页只留本篇, 且仍仅编委可见");
+  // 2026-10-30: 显示分两层 —— 有 beacon 数据就报「有效阅读 · 读者」, 还没有才退回「到达 · 人次」。
+  // 回归原点: 到达是分母/上界, 有效阅读才是能拿去写年报的数, 读者才是「多少人」。
+  assert(auth.includes("本篇有效阅读") && auth.includes("本篇到达") && auth.includes("仅编委可见"),
+    "作品页只留本篇: 有有效阅读就报「有效阅读+读者」, 否则退回「到达+人次」, 且仍仅编委可见");
+  assert(/w\.reads/.test(auth) && /w\.readers/.test(auth), "作品页要读接口给的本篇 reads/readers");
+  assert(auth.includes("网站累计有效阅读") && auth.includes("网站累计到达"),
+    "首页同理: 有效阅读优先, 到达兜底(两个数不许混着叫同一个名字)");
+  assert(/r\.total/.test(auth) && /r\.readers/.test(auth), "首页要读 reads.total/readers(有效阅读层)");
   // 口径说明**不占版面**: 两处都放进元素的 title, 鼠标悬停才显示(2026-10-15 起)
   assert(!auth.includes("（阅读=打开次数"), "作品页不该把口径说明直接印在页面上(改用 title 悬停)");
-  assert(/el\.title = "阅读=打开次数/.test(auth), "作品页的口径说明要进 title");
+  assert(/el\.title = useEng/.test(auth), "口径说明要进 title, 且按「有没有有效阅读」分两套");
+  assert(/服务端复算/.test(auth) && /≥8 秒/.test(auth), "title 要写明有效阅读的门槛(服务端复算/8 秒)");
   assert(!/ws-since/.test(auth) && !/ws-since/.test(css), "旧的 .ws-since 常驻说明应已清掉(说明改走 title)");
   // 「仅编委可见」徽章: 作品页那行与首页那行共用同一款
   assert(/\.work-stats \.ws-only,\s*\n\.hero-copy \.site-stats \.ws-only\{/.test(css),
     "「仅编委可见」徽章样式要同时覆盖作品页与首页(共用一款)");
-  assert(/renderSiteStats[\s\S]{0,700}ws-only/.test(auth), "首页那行也要带「仅编委可见」徽章");
-  assert(/el\.title = "全站内容页/.test(auth), "首页那行的口径说明要在 title 里");
+  assert(/renderSiteStats[\s\S]{0,900}ws-only/.test(auth), "首页那行也要带「仅编委可见」徽章");
+  assert(/健康区间/.test(auth), "首页 title 要给出有效/到达的健康区间(方便编委判读)");
   const homeNjk = readf("src/index.njk");
   assert(/<p class="site-stats" id="site-stats" hidden><\/p>/.test(homeNjk),
     "首页应有 hidden 的 #site-stats 占位(构建期不留数字)");
