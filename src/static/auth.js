@@ -68,7 +68,7 @@
   function renderWorkStats(el, j) {
     var w = j.work || { views: 0, uniq: 0, sviews: 0 };
     var eng = Number(w.reads || 0), ppl = Number(w.readers || 0);
-    var useEng = eng > 0;                                  // 这篇有有效阅读数据了吗
+    var useEng = typeof w.reads === "number";              // 接口给了有效阅读字段 ⇒ 就按新口径报（哪怕是 0）
     el.innerHTML = useEng
       ? "本篇有效阅读 <b>" + fmtNum(eng) + "</b> · 读者 <b>" + fmtNum(ppl) + "</b>" +
         botBit(w.sviews) + '<span class="ws-only">仅编委可见</span>'
@@ -79,7 +79,7 @@
         "读者 = 跨天去重的访客标识（≠账号、不等于人数上限）。" +
         "本篇到达 " + fmtNum(w.views) + " 次（服务端看到打开就算，含点开就退）。" +
         "【疑机】= 爬虫/脚本/AI 爬虫，单独记，不混进上面两个数。"
-      : "本篇还没有有效阅读数据（beacon 刚上线，或还没人真的读完这一篇）。" +
+      : "本篇还没有有效阅读数据（接口还是旧版，或 beacon 没部署上）。" +
         "到达 = 服务端看到的页面打开次数（含点开就退）；人次 = 按天去重（≠人数）。" +
         "【疑机】= 疑似机器人的访问，单独记。";
     el.hidden = false;
@@ -90,7 +90,7 @@
     if (!d) return;
     var r = j.reads || null;
     var upper = Number(d.legacyDayCount || 0) > 0;         // 还有改版前的历史行 ⇒ 只能当上界
-    var useEng = !!(r && Number(r.total) > 0);
+    var useEng = !!(r && typeof r.total === "number");     // 接口给了有效阅读层 ⇒ 就按新口径报（哪怕是 0）
     el.innerHTML = useEng
       ? "网站累计有效阅读 <b>" + fmtNum(r.total) + "</b> · 读者 <b>" + fmtNum(r.readers) + "</b>" +
         '<span class="ws-only">仅编委可见</span>'
@@ -103,7 +103,7 @@
         "有效/到达 = " + (r.rate || 0) + "%，健康区间约 25%–45%。" +
         (upper ? "改版前的历史行没有机器标记、无法分离，到达那一层只能当上界。" : "")
       : "全站内容页（作品 / 期页 / 概念页 / 全文库）的打开次数与按天去重人次（≠人数）。" +
-        "有效阅读还没有数据（beacon 刚上线，要等真有人读完才算）。" +
+        "有效阅读还没有数据（接口还是旧版，或 beacon 没部署上）。" +
         (upper ? "改版前的历史行没有机器标记、无法分离，所以这两个数都是上界（不超过这么多）。" : "");
     el.hidden = false;
   }
