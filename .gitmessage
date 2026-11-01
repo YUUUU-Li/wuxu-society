@@ -1,0 +1,11 @@
+# <type>(<scope>): <subject>
+# 例: feat(submit): 投稿页新增创作时间选择
+#
+# 类型: feat fix docs style refactor perf test build ci chore revert
+# 范围: works issues concepts tags comments auth submit join preview stats
+#       library members yaji ui scripts data docs deploy deps
+# 标题: <= 50 字，不加句号；正文空一行后写"为什么 / 影响范围"
+# 页脚: Closes #12 / BREAKING CHANGE: 说明
+#
+# 一次提交只做一件事；提交前 npm test 全绿；
+# 不提交 dist/、node_modules/、src/static/LICENSE*.txt。
