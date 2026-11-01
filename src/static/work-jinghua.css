@@ -1,0 +1,98 @@
+/* =========================================================
+   作品页 · 京华老宋体
+   只由 layouts/work.njk 加载；首页/作品库等保持原字体与字号。
+   字体：京华老宋体 v2.002（作者特里王，免费商用；作者声明禁止修改字形）
+   子集：fonts/KingHwaOldSong-site.woff2（当前全站文字 + 前端脚本提示语）
+   ========================================================= */
+@font-face{
+  font-family:"KingHwa Old Song";
+  src:url("fonts/KingHwaOldSong-site.woff2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+}
+
+body.work-page{
+  font-family:"KingHwa Old Song","Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  font-size:22px;line-height:1.95;font-weight:400;font-synthesis:none;
+}
+/* 京华只有一个字重；全页关闭伪粗体，层级靠字号、颜色和留白 */
+body.work-page *{font-weight:400!important;font-synthesis:none}
+
+/* 标题：保持作品页的 3.8rem，不跟着正文继续放大 */
+body.work-page .p-title{
+  font-size:clamp(2.5rem,5.8vw,3.8rem);
+  letter-spacing:.06em;line-height:1.4;
+}
+body.work-page .p-meta{font-size:17px;padding-top:16px}
+body.work-page .crumb{font-size:15.5px}
+body.work-page .nav-links a.txt{font-size:17px}
+body.work-page .nav-auth .btn{font-size:16.5px}
+
+/* 正文 */
+body.work-page .poem-body .stanza{
+  font-size:24px;line-height:2.2;letter-spacing:.05em;
+}
+body.work-page .lib-body{max-width:40em}
+body.work-page .work-epigraph,
+body.work-page .work-selfnote{font-size:19px}
+body.work-page .work-stats{font-size:15.5px}
+body.work-page .lib-body .prose{font-size:22px;line-height:2.1}
+body.work-page .lib-body .byline{font-size:16px}
+body.work-page .lib-body .analysis{font-size:17px;line-height:2}
+body.work-page .poem-note{font-size:15.5px}
+body.work-page .work-concepts{font-size:15.5px}
+
+/* 关联作品 */
+body.work-page .rel h3{font-size:1.5rem}
+body.work-page .rel h4,
+body.work-page .rel .rel-h4{font-size:17px;letter-spacing:.16em}
+body.work-page .rel h4 .cnt,
+body.work-page .rel .rel-h4 .cnt{font-size:17px;letter-spacing:.03em;opacity:.75}
+body.work-page .rel .shuffle{font-size:16px;letter-spacing:.02em}
+body.work-page .rel li{font-size:19.5px}
+body.work-page .rel li span.reason{font-size:15.5px}
+
+/* 按钮 / 标签 / 众注 */
+body.work-page .btn{font-size:18px;min-height:50px}
+body.work-page .tagpill{font-size:15px}
+body.work-page .zz-head h3{font-size:21px}
+body.work-page .zz-rule,
+body.work-page .zz-cap,
+body.work-page .zz-note{font-size:14.5px}
+body.work-page .z-meta,
+body.work-page .z-reply,
+body.work-page .z-r-as,
+body.work-page .zz-msgline{font-size:14.5px}
+body.work-page .z-text{font-size:18px;line-height:1.95}
+body.work-page .z-form input,
+body.work-page .z-form textarea,
+body.work-page .z-r-text{font-size:17px}
+body.work-page .field label{font-size:15px}
+body.work-page .field input,
+body.work-page .field select,
+body.work-page .field textarea{font-size:17px}
+body.work-page .zz-authpanel{font-size:17px}
+body.work-page .zz-authhd b{font-size:1.35rem}
+body.work-page .zz-f{font-size:17px}
+body.work-page .zz-f > span{font-size:15px}
+body.work-page .zz-f input{font-size:16.5px}
+body.work-page .zz-hint{font-size:14.5px}
+body.work-page .tag-wrap input{font-size:14.5px}
+
+/* 页脚：比原稿略窄，但不挤 */
+body.work-page .foot h4{margin-bottom:12px}
+body.work-page .foot ul{gap:5px}
+body.work-page .foot li{font-size:19px;line-height:2}
+body.work-page .foot a{font-size:16px;line-height:2}
+body.work-page .foot p{font-size:16px}
+body.work-page .foot-note{font-size:14px}
+
+@media (max-width:640px){
+  body.work-page{font-size:19px}
+  body.work-page .p-title{
+    font-size:1.8rem;letter-spacing:.04em;overflow-wrap:anywhere;word-break:break-all;
+  }
+  body.work-page .poem-body .stanza{font-size:20px}
+  body.work-page .lib-body .prose{font-size:19px}
+  body.work-page .rel li{grid-template-columns:1fr;gap:4px}
+  body.work-page .rel li span.reason{display:block}
+}
