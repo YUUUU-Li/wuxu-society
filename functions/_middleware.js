@@ -183,10 +183,74 @@ function beijingDay(now) {
   return new Date(ms).toISOString().slice(0, 10);
 }
 const SKIP_EXT = /\.(js|mjs|css|map|json|txt|xml|webmanifest|png|jpe?g|gif|webp|avif|svg|ico|bmp|woff2?|ttf|otf|eot|pdf|zip|mp4|webm|mp3|wasm)$/i;
-// 已知爬虫/脚本/扫描器（含主流 AI 爬虫与 SEO 工具）；命中即"疑似机器"
-const BOT_RE = /bot|crawler|spider|crawl|slurp|bingpreview|facebookexternalhit|embedly|quora link preview|whatsapp|telegram|pingdom|uptime|monitor|headlesschrome|lighthouse|curl|wget|python-requests|python-urllib|urllib|aiohttp|httpx|axios|got \(|undici|node-fetch|go-http-client|okhttp|java\/|libwww|scrapy|masscan|zgrab|nmap|expanse|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|yisou|sogou|ai2bot|gptbot|claudebot|ccbot|perplexity|amazonbot|applebot|dataprovider|leakix|censys|shodan|netsystemsresearch|paloalto|bitdiscovery|checkhost|driftnet|wpengine|safedns|proofpoint/i;
+// 正常手机 UA 里也可能含 "bot" 字样（如 CUBOT X30），先放过
+const BOT_FALSE_POSITIVE_RE = /\bcubot\b/i;
+// 已知爬虫/脚本/扫描器/AI 浏览与自动化工具。
+// 用「词尾 bot」而不是裸 `bot`：既能匹配 Googlebot/ClaudeBot/新式 *Bot，也不会把 CUBOT 这类机型算进来。
+// 2026-11 补：ChatGPT-User / Claude-User / Playwright / Puppeteer 等新式 AI 浏览与自动化工具。
+const BOT_RE = new RegExp([
+  String.raw`[a-z0-9_-]*bot\b`,
+  String.raw`\bcrawler\b`, String.raw`\bspider\b`, String.raw`\bcrawl\b`, String.raw`\bslurp\b`,
+  "bingpreview", "facebookexternalhit", "embedly", "quora link preview", "whatsapp", "telegram",
+  "pingdom", "uptime", "monitor", "headlesschrome", "headless", "lighthouse",
+  "curl", "wget", "python-requests", "python-urllib", "urllib", "aiohttp", "httpx", "requests",
+  "axios", String.raw`got \(`, "undici", "node-fetch", "go-http-client", "okhttp",
+  String.raw`java\/`, "libwww", "scrapy", "masscan", "zgrab", "nmap", "expanse",
+  "semrush", "ahrefs", "mj12", "dotbot", "petalbot", "bytespider", "yisou", "sogou",
+  "ai2bot", "gptbot", "claudebot", "ccbot", "perplexity", "amazonbot", "applebot",
+  "dataprovider", "leakix", "censys", "shodan", "netsystemsresearch", "paloalto",
+  "bitdiscovery", "checkhost", "driftnet", "wpengine", "safedns", "proofpoint",
+  // 新式 AI 浏览/抓取
+  "chatgpt", "openai", "oai-search", "claude-user", "claude-search", "anthropic",
+  "mistral", "gemini", "google-extended", "meta-externalagent", "cohere", "youbot",
+  "diffbot", "timpibot", "omgili", "imagesift", "img2dataset", "dataforseo",
+  "scrapinghub", "brightdata", "oxylabs", "apify", "firecrawl", "browserless",
+  // 浏览器自动化 / 脚本客户端
+  "playwright", "puppeteer", "selenium", "webdriver", "phantomjs", "cypress",
+  "postmanruntime", "insomnia", "httpie", "guzzle", "restsharp", "powershell", "winhttp",
+  "dotnet", "libcurl", "deno", "bun/", "dart", "httpclient", "python", "node",
+].join("|"), "i");
+export function isBotUA(ua) {
+  const s = String(ua || "");
+  if (!s) return false;                       // 空 UA 由 isSuspect 的 !ua 分支处理
+  // CUBOT 是正常手机品牌；只有把该词拿掉后仍含其他机器标识时才算机器，
+  // 避免 UA 里同时写了 CUBOT 和 GPTBot 时被整条放过。
+  const rest = BOT_FALSE_POSITIVE_RE.test(s) ? s.replace(BOT_FALSE_POSITIVE_RE, "") : s;
+  return BOT_RE.test(rest);
+}
 // 分支预览部署（abc123.wuxu-society.pages.dev）不计数；生产用的 pages.dev 域名与自定义域名照常算
 const PROD_PAGES_HOST = "wuxu-society.pages.dev";
+
+// —— 云/机房出口（抓取器常用）——
+// 只作"疑机"的**辅助证据**：仅当请求同时缺少强浏览器信号（Sec-Fetch）时才据此判定，
+// 避免误伤公司 VPN / 云桌面里的真人（他们的真浏览器会带 Sec-Fetch）。
+const DATACENTER_ASNS = new Set([
+  16509, 14618, 8987,          // Amazon / AWS
+  15169, 396982,               // Google / Google Cloud
+  8075, 8068,                  // Microsoft / Azure
+  14061,                       // DigitalOcean
+  63949,                       // Linode / Akamai
+  24940,                       // Hetzner
+  16276, 35540,                // OVH
+  20473,                       // Vultr / Choopa
+  31898,                       // Oracle Cloud
+  45102, 37963,                // Alibaba Cloud
+  132203,                      // Tencent Cloud
+  13335,                       // Cloudflare (WARP 等)
+  20940, 54113,                // Akamai / Fastly
+  51167, 12876, 60781, 9009,   // Contabo / Scaleway / Leaseweb / M247
+  36352, 40676, 46606, 55286,  // ColoCrossing / Psychz / Unified Layer / B2 Net
+  199524, 3223, 60068,         // G-Core / Voxility / CDN77
+]);
+const DATACENTER_ORG_RE = /amazon|amazon web services|\baws\b|google cloud|google llc|microsoft|azure|digitalocean|linode|akamai|cloudflare|hetzner|\bovh\b|oracle|vultr|contabo|scaleway|alibaba|aliyun|tencent|huawei cloud|rackspace|leaseweb|\bm247\b|choopa|colocrossing|psychz|hostinger|godaddy|ionos|netcup|serverius|g-core|voxility|cdn77|data ?center|datacenter|hosting/i;
+export function isDatacenter(request) {
+  const cf = request && request.cf;
+  if (!cf) return false;
+  const asn = Number(cf.asn || 0);
+  if (asn && DATACENTER_ASNS.has(asn)) return true;
+  const org = String(cf.asOrganization || cf.as_organization || "");
+  return !!org && DATACENTER_ORG_RE.test(org);
+}
 
 export function canonPath(pathname) {
   let p = String(pathname || "/").split("?")[0];
@@ -223,22 +287,27 @@ export function hasNoStatsCookie(request) {
 
 // 是不是"疑似机器"？
 // 判定原则: **宁可把机器当人，也不要把人当机器** —— 只有拿到正向证据才算疑机：
-//   · UA 命中已知爬虫/脚本黑名单，或干脆没有 UA；
-//   · 没有 Accept-Language（真浏览器与微信 webview 都会带，脚本/扫描器基本不带）。
+//   · UA 命中已知爬虫/脚本/自动化工具名单，或干脆没有 UA；
+//   · 没有 Accept-Language（真浏览器与微信 webview 都会带，脚本/扫描器基本不带）；
+//   · 来自云/机房 ASN，且**没有** Sec-Fetch 这类强浏览器信号（伪装成 Chrome 的服务器抓取常见）。
 // 真人特征：有 Accept-Language，且（现代浏览器的 Sec-Fetch-Mode: navigate / Sec-Fetch-Dest: document，
-//          或 老浏览器/微信 webview 的 Accept-Encoding 含 gzip/br）。
-export function isSuspect(request) {
+//          或 老浏览器/微信 webview 的 Accept-Encoding 含 gzip/br —— 但机房 IP 不适用这条兜底）。
+export function isSuspect(request, opts = {}) {
   const h = (request && request.headers) || new Headers();
   const ua = h.get("user-agent") || "";
   if (!ua) return true;
-  if (BOT_RE.test(ua)) return true;
+  if (isBotUA(ua)) return true;
   const al = (h.get("accept-language") || "").trim();
   const ae = (h.get("accept-encoding") || "").toLowerCase();
   const sfDest = (h.get("sec-fetch-dest") || "").toLowerCase();
   const sfMode = (h.get("sec-fetch-mode") || "").toLowerCase();
   if (!al) return true;
-  if (sfDest === "document" || sfMode === "navigate") return false;
-  if (/gzip|br|deflate/.test(ae)) return false;              // 没 Sec-Fetch 但像浏览器(老 Safari/微信)
+  if (sfDest === "document" || sfMode === "navigate") return false;   // 强浏览器信号: 真人
+  // 没有 Sec-Fetch: 老 Safari/微信可能是真人, 服务器抓取也可能是伪装。
+  // 机房 IP 不再享受"语言+压缩"兜底；普通网络照旧放行，避免误伤真实读者。
+  // opts.datacenter=false 供 /api/hit 使用: beacon 是 POST/no-cors, 不能按导航请求判。
+  if (opts.datacenter !== false && isDatacenter(request)) return true;
+  if (/gzip|br|deflate/.test(ae)) return false;
   return true;
 }
 

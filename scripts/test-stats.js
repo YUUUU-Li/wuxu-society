@@ -77,6 +77,14 @@ const botReq = (url, headers = {}) =>
   new Request("https://wuxu-society.pages.dev" + url, {
     headers: Object.assign({ "cf-connecting-ip": "198.51.100.66", accept: "text/html,*/*", "accept-encoding": "gzip, deflate", "user-agent": "python-requests/2.31.0" }, headers),
   });
+// 老浏览器/微信: 没有 Sec-Fetch, 但有语言偏好与压缩
+const WEAK_HDR = Object.assign({}, HUMAN_HDR, { "sec-fetch-mode": "", "sec-fetch-dest": "" });
+// 机房出口 + 伪装成 Chrome 的请求头(没有 Sec-Fetch)
+const dcReq = (url, headers = {}) => ({
+  url: "https://wuxu-society.pages.dev" + url,
+  headers: new Headers(Object.assign({ "cf-connecting-ip": "203.0.113.9" }, WEAK_HDR, headers)),
+  cf: { asn: 16509, asOrganization: "Amazon.com, Inc." },
+});
 
 const ADMIN = { id: 8, handle: "jwl", nick: "蓦流", role: "编委", member_state: "已确认" };
 const READER = { id: 7, handle: "cty", nick: "泊珩", role: "读者", member_state: "" };
@@ -121,6 +129,23 @@ async function main() {
   assert.strictEqual(mw.isSuspect(botReq("/w-feng.html")), true, "python-requests: 疑机");
   assert.strictEqual(mw.isSuspect(req("/w-feng.html", { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" })), true, "Googlebot: 疑机");
   assert.strictEqual(mw.isSuspect(req("/w-feng.html", { "user-agent": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot" })), true, "GPTBot: 疑机");
+  // 2026-11: 新式 AI 浏览/自动化 UA 不再靠裸 "bot" 子串，也要能认出来
+  assert.strictEqual(mw.isBotUA("Mozilla/5.0 (compatible; ChatGPT-User/1.0)"), true, "ChatGPT-User: 机器");
+  assert.strictEqual(mw.isBotUA("Mozilla/5.0 (compatible; Claude-User/1.0)"), true, "Claude-User: 机器");
+  assert.strictEqual(mw.isBotUA("Mozilla/5.0 (compatible; Claude-SearchBot/1.0)"), true, "Claude-SearchBot: 机器");
+  assert.strictEqual(mw.isBotUA("Mozilla/5.0 Playwright/1.40"), true, "Playwright: 机器");
+  assert.strictEqual(mw.isBotUA("Mozilla/5.0 (Linux; Android 10; CUBOT X30)"), false, "CUBOT 手机: 不能因含 bot 字样被误伤");
+  assert.strictEqual(mw.isSuspect(req("/w-feng.html", { "user-agent": "Mozilla/5.0 (compatible; ChatGPT-User/1.0)" })), true,
+    "ChatGPT-User(不带 /bot): 也判疑机");
+  // 2026-11: 机房 IP + 没有 Sec-Fetch(即使伪装成 Chrome) → 疑机；普通网络的老浏览器/微信仍放行
+  assert.strictEqual(mw.isDatacenter(dcReq("/w-feng.html")), true, "机房 ASN 能认出来");
+  assert.strictEqual(mw.isDatacenter({ cf: { asOrganization: "Lawson, Inc." } }), false, "短词 aws 不能误伤 Lawson 这类组织名");
+  assert.strictEqual(mw.isSuspect(dcReq("/w-feng.html")), true, "机房 + 无 Sec-Fetch: 疑机");
+  assert.strictEqual(mw.isSuspect(dcReq("/w-feng.html"), { datacenter: false }), false,
+    "beacon POST 不套机房判定(VPN/云桌面里的真人仍可上报有效阅读)");
+  assert.strictEqual(mw.isSuspect({ headers: new Headers(WEAK_HDR) }), false, "普通网络 + 无 Sec-Fetch: 仍算真人(老浏览器/微信)");
+  assert.strictEqual(mw.isSuspect({ headers: new Headers(Object.assign({}, WEAK_HDR, { "sec-fetch-mode": "navigate" })), cf: { asn: 16509 } }), false,
+    "机房 + 有 Sec-Fetch: 尊重强浏览器信号(不误伤 VPN/云桌面里的真人)");
   assert.strictEqual(mw.isSuspect(req("/w-feng.html", { "user-agent": "" })), true, "没有 UA: 疑机");
   assert.strictEqual(mw.isSuspect(req("/w-feng.html", { "accept-encoding": "", "sec-fetch-mode": "", "sec-fetch-dest": "" })), true,
     "有语言偏好但既无 Sec-Fetch 又不接受压缩: 疑机");
@@ -206,6 +231,12 @@ async function main() {
   assert.deepStrictEqual([wTot.v, wTot.u, wTot.sv, wTot.su], [6, 4, 2, 1], "本篇累计: 真人 6/4, 疑机 2/1");
   assert.strictEqual(row(db, "SELECT v FROM stats_meta WHERE k = 'split_since'").v, "2026-09-12", "记下「真假可分辨」的起始日");
 
+  // 5.5) 机房抓取: 伪装成 Chrome 但没有 Sec-Fetch —— 进疑机桶, 不进真人数字
+  await mw.countView(env, dcReq("/w-dc-test.html"), { now: T2 + 10 * SEC });
+  const pdc = pageOf("/w-dc-test", "2026-09-13");
+  assert.deepStrictEqual([pdc.views, pdc.uniq, pdc.sviews, pdc.suniq], [0, 0, 1, 1],
+    "机房 IP + 无 Sec-Fetch: 只记疑机, 不动真人阅读/访客");
+
   // 6) 隐私: 只有指纹
   const v = row(db, "SELECT visitor FROM page_visitors ORDER BY visitor LIMIT 1");
   assert(/^[0-9a-f]{24}$/.test(v.visitor), "访客是 24 位哈希指纹");
@@ -286,7 +317,7 @@ async function main() {
   assert.strictEqual(j.derived.contentViews, sqlCV, "内容页阅读 = 内容页路径的 views 之和");
   assert.strictEqual(j.derived.entryViews, sqlEV, "入口页阅读 = 非内容页路径的 views+eviews 之和");
   assert.strictEqual(j.derived.contentUniq, sqlCUhuman, "内容页人次 = 明细里碰过内容页的 (天,人) 去重数, **不含疑机**");
-  assert.strictEqual(sqlCUall - sqlCUhuman, 1, "旧口径会多算 1 个: 那个碰过作品页的爬虫(本次修正掉的就是它)");
+  assert.strictEqual(sqlCUall - sqlCUhuman, 2, "旧口径会多算 2 个: python 爬虫 + 机房伪装抓取(本次修正掉的就是它们)");
   const day12 = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT visitor FROM page_visitors WHERE day = '2026-09-12' AND path LIKE '/w-%')").get().n;
   assert.strictEqual(day12, 4, "09-12 碰过内容页的人：A/B/C/机器人 = 4(这是**旧口径**, 已不再对外报出)");
   const day12human = db._raw.prepare("SELECT COUNT(*) AS n FROM (SELECT DISTINCT visitor FROM page_visitors WHERE day = '2026-09-12' AND path LIKE '/w-%' AND bucket <> 's')").get().n;
@@ -636,7 +667,7 @@ async function main() {
   assert.ok(/wuxu_vid/.test(beaconSrc) && /365/.test(beaconSrc), "vid 存 localStorage(365 天)");
   assert.ok(/navigator\.webdriver/.test(beaconSrc), "客户端也要挡一层 webdriver(拿不到 vid 就不发)");
 
-  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页全站口径(仅编委) · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列 · 有效阅读门槛服务端复算 · 被拒必留痕 · 限流 429 · 读者跨天去重 · CSV 导出 · beacon 口径一致)");
+  console.log("✅ test-stats.js 全部通过 (PV/UV 口径 · 30秒去抖 · 真人/疑机/入口三桶 · 回溯排除疑机与上界标记 · 回溯按需 · 首页全站口径(仅编委) · 编委不计入 · 路径归一 · 过滤门槛 · 仅存指纹 · 中间件不炸站 · 仅编委可读 · 诊断数据 · 建表等价与老库补列 · AI/自动化 UA · CUBOT 不误伤 · 机房+无Sec-Fetch 判疑机 · 有效阅读门槛服务端复算 · 被拒必留痕 · 限流 429 · 读者跨天去重 · CSV 导出 · beacon 口径一致)");
 
 }
 

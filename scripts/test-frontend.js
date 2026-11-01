@@ -259,17 +259,18 @@ assert(!/\.created-row input\[type="number"\]/.test(css), "旧的三控件选择
   // 2026-10-15: 全站数字**移出作品页** —— 首页 Hero 里给编委看, 作品页只留本篇(也仅编委)
   assert(!auth.includes("全站真人阅读") && !auth.includes("首页围观"),
     "作品页不该再显示跨页数字(全站口径已挪到首页)");
-  // 2026-10-30: 显示分两层 —— 有 beacon 数据就报「有效阅读 · 读者」, 还没有才退回「到达 · 人次」。
-  // 回归原点: 到达是分母/上界, 有效阅读才是能拿去写年报的数, 读者才是「多少人」。
-  assert(auth.includes("本篇有效阅读") && auth.includes("本篇到达") && auth.includes("仅编委可见"),
-    "作品页只留本篇: 有有效阅读就报「有效阅读+读者」, 否则退回「到达+人次」, 且仍仅编委可见");
+  // 2026-11: 主数字**只报有效阅读/读者**；"页面打开"只放进 title 当分母/诊断,
+  // 不再作为主数字 —— 读者不会把打开次数误当成人数。
+  assert(auth.includes("本篇有效阅读") && auth.includes("仅编委可见") && !auth.includes("本篇到达"),
+    "作品页主数字只报「有效阅读+读者」, 不再把到达/人次放在主行");
   assert(/w\.reads/.test(auth) && /w\.readers/.test(auth), "作品页要读接口给的本篇 reads/readers");
-  assert(auth.includes("网站累计有效阅读") && auth.includes("网站累计到达"),
-    "首页同理: 有效阅读优先, 到达兜底(两个数不许混着叫同一个名字)");
+  assert(auth.includes("网站累计有效阅读") && !auth.includes("网站累计到达"),
+    "首页同理: 主数字只报有效阅读/读者, 不把到达当主数字");
   assert(/r\.total/.test(auth) && /r\.readers/.test(auth), "首页要读 reads.total/readers(有效阅读层)");
   // 口径说明**不占版面**: 两处都放进元素的 title, 鼠标悬停才显示(2026-10-15 起)
   assert(!auth.includes("（阅读=打开次数"), "作品页不该把口径说明直接印在页面上(改用 title 悬停)");
-  assert(/el\.title = useEng/.test(auth), "口径说明要进 title, 且按「有没有有效阅读」分两套");
+  assert(/el\.title = hasEng/.test(auth), "口径说明要进 title(有有效阅读时给出分母与比例)");
+  assert(/页面打开/.test(auth) && /只作分母/.test(auth), "title 里的到达层要改叫「页面打开」, 并注明只作分母");
   assert(/服务端复算/.test(auth) && /≥8 秒/.test(auth), "title 要写明有效阅读的门槛(服务端复算/8 秒)");
   assert(!/ws-since/.test(auth) && !/ws-since/.test(css), "旧的 .ws-since 常驻说明应已清掉(说明改走 title)");
   // 「仅编委可见」徽章: 作品页那行与首页那行共用同一款

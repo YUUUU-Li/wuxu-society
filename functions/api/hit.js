@@ -123,8 +123,10 @@ export async function onRequest(context) {
   try {
     // 1) 编委自己不计入（与到达层同一个 cookie）
     if (hasNoStatsCookie(request)) { await reject(db, day, "nostats"); return silent(); }
-    // 2) 机器自检（UA 黑名单 / 无 Accept-Language），与到达层共用同一套判定
-    if (isSuspect(request)) { await reject(db, day, "bot"); return silent(); }
+    // 2) 机器自检（UA 黑名单 / 无 Accept-Language），与到达层共用同一套判定。
+    //    关闭「机房 IP」那条: beacon 是 sendBeacon 的 POST(no-cors)，不是导航请求，
+    //    否则 VPN/云桌面里的真人会被误判。UA/语言/自动化标记仍然照查。
+    if (isSuspect(request, { datacenter: false })) { await reject(db, day, "bot"); return silent(); }
     // 3) 限流
     if (await rateHit(env, request, now)) { await reject(db, day, "rate"); return json(429, { ok: false }); }
     // 4) 读请求体（sendBeacon 用 text/plain 的 Blob，也兼容 application/json）
