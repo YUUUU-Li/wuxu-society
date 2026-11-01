@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN" data-style="a" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>婺需文学社 · A / E 并排对比</title>
+<link rel="stylesheet" href="proto.css" />
+</head>
+<body class="compare-body">
+<header class="cmp-top">
+  <a class="proto-brand" href="index.html">婺需文学社 <span>并排对比</span></a>
+  <nav class="screens" id="cmp-nav" aria-label="画面">
+    <button type="button" data-screen="home">首页</button>
+    <button type="button" data-screen="work">作品页</button>
+    <button type="button" data-screen="library">作品库</button>
+    <button type="button" data-screen="feedback">反馈</button>
+  </nav>
+  <button type="button" class="theme" id="cmp-theme" aria-label="切换深浅色">夜</button>
+  <a class="proto-link" href="index.html">单品预览</a>
+</header>
+<div class="cmp-grid">
+  <section class="cmp-pane">
+    <h2><span>A</span> 现代社刊</h2>
+    <iframe id="frame-a" title="A 现代社刊" src="index.html?embed=1&style=a&screen=home"></iframe>
+  </section>
+  <section class="cmp-pane">
+    <h2><span>E</span> 水墨留白</h2>
+    <iframe id="frame-e" title="E 水墨留白" src="index.html?embed=1&style=e&screen=home"></iframe>
+  </section>
+</div>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var screen = params.get("screen") || "home";
+  var theme = params.get("theme") || localStorage.getItem("proto-theme") ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  var frames = [document.getElementById("frame-a"), document.getElementById("frame-e")];
+  var styles = ["a", "e"];
+  document.documentElement.dataset.theme = theme;
+  function setScreen(s) {
+    screen = s;
+    frames.forEach(function (f, i) {
+      f.src = "index.html?embed=1&style=" + styles[i] + "&screen=" + encodeURIComponent(s) + "&theme=" + theme;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#cmp-nav [data-screen]"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-screen") === s);
+    });
+    var u = new URL(location.href);
+    u.searchParams.set("screen", s);
+    u.searchParams.set("theme", theme);
+    history.replaceState(null, "", u);
+  }
+  function syncTheme() {
+    document.documentElement.dataset.theme = theme;
+    var b = document.getElementById("cmp-theme");
+    if (b) b.textContent = theme === "dark" ? "日" : "夜";
+  }
+  document.getElementById("cmp-nav").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-screen]");
+    if (b) setScreen(b.getAttribute("data-screen"));
+  });
+  document.getElementById("cmp-theme").addEventListener("click", function () {
+    theme = theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem("proto-theme", theme); } catch (e) {}
+    syncTheme();
+    setScreen(screen);
+  });
+  syncTheme();
+  setScreen(screen);
+})();
+</script>
+</body>
+</html>

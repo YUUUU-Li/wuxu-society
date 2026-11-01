@@ -1,0 +1,41 @@
+/* 真实作品页 · 全锦书宋试版
+   宋体、Noto Sans SC、UI 文字全部换成寒蝉锦书宋；
+   标题走真实 Bold，不做浏览器伪粗体。 */
+@font-face{
+  font-family:"Chill Text";
+  src:url("fonts/ChillJinshuSongTextRegular-work.woff2?v=2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+}
+@font-face{
+  font-family:"Chill Text";
+  src:url("fonts/ChillJinshuSongBold-work.woff2?v=2") format("woff2");
+  font-weight:700;font-style:normal;font-display:swap;
+}
+html.theme-chill{
+  --font-serif:"Chill Text","Noto Serif SC","Source Han Serif SC",serif;
+  --font-text:"Chill Text","Noto Serif SC","Source Han Serif SC",serif;
+  --font-ui:"Chill Text","Noto Sans SC","Segoe UI",sans-serif;
+  --font-sans:"IBM Plex Sans","Chill Text","Noto Sans SC",sans-serif;
+}
+
+html.theme-chill body{
+  font-family:var(--font-serif);font-weight:400;font-synthesis:none;
+}
+html.theme-chill .p-title{font-weight:700}
+html.theme-chill h1,
+html.theme-chill h2,
+html.theme-chill h3,
+html.theme-chill .rel h3,
+html.theme-chill .rel h4,
+html.theme-chill .rel li .t,
+html.theme-chill .zz-head h3,
+html.theme-chill .zz-authhd b,
+html.theme-chill .p-meta b,
+html.theme-chill .work-stats b,
+html.theme-chill .foot h4{font-weight:700}
+html.theme-chill b,
+html.theme-chill strong{font-weight:700}
+html.theme-chill .btn,
+html.theme-chill .tagpill,
+html.theme-chill .z-r-name,
+html.theme-chill .z-r-send{font-weight:400}

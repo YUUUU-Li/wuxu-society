@@ -241,3 +241,20 @@
     }).join("");
   });
 })();
+
+/* 配色主题切换: 只改 data-palette, 明暗仍由 data-theme 负责 */
+(function () {
+  var sel = document.getElementById("palette-select");
+  if (!sel) return;
+  var root = document.documentElement;
+  var valid = ["celadon", "vermilion", "pine", "lotus", "deco"];
+  var cur = root.getAttribute("data-palette");
+  if (valid.indexOf(cur) < 0) cur = "celadon";
+  root.setAttribute("data-palette", cur);
+  sel.value = cur;
+  sel.addEventListener("change", function () {
+    if (valid.indexOf(sel.value) < 0) return;
+    root.setAttribute("data-palette", sel.value);
+    try { localStorage.setItem("palette", sel.value); } catch (e) {}
+  });
+})();

@@ -1,0 +1,113 @@
+/* 四页字体试版共用的字号尺度：只放大，不改布局结构。
+   页面 class 同时保留 theme-v4，先继承青瓷 v4，再按 theme-chill / theme-huiwen / theme-huiwen-gbk / theme-jinghua 换字。 */
+html.theme-chill body,
+html.theme-huiwen body{
+  font-size:20px;line-height:1.95;font-weight:400;
+}
+html.theme-chill .p-title,
+html.theme-huiwen .p-title{
+  font-size:clamp(2.3rem,5.4vw,3.8rem);
+}
+html.theme-chill .p-meta,
+html.theme-huiwen .p-meta{
+  font-size:16px;padding-top:16px;
+}
+html.theme-chill .crumb,
+html.theme-huiwen .crumb{font-size:14.5px}
+html.theme-chill .nav-links a.txt,
+html.theme-huiwen .nav-links a.txt{font-size:16px}
+html.theme-chill .nav-auth .btn,
+html.theme-huiwen .nav-auth .btn{font-size:15.5px}
+html.theme-chill .poem-body .stanza,
+html.theme-huiwen .poem-body .stanza{
+  font-size:22px;line-height:2.2;letter-spacing:.05em;
+}
+html.theme-chill .work-epigraph,
+html.theme-chill .work-selfnote,
+html.theme-huiwen .work-epigraph,
+html.theme-huiwen .work-selfnote{font-size:18px}
+html.theme-chill .work-stats,
+html.theme-huiwen .work-stats{font-size:14.5px}
+html.theme-chill .rel h3,
+html.theme-huiwen .rel h3{font-size:1.4rem}
+html.theme-chill .rel h4,
+html.theme-chill .rel .rel-h4,
+html.theme-huiwen .rel h4,
+html.theme-huiwen .rel .rel-h4{font-size:14px}
+html.theme-chill .rel .rel-h4 .cnt,
+html.theme-huiwen .rel .rel-h4 .cnt{font-size:1em;letter-spacing:.03em}
+html.theme-chill .rel .shuffle,
+html.theme-huiwen .rel .shuffle{font-size:1em;letter-spacing:.02em}
+html.theme-chill .rel li,
+html.theme-huiwen .rel li{font-size:18px}
+html.theme-chill .rel li span.reason,
+html.theme-huiwen .rel li span.reason{font-size:14.5px}
+html.theme-chill .btn,
+html.theme-huiwen .btn{font-size:17px;min-height:48px}
+html.theme-chill .tagpill,
+html.theme-huiwen .tagpill{font-size:14px}
+html.theme-chill .zz-head h3,
+html.theme-huiwen .zz-head h3{font-size:20px}
+html.theme-chill .zz-rule,
+html.theme-chill .zz-cap,
+html.theme-chill .zz-note,
+html.theme-huiwen .zz-rule,
+html.theme-huiwen .zz-cap,
+html.theme-huiwen .zz-note{font-size:13.5px}
+html.theme-chill .z-meta,
+html.theme-chill .z-reply,
+html.theme-chill .z-r-as,
+html.theme-chill .zz-msgline,
+html.theme-huiwen .z-meta,
+html.theme-huiwen .z-reply,
+html.theme-huiwen .z-r-as,
+html.theme-huiwen .zz-msgline{font-size:13.5px}
+html.theme-chill .z-text,
+html.theme-huiwen .z-text{font-size:17px;line-height:1.95}
+html.theme-chill .z-form input,
+html.theme-chill .z-form textarea,
+html.theme-chill .z-r-text,
+html.theme-huiwen .z-form input,
+html.theme-huiwen .z-form textarea,
+html.theme-huiwen .z-r-text{font-size:16px}
+html.theme-chill .field label,
+html.theme-huiwen .field label{font-size:14px}
+html.theme-chill .field input,
+html.theme-chill .field select,
+html.theme-chill .field textarea,
+html.theme-huiwen .field input,
+html.theme-huiwen .field select,
+html.theme-huiwen .field textarea{font-size:16px}
+html.theme-chill .zz-authpanel,
+html.theme-huiwen .zz-authpanel{font-size:16px}
+html.theme-chill .zz-authhd b,
+html.theme-huiwen .zz-authhd b{font-size:1.25rem}
+html.theme-chill .zz-f,
+html.theme-huiwen .zz-f{font-size:16px}
+html.theme-chill .zz-f > span,
+html.theme-huiwen .zz-f > span{font-size:14px}
+html.theme-chill .zz-f input,
+html.theme-huiwen .zz-f input{font-size:15.5px}
+html.theme-chill .zz-hint,
+html.theme-huiwen .zz-hint{font-size:13.5px}
+html.theme-chill .tag-wrap input,
+html.theme-huiwen .tag-wrap input{font-size:13.5px}
+html.theme-chill .foot a,
+html.theme-huiwen .foot a{font-size:15px}
+html.theme-chill .foot-note,
+html.theme-huiwen .foot-note{font-size:13px}
+
+@media (max-width:640px){
+  html.theme-chill body,
+  html.theme-huiwen body{font-size:19px}
+  html.theme-chill .poem-body .stanza,
+  html.theme-huiwen .poem-body .stanza{font-size:20px}
+  html.theme-chill .p-title,
+  html.theme-huiwen .p-title{
+    font-size:1.8rem;letter-spacing:.04em;overflow-wrap:anywhere;word-break:break-all;
+  }
+  html.theme-chill .rel li,
+  html.theme-huiwen .rel li{grid-template-columns:1fr;gap:4px}
+  html.theme-chill .rel li span.reason,
+  html.theme-huiwen .rel li span.reason{display:block}
+}

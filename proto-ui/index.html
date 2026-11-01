@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN" data-style="a" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>婺需文学社 · UI 样张</title>
+<link rel="stylesheet" href="proto.css" />
+</head>
+<body>
+<header class="proto-top" id="proto-top">
+  <a class="proto-brand" href="index.html">婺需文学社 <span>UI 样张</span></a>
+  <div class="proto-controls">
+    <div class="seg" id="style-switch" role="group" aria-label="风格">
+      <button type="button" data-style="a">A 社刊</button>
+      <button type="button" data-style="e">E 留白</button>
+    </div>
+    <nav class="screens" id="screen-nav" aria-label="画面">
+      <button type="button" data-screen="home">首页</button>
+      <button type="button" data-screen="work">作品页</button>
+      <button type="button" data-screen="library">作品库</button>
+      <button type="button" data-screen="feedback">反馈</button>
+    </nav>
+    <button type="button" class="theme" id="theme-toggle" aria-label="切换深浅色" title="切换深浅色">夜</button>
+    <a class="proto-link" href="theme.html">主题板</a>
+    <a class="proto-link" id="compare-link" href="compare.html?screen=home">并排对比</a>
+  </div>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="modal-root"></div>
+<script src="proto.js"></script>
+</body>
+</html>

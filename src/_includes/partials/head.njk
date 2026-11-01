@@ -16,13 +16,17 @@
 <meta property="og:image" content="{{ site.url }}/hero-qingming.jpg" />
 <meta property="og:url" content="{{ site.url }}{{ page.url }}" />
 <meta name="twitter:card" content="summary_large_image" />
+<link rel="preload" href="fonts/KingHwaOldSong-site.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="site.css?v={{ assetVer }}" />
+<link rel="stylesheet" href="themes.css?v={{ assetVer }}" />
+<link rel="stylesheet" href="type.css?v={{ assetVer }}" />
+<link rel="stylesheet" href="motion.css?v={{ assetVer }}" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<script>(function(){try{var t=localStorage.getItem("theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script>(function(){try{var p=localStorage.getItem("palette");if(["celadon","vermilion","pine","lotus","deco"].indexOf(p)<0){p="celadon";}document.documentElement.setAttribute("data-palette",p);var t=localStorage.getItem("theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-palette","celadon");document.documentElement.setAttribute("data-theme","light");}})();</script>
 <script>document.documentElement.classList.add("js");</script>
 <!-- 有效阅读上报（口径见 functions/api/hit.js 与 docs/网站自定义指南.md「浏览量统计」）。
      只有正文页加载；404 页在 front matter 里设 noBeacon: true —— 它本身不计入到达，

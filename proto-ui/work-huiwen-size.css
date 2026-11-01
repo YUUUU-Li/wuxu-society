@@ -1,0 +1,57 @@
+/* 只服务汇文页：在 work-type.css 的基础上再放大一档。
+   同时作用于汇文旧版与汇文 GBK 版；锦书宋 / 京华不受影响。
+   手机端保持 work-type.css 的尺寸，避免诗行和标题被挤断。 */
+@media (min-width:641px){
+  html.theme-huiwen body{
+    font-size:22px;
+  }
+  html.theme-huiwen .p-title{
+    font-size:clamp(2.5rem,5.8vw,4.1rem);
+  }
+  html.theme-huiwen .p-meta{
+    font-size:17px;
+  }
+  html.theme-huiwen .crumb{font-size:15.5px}
+  html.theme-huiwen .nav-links a.txt{font-size:17px}
+  html.theme-huiwen .nav-auth .btn{font-size:16.5px}
+  html.theme-huiwen .poem-body .stanza{
+    font-size:24px;line-height:2.2;
+  }
+  html.theme-huiwen .work-epigraph,
+  html.theme-huiwen .work-selfnote{font-size:19px}
+  html.theme-huiwen .work-stats{font-size:15.5px}
+  html.theme-huiwen .rel h3{font-size:1.5rem}
+  html.theme-huiwen .rel h4,
+  html.theme-huiwen .rel .rel-h4{font-size:15px}
+  html.theme-huiwen .rel .rel-h4 .cnt{font-size:1em;letter-spacing:.03em}
+  html.theme-huiwen .rel .shuffle{font-size:1em;letter-spacing:.02em}
+  html.theme-huiwen .rel li{font-size:19.5px}
+  html.theme-huiwen .rel li span.reason{font-size:15.5px}
+  html.theme-huiwen .btn{font-size:18px;min-height:50px}
+  html.theme-huiwen .tagpill{font-size:15px}
+  html.theme-huiwen .zz-head h3{font-size:21px}
+  html.theme-huiwen .zz-rule,
+  html.theme-huiwen .zz-cap,
+  html.theme-huiwen .zz-note{font-size:14.5px}
+  html.theme-huiwen .z-meta,
+  html.theme-huiwen .z-reply,
+  html.theme-huiwen .z-r-as,
+  html.theme-huiwen .zz-msgline{font-size:14.5px}
+  html.theme-huiwen .z-text{font-size:18px}
+  html.theme-huiwen .z-form input,
+  html.theme-huiwen .z-form textarea,
+  html.theme-huiwen .z-r-text{font-size:17px}
+  html.theme-huiwen .field label{font-size:15px}
+  html.theme-huiwen .field input,
+  html.theme-huiwen .field select,
+  html.theme-huiwen .field textarea{font-size:17px}
+  html.theme-huiwen .zz-authpanel{font-size:17px}
+  html.theme-huiwen .zz-authhd b{font-size:1.35rem}
+  html.theme-huiwen .zz-f{font-size:17px}
+  html.theme-huiwen .zz-f > span{font-size:15px}
+  html.theme-huiwen .zz-f input{font-size:16.5px}
+  html.theme-huiwen .zz-hint{font-size:14.5px}
+  html.theme-huiwen .tag-wrap input{font-size:14.5px}
+  html.theme-huiwen .foot a{font-size:16px}
+  html.theme-huiwen .foot-note{font-size:14px}
+}
