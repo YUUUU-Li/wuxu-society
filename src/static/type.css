@@ -1,0 +1,110 @@
+/* =========================================================
+   全站字号：与作品页统一到 22px 基准
+   只改字号/行高/行宽，不改布局结构。
+   ========================================================= */
+body{font-size:22px;line-height:1.95}
+
+/* 导航与页头 */
+.nav-links a.txt{font-size:17px}
+.nav-auth .btn{font-size:16.5px;min-height:0;padding:11px 20px}
+.nav-auth .nav-who{font-size:16px}
+.p-title{font-size:clamp(2.5rem,5.8vw,3.8rem);letter-spacing:.06em}
+.p-meta{font-size:17px;padding-top:16px}
+.crumb{font-size:15.5px}
+h1{font-size:clamp(2.4rem,5.4vw,3.8rem)}
+h2{font-size:clamp(1.8rem,3.6vw,2.6rem)}
+h3{font-size:1.3rem}
+
+/* 首页 */
+.hero .tagline{font-size:17px}
+.hero .sub{font-size:20px;line-height:1.9}
+.hero-link{font-size:17px}
+.lead{font-size:22px;line-height:1.95}
+.tenet strong{font-size:22px}
+.tenet span{font-size:16px;line-height:1.9}
+.motto cite{font-size:16px}
+.poem-item .pi-title{font-size:22px}
+.poem-item .pi-meta{font-size:15.5px}
+.poem-item .pi-line{font-size:18px}
+.poem-item .pi-link{font-size:15.5px}
+
+/* 作品页 / 全文页 */
+.poem-body .stanza{font-size:24px;line-height:2.2;letter-spacing:.05em}
+.lib-body{max-width:40em}
+.lib-body .stanza{font-size:24px;line-height:2.2}
+.lib-body .prose{font-size:22px;line-height:2.1}
+.lib-body .analysis{font-size:17px;line-height:2}
+.lib-body .byline{font-size:16px}
+.work-epigraph,.work-selfnote{font-size:19px}
+.poem-note{font-size:15.5px}
+.work-stats{font-size:15.5px}
+.work-concepts{font-size:15.5px}
+.pending-hint{font-size:15px}
+
+/* 关联作品：同作者行与正文同一层级 */
+.rel h3{font-size:1.5rem}
+.rel h4,.rel .rel-h4{font-size:17px;letter-spacing:.16em}
+.rel h4 .cnt,.rel .rel-h4 .cnt{font-size:17px;letter-spacing:.03em;opacity:.75}
+.rel .shuffle{font-size:16px;letter-spacing:.02em}
+.rel li{font-size:19.5px}
+.rel li span.reason{font-size:15.5px}
+
+/* 作品库 / 期页 / 社员 */
+.archive-row .vol{font-size:22px}
+.archive-row .vol small{font-size:15.5px}
+.archive-row .toc span.g,
+.archive-row .toc span.w{font-size:14px}
+.member .m-name{font-size:22px}
+.member .m-role{font-size:14px}
+.member .m-branch{font-size:15px}
+.member .m-note{font-size:16px}
+.member a.plink{font-size:16px}
+.lib-item summary .t{font-size:22px}
+.lib-item summary .a,
+.lib-item summary .f{font-size:14px}
+.idx-row{font-size:19.5px}
+.idx-row .g,.idx-row .f{font-size:14px}
+
+/* 按钮：正文按钮放大；标签/评论里的小按钮保持紧凑 */
+.btn{font-size:18px;min-height:50px}
+.duo-acts .btn{font-size:18px}
+.tag-add .btn{font-size:13px;min-height:30px;padding:0 14px}
+.z-r-send{font-size:13px;min-height:28px;padding:0 14px}
+.chip{font-size:15px}
+.tagpill{font-size:15px}
+
+/* 表单 */
+.field label{font-size:15px}
+.field input,.field select,.field textarea{font-size:17px}
+
+/* 众注 / 弹窗 */
+.zz-head h3{font-size:21px}
+.zz-rule,.zz-cap,.zz-note{font-size:14.5px}
+.z-meta,.z-reply,.z-r-as,.zz-msgline{font-size:14.5px}
+.z-text{font-size:18px;line-height:1.95}
+.z-form input,.z-form textarea,.z-r-text{font-size:17px}
+.zz-authpanel{font-size:17px}
+.zz-authhd b{font-size:1.35rem}
+.zz-f{font-size:17px}
+.zz-f > span{font-size:15px}
+.zz-f input{font-size:16.5px}
+.zz-hint{font-size:14.5px}
+.tag-wrap input{font-size:14.5px}
+.issue-epi .epigraph,.concept-note{font-size:19px}
+
+/* 页脚：比原稿略窄，全站统一 */
+.foot h4{margin-bottom:12px}
+.foot ul{gap:5px}
+.foot li{font-size:19px;line-height:2}
+.foot a{font-size:16px;line-height:2}
+.foot p{font-size:16px}
+.foot-note{font-size:14px}
+
+@media (max-width:640px){
+  body{font-size:19px}
+  .p-title{font-size:1.8rem;letter-spacing:.04em;overflow-wrap:anywhere;word-break:break-all}
+  .poem-body .stanza,.lib-body .stanza{font-size:20px}
+  .lib-body .prose{font-size:19px}
+  .rel li{grid-template-columns:1fr;gap:4px}
+  .rel li span.reason{display:block}
+}

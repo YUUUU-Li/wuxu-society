@@ -98,7 +98,7 @@ assert(zhuzhu.includes("adminOn()"), "编委判定应走账号角色或旧钥匙
 for (const sel of [".nav-auth", ".nav-auth .nav-who", ".zz-authbox", ".zz-authpanel", ".zz-f", ".zz-msgline", ".z-like.own", ".work-epigraph", ".work-selfnote"]) {
   assert(css.includes(sel), "site.css 缺样式: " + sel);
 }
-assert(/@media \(max-width:760px\)[\s\S]*?\.nav-auth\{/.test(css), "移动端菜单里也要有账号态样式");
+assert(/@media \(max-width:860px\)[\s\S]*?\.nav-auth\{/.test(css), "移动端菜单里也要有账号态样式");
 // 登录/注册弹窗: 两栏等宽等高、字体随正文; 底部两按钮同宽同高、轴对称、颜色统一; 手机端竖排通栏
 assert(css.includes(".nav-auth .btn{"), "登录/注册入口应沿用页头按钮(.btn)的样式");
 assert(/\.zz-f\{display:grid;grid-template-columns:56px 1fr/.test(css), "昵称/口令两栏应等宽(grid 两列)");

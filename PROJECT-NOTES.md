@@ -21,7 +21,7 @@
 - `src/_data/tag_outline.json` —— 标签大纲（94 词；`npm run sync-tags` 编译进函数）
 - `src/_data/site.json` —— 站名/网址/公众号/众注开关
 - `src/_includes/` —— 布局、导航、页脚
-- `src/static/work-jinghua.css` + `src/static/fonts/KingHwaOldSong-site.woff2` —— 作品页专用京华老宋体（只在 `layouts/work.njk` 加载；字体授权与子集说明见 `src/static/fonts/README.md`）
+- `src/static/work-jinghua.css` + `src/static/fonts/KingHwaOldSong-site.woff2` —— 全站京华老宋体子集；`type.css` 统一 22px 基准，`themes.css` 五套配色，`motion.css` 交互反馈层；`work-jinghua.css` 只保留作品页特有字号（字体授权与子集说明见 `src/static/fonts/README.md`）
 - `functions/_middleware.js` —— 浏览量中间件（三桶 + 有效阅读建表）
 - `functions/api/` —— `submit` 投稿、`join` 入社、`preview` 预览、`auth` 账号、`tags`/`comments` 众注、`related` 相似标签、`stats`/`hit` 统计、`tag-outline`/`zhuzhu-config` 生成物
 - `sql/` —— `zhuzhu.sql`（众注四表）、`stats.sql`、`accounts/`、`curation/`、`tags-v1/`、`backup/`

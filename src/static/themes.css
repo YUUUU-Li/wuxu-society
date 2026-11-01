@@ -1,0 +1,168 @@
+/* =========================================================
+   五套配色主题（来自 proto-ui 主题板）
+   只改 CSS 变量；data-theme 仍负责明暗，data-palette 负责色系。
+   ========================================================= */
+html[data-palette="celadon"]{
+  --paper-lt:#F1F0E8;--paper-dk:#141A18;
+  --paper:#F1F0E8;--paper-deep:#E3E9E2;--surface:#F7F6EF;
+  --ink:#1E2927;--ink-soft:#40504B;--dim:#5A665F;
+  --line:rgba(30,41,39,.17);--line-soft:rgba(30,41,39,.09);
+  --seal:#9C4A3A;--seal-ink:#F7F2E8;
+  --action:#2E4641;--action-ink:#F4F5EC;
+  --accent:#6F8F86;--accent-deep:#385750;--accent-soft:#D8E3DD;
+  --highlight:#B9A06A;--ok:#4F6B52;--warn:#8A6A2F;--danger:#8E3A2C;--info:#385750;
+  --nav-bg:rgba(241,240,232,.92);--input-bg:rgba(255,255,255,.34);
+}
+html[data-palette="celadon"][data-theme="dark"]{
+  --paper:#141A18;--paper-deep:#1B2320;--surface:#1E2723;
+  --ink:#E7E5D9;--ink-soft:#C0C9C0;--dim:#A2ADA4;
+  --line:rgba(231,229,217,.18);--line-soft:rgba(231,229,217,.09);
+  --seal:#C56A55;--seal-ink:#121917;
+  --action:#A5B8B1;--action-ink:#121917;
+  --accent:#8FB0A5;--accent-deep:#7A9D92;--accent-soft:#22302B;
+  --highlight:#C0A876;--ok:#8FA38F;--warn:#C0A876;--danger:#D0715B;--info:#8FB0A5;
+  --nav-bg:rgba(20,26,24,.94);--input-bg:rgba(255,255,255,.06);
+}
+
+html[data-palette="vermilion"]{
+  --paper-lt:#F4EEDF;--paper-dk:#171411;
+  --paper:#F4EEDF;--paper-deep:#E9E1CF;--surface:#FAF6EC;
+  --ink:#1C1A17;--ink-soft:#4A443A;--dim:#71685A;
+  --line:rgba(28,26,23,.18);--line-soft:rgba(28,26,23,.09);
+  --seal:#B23A2A;--seal-ink:#FBF4E8;
+  --action:#7E3229;--action-ink:#FBF4E8;
+  --accent:#2E4A5E;--accent-deep:#1F3443;--accent-soft:#D7E0E4;
+  --highlight:#C9A86A;--ok:#4F6B52;--warn:#8A6A2F;--danger:#B23A2A;--info:#2E4A5E;
+  --nav-bg:rgba(244,238,223,.92);--input-bg:rgba(255,255,255,.32);
+}
+html[data-palette="vermilion"][data-theme="dark"]{
+  --paper:#171411;--paper-deep:#211C17;--surface:#251F19;
+  --ink:#F0E8D8;--ink-soft:#CFC3AE;--dim:#B5A995;
+  --line:rgba(240,232,216,.18);--line-soft:rgba(240,232,216,.09);
+  --seal:#D46A52;--seal-ink:#171411;
+  --action:#B87A6D;--action-ink:#171411;
+  --accent:#8FA9B8;--accent-deep:#7193A4;--accent-soft:#26333A;
+  --highlight:#C9A86A;--ok:#8FA38F;--warn:#C9A86A;--danger:#D46A52;--info:#8FA9B8;
+  --nav-bg:rgba(23,20,17,.94);--input-bg:rgba(255,255,255,.06);
+}
+
+html[data-palette="pine"]{
+  --paper-lt:#EFEADF;--paper-dk:#121110;
+  --paper:#EFEADF;--paper-deep:#E4DDD0;--surface:#F7F2E8;
+  --ink:#22201C;--ink-soft:#4A453C;--dim:#6E675B;
+  --line:rgba(34,32,28,.16);--line-soft:rgba(34,32,28,.09);
+  --seal:#A84938;--seal-ink:#F7F0E4;
+  --action:#A84938;--action-ink:#F7F0E4;
+  --accent:#5B6B5E;--accent-deep:#3F4F43;--accent-soft:#D9E0D8;
+  --highlight:#C9A86A;--ok:#4F6B52;--warn:#8A6A2F;--danger:#A84938;--info:#5B6B5E;
+  --nav-bg:rgba(239,234,223,.92);--input-bg:rgba(255,255,255,.32);
+}
+html[data-palette="pine"][data-theme="dark"]{
+  --paper:#121110;--paper-deep:#1A1815;--surface:#1E1B17;
+  --ink:#E7E1D3;--ink-soft:#C4BCAB;--dim:#8E8678;
+  --line:rgba(231,225,211,.18);--line-soft:rgba(231,225,211,.09);
+  --seal:#C96B55;--seal-ink:#121110;
+  --action:#C96B55;--action-ink:#121110;
+  --accent:#8FA38F;--accent-deep:#7C9379;--accent-soft:#243029;
+  --highlight:#C9A86A;--ok:#8FA38F;--warn:#C9A86A;--danger:#C96B55;--info:#8FA38F;
+  --nav-bg:rgba(18,17,16,.94);--input-bg:rgba(255,255,255,.06);
+}
+
+html[data-palette="lotus"]{
+  --paper-lt:#F3EDE6;--paper-dk:#171314;
+  --paper:#F3EDE6;--paper-deep:#E9DDD5;--surface:#FAF5EF;
+  --ink:#2A2324;--ink-soft:#574A4A;--dim:#6E5F5D;
+  --line:rgba(42,35,36,.15);--line-soft:rgba(42,35,36,.08);
+  --seal:#A64B45;--seal-ink:#FBF3EC;
+  --action:#A64B45;--action-ink:#FBF3EC;
+  --accent:#6E7C66;--accent-deep:#4D5B48;--accent-soft:#DDE3D8;
+  --highlight:#C9A86A;--ok:#4F6B52;--warn:#8A6A2F;--danger:#A64B45;--info:#6E7C66;
+  --nav-bg:rgba(243,237,230,.92);--input-bg:rgba(255,255,255,.32);
+}
+html[data-palette="lotus"][data-theme="dark"]{
+  --paper:#171314;--paper-deep:#211A1B;--surface:#262021;
+  --ink:#EDE3DC;--ink-soft:#CDBFBA;--dim:#B3A29E;
+  --line:rgba(237,227,220,.18);--line-soft:rgba(237,227,220,.09);
+  --seal:#D07A6C;--seal-ink:#171314;
+  --action:#D07A6C;--action-ink:#171314;
+  --accent:#93A58E;--accent-deep:#7F9479;--accent-soft:#2A3228;
+  --highlight:#C9A86A;--ok:#93A58E;--warn:#C9A86A;--danger:#D07A6C;--info:#93A58E;
+  --nav-bg:rgba(23,19,20,.94);--input-bg:rgba(255,255,255,.06);
+}
+
+html[data-palette="deco"]{
+  --paper-lt:#F3EBDD;--paper-dk:#141210;
+  --paper:#F3EBDD;--paper-deep:#E8DCC8;--surface:#FAF4E8;
+  --ink:#1A1714;--ink-soft:#4A4036;--dim:#73675A;
+  --line:rgba(26,23,20,.18);--line-soft:rgba(26,23,20,.09);
+  --seal:#A83A2A;--seal-ink:#FBF3E4;
+  --action:#A83A2A;--action-ink:#FBF3E4;
+  --accent:#B08D57;--accent-deep:#7F6136;--accent-soft:#E6D7C0;
+  --highlight:#C9A86A;--ok:#4F6B52;--warn:#8A6A2F;--danger:#A83A2A;--info:#2E4A5E;
+  --nav-bg:rgba(243,235,221,.92);--input-bg:rgba(255,255,255,.32);
+}
+html[data-palette="deco"][data-theme="dark"]{
+  --paper:#141210;--paper-deep:#1F1A15;--surface:#241E18;
+  --ink:#F0E7D6;--ink-soft:#D0C0A8;--dim:#B8A78F;
+  --line:rgba(240,231,214,.18);--line-soft:rgba(240,231,214,.09);
+  --seal:#C16A4E;--seal-ink:#141210;
+  --action:#C16A4E;--action-ink:#141210;
+  --accent:#C8A76A;--accent-deep:#A98551;--accent-soft:#33281A;
+  --highlight:#C8A76A;--ok:#8FA38F;--warn:#C8A76A;--danger:#C16A4E;--info:#8FA9B8;
+  --nav-bg:rgba(20,18,16,.94);--input-bg:rgba(255,255,255,.06);
+}
+
+/* 主题化组件：按钮/输入/标签/弹窗跟随行动色与纸面 */
+.btn{
+  background:var(--action);color:var(--action-ink);
+  border:1px solid color-mix(in srgb,var(--action) 72%,var(--ink));
+  border-radius:var(--radius-sm,4px);
+}
+.btn:hover{background:color-mix(in srgb,var(--action) 90%,var(--ink));color:var(--action-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{background:color-mix(in srgb,var(--surface) 88%,var(--paper));color:var(--action);border-color:var(--action)}
+.nav-links a.txt:hover,.nav-links a.txt.on{color:var(--action)}
+.ink-link:hover,.hero-link:hover,.crumb a:hover,a.plink:hover,.pi-link:hover,.lib-item summary:hover .t{color:var(--action)}
+.chip{background:color-mix(in srgb,var(--seal) 4%,var(--paper));border-color:var(--line);color:var(--ink-soft)}
+.chip:hover{border-color:var(--action);color:var(--action)}
+
+.field input,.field select,.field textarea,
+.z-form input,.z-form textarea,.z-r-text,
+.zz-f input{
+  background:var(--input-bg);border:1px solid var(--line);border-radius:var(--radius-sm,4px);color:var(--ink);
+}
+.field input:focus,.field select:focus,.field textarea:focus,
+.z-form input:focus,.z-form textarea:focus,.z-r-text:focus,.zz-f input:focus{
+  outline:none;border-color:var(--action);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 16%,transparent);
+}
+.tagpill{background:var(--surface);border-color:var(--line)}
+.tagpill.on{background:var(--seal);border-color:var(--seal);color:var(--seal-ink)}
+.tagpill.on:hover{background:var(--seal);border-color:var(--seal);color:var(--seal-ink)}
+.tagpill.on .tp-n{background:var(--seal-ink);color:var(--seal)}
+.member{background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.zz{background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.zz-authpanel{background:var(--surface);border-color:var(--line)}
+.zz-f input:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 16%,transparent)}
+
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup{background:var(--paper-deep);color:var(--ink)}
+[data-theme="dark"] .sug{background:var(--paper-deep);border-color:var(--line)}
+
+/* 配色主题选择器（导航内） */
+.palette-pick{display:flex;align-items:center;flex:none}
+.palette-select{
+  appearance:auto;border:1px solid var(--line);border-radius:4px;
+  background:var(--surface);color:var(--ink-soft);
+  font:inherit;font-size:13px;line-height:1.2;padding:5px 7px;cursor:pointer;
+}
+.palette-select:hover{border-color:var(--action);color:var(--action)}
+.palette-select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (min-width:861px) and (max-width:1000px){
+  .palette-select{font-size:12px;padding:4px 5px}
+}
+@media (max-width:860px){
+  .palette-pick{width:100%;padding:8px 14px}
+  .palette-select{width:100%;padding:8px 10px;font-size:15px}
+}
+.tag-add .btn,.z-r-send{border-radius:var(--radius-pill,999px)}

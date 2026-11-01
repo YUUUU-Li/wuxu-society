@@ -4,6 +4,11 @@
    Dials: VARIANCE 6 / MOTION 3 / DENSITY 3
    单主题(浅色纸面) / 单强调色(朱砂) / 全直角
    ========================================================= */
+@font-face{
+  font-family:"KingHwa Old Song";
+  src:url("fonts/KingHwaOldSong-site.woff2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+}
 :root{
   color-scheme:light;      /* 原生控件跟随主题(下拉开列表/滚动条等) */
   --paper-lt:#eef0e6;       /* 浅色纸(滴墨换色时"深→浅"滴的就是这一色) */
@@ -19,13 +24,19 @@
   --seal-ink:#eef0e6;
   --nav-bg:rgba(238,240,230,.9);   /* 顶栏背景(深色模式另配) */
   --input-bg:rgba(255,255,255,.34); /* 输入/预览共用底色 */
+  --radius-xs:2px;          /* 纸边 */
+  --radius-sm:4px;          /* 按钮 / 输入 */
+  --radius-pill:999px;      /* 标签 */
   --maxw:1120px;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);
-  font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  font-family:"KingHwa Old Song","Noto Serif SC","Songti SC","STSong","SimSun",serif;
   font-size:17px;line-height:1.9;-webkit-font-smoothing:antialiased}
+/* 京华只有一个字重：全站关闭伪粗体，层级靠字号、颜色与留白 */
+html.jinghua body{font-weight:400;font-synthesis:none}
+html.jinghua *{font-weight:400!important;font-synthesis:none}
 img{display:block;max-width:100%}
 a{color:inherit}
 ::selection{background:var(--seal);color:var(--seal-ink)}
@@ -50,7 +61,7 @@ header{position:sticky;top:0;z-index:50;
 .nav-links a.txt:hover{color:var(--seal)}
 .nav-links a.txt.on{color:var(--seal);font-weight:700}
 /* 中等宽度(761–1000px): 导航项变多(申请入社/投稿 + 登录按钮), 收一收间距免得挤成一团 */
-@media (min-width:761px) and (max-width:1000px){
+@media (min-width:861px) and (max-width:1000px){
   .nav-links{gap:16px}
   .nav-links a.txt{font-size:14.5px}
   .nav-auth{gap:10px}
@@ -149,7 +160,7 @@ a.plink:hover{color:var(--seal)}
   .poem-item:nth-child(2n){border-right:1px solid var(--line)}}
 
 /* ---------- 社员 ---------- */
-.member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px;margin-top:34px}
+.member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:34px}
 .member{border:1px solid var(--line);background:rgba(255,255,255,.3);padding:20px 22px;display:flex;flex-direction:column;gap:6px;scroll-margin-top:96px}
 .member .m-name{font-size:20px;font-weight:700;letter-spacing:.06em}
 .member .m-role{display:inline-block;align-self:flex-start;font-size:12.5px;color:var(--seal);border:1px solid rgba(156,63,48,.5);padding:1px 10px;letter-spacing:.08em}
@@ -312,7 +323,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 .nav-toggle{display:none;flex-direction:column;justify-content:center;gap:4px;
   border:0;background:none;cursor:pointer;padding:10px 6px}
 .nav-toggle .bar{display:block;width:20px;height:2px;background:var(--ink);border-radius:2px}
-@media (max-width:760px){
+@media (max-width:860px){
   .nav{position:relative}
   .nav-toggle{display:inline-flex}
   .nav-links{display:none;position:absolute;top:100%;left:0;right:0;z-index:60;

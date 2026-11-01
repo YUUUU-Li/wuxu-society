@@ -14,6 +14,16 @@
       <a class="txt{% if active == 'library' %} on{% endif %}" href="library.html">作品库</a>
       <a class="txt" href="{% if home %}#join{% else %}index.html#join{% endif %}">申请入社</a>
       <a class="txt" href="submit.html">投稿</a>
+      <label class="palette-pick" title="配色主题">
+        <span class="visually-hidden">配色主题</span>
+        <select id="palette-select" class="palette-select">
+          <option value="celadon">青瓷</option>
+          <option value="vermilion">朱墨</option>
+          <option value="pine">松烟</option>
+          <option value="lotus">藕荷</option>
+          <option value="deco">海派</option>
+        </select>
+      </label>
       {# 账号态(登录/注册 · 笔名 · 退出): 由 auth.js 填, 未登录时是个和页头按钮同款的入口 #}
       <span class="nav-auth" id="nav-auth" hidden></span>
     </nav>

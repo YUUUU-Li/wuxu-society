@@ -1,15 +1,9 @@
 /* =========================================================
    作品页 · 京华老宋体
-   只由 layouts/work.njk 加载；首页/作品库等保持原字体与字号。
+   京华字体已由 site.css 全站加载；本文件只负责作品页的字号与层级。
    字体：京华老宋体 v2.002（作者特里王，免费商用；作者声明禁止修改字形）
    子集：fonts/KingHwaOldSong-site.woff2（当前全站文字 + 前端脚本提示语）
    ========================================================= */
-@font-face{
-  font-family:"KingHwa Old Song";
-  src:url("fonts/KingHwaOldSong-site.woff2") format("woff2");
-  font-weight:400;font-style:normal;font-display:swap;
-}
-
 body.work-page{
   font-family:"KingHwa Old Song","Noto Serif SC","Songti SC","STSong","SimSun",serif;
   font-size:22px;line-height:1.95;font-weight:400;font-synthesis:none;
