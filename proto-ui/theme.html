@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="celadon" data-mode="light">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>婺需文学社 · 主题板</title>
+<link rel="preconnect" href="https://fonts.loli.net" />
+<link rel="preconnect" href="https://gstatic.loli.net" crossorigin />
+<link rel="stylesheet" href="https://fonts.loli.net/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css" />
+<link rel="stylesheet" href="theme.css?v=20261101-6" />
+<style>.springing{animation:none!important}</style>
+</head>
+<body>
+<header class="tb-top">
+  <a class="tb-brand" href="index.html">婺需文学社 <span>主题板 · v6</span></a>
+  <div class="tb-controls">
+    <nav class="tb-themes" id="theme-nav" role="tablist" aria-label="主题">
+      <button type="button" role="tab" data-theme="celadon">青瓷·雨过</button>
+      <button type="button" role="tab" data-theme="vermilion">朱墨·双色</button>
+      <button type="button" role="tab" data-theme="pine">松烟·夜读</button>
+      <button type="button" role="tab" data-theme="lotus">藕荷·词笺</button>
+      <button type="button" role="tab" data-theme="deco">海派·墨金</button>
+    </nav>
+    <button type="button" class="tb-mode" id="mode-toggle" aria-label="切换明暗">夜</button>
+    <a class="tb-link" href="index.html">UI 样张</a>
+  </div>
+</header>
+
+<main class="tb-main">
+  <section class="tb-hero">
+    <p class="tb-kicker" id="theme-kicker">主主题</p>
+    <h1 class="tb-title" id="theme-name">青瓷·雨过</h1>
+    <p class="tb-desc" id="theme-desc">宋瓷雨后，纸色微青，青瓷作副色；适合全站。</p>
+    <p class="tb-refs" id="theme-refs">参考：StyleKit Cultural / Editorial；Design Prompts Academia / Newsprint；龙泉青瓷。</p>
+    <p class="tb-note">只做主题层：色板、字体、组件状态与材质。<strong>不改页面布局</strong>；下一步才落到正式站的 <code>site.css</code>。</p>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>色板</h2><span class="tb-rule"></span><span class="tb-hint">纸 70 / 墨 20 / 中性 8 / 朱砂 2</span></div>
+    <div class="tb-swatches" id="swatches"></div>
+    <div class="tb-contrast" id="contrast"></div>
+    <div class="tb-ratio" aria-label="颜色使用比例">
+      <span class="r-paper" title="纸 70%"></span><span class="r-ink" title="墨 20%"></span>
+      <span class="r-neutral" title="中性 8%"></span><span class="r-seal" title="朱砂 2%"></span>
+    </div>
+    <div class="tb-ratio-label"><span>纸 70%</span><span>墨 20%</span><span>中性 8%</span><span>朱砂 2%</span></div>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>基础检查</h2><span class="tb-rule"></span><span class="tb-hint">对照 StyleKit 前端基础：色彩 / 字阶 / 间距 / 层次</span></div>
+    <div class="tb-basics">
+      <div class="tb-basic">
+        <span>色彩 · 60-30-10 的阅读变体</span>
+        <p><b>70 / 20 / 8 / 2</b>：纸 70、墨 20、中性 8、朱砂 2。正文 13.1:1，朱砂 5.3:1，行动 8.9:1；副色只做装饰与大字，正文用「副色·深」。</p>
+      </div>
+      <div class="tb-basic">
+        <span>字号 · 正文 18 / 标题 1.5</span>
+        <p>正文 18px（中文比 16px 基准大半档），行高 1.95；标题按编辑比例 <b>28 → 40 → 64</b>；正文行宽 28–34 字（≈55–75ch）。</p>
+      </div>
+      <div class="tb-basic">
+        <span>间距 · 8pt 网格</span>
+        <p><b>4 / 8 / 16 / 24 / 32 / 48 / 64</b>；卡片内 16–24，按钮高 40–48，触控目标 ≥44×44。不在原地发明 13px。</p>
+      </div>
+      <div class="tb-basic">
+        <span>形状 · 不是全方，也不全圆</span>
+        <p>纸边 <b>2px</b>、控件 <b>4px</b>、标签 <b>pill</b>；不做全站大圆角。卡片与按钮加 <b>1px 纸边 + 短阴影</b>，让它们浮在纸面上，而不是平贴。</p>
+      </div>
+      <div class="tb-basic">
+        <span>层次 · 每屏一个主焦点</span>
+        <p>大小、字重、颜色对比、留白四杠杆叠加使用；主次差异要明显，不做“差一点”的中间态。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>字体</h2><span class="tb-rule"></span><span class="tb-hint">三族字 · 六级 · 行宽 28–34 字</span></div>
+    <div class="tb-type">
+      <div class="tb-type-row">
+        <span class="tb-type-label">Display · 64/1.1 · 宋体 900</span>
+        <p class="tb-display">婺需文学社</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">H1 · 40/1.25 · 宋体 700</span>
+        <p class="tb-h1">十二月的夕阳堕入山林</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">H2 · 28/1.4 · 宋体 700</span>
+        <p class="tb-h2">甲辰清明雅集</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">Body · 18/1.95 · 寒蝉锦书宋 400</span>
+        <p class="tb-body">月逐烟云梅倚时，长歌一曲雁来迟。<br />惊鸿影照羞花貌，骚客空怜绰约姿。</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">Note · 14/1.9 · 楷体</span>
+        <p class="tb-note-type">后记：丙午年四月二十，芒种作。录自社内原稿。</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">Meta · 12/1.5 · Noto Sans SC</span>
+        <p class="tb-meta">zk（道格） · 七律 · 2025-10-26 · 月 / 星 / 离愁</p>
+      </div>
+      <div class="tb-type-row">
+        <span class="tb-type-label">Latin · Fraunces · 数字/英文</span>
+        <p class="tb-latin">VOL. 01 · MMXXVI · Anno 2026</p>
+      </div>
+    </div>
+    <div class="tb-scale">
+      <div class="tb-scale-row head"><span>Token</span><span>字号 / 行高 / 字重</span><span>用途</span></div>
+      <div class="tb-scale-row"><code>--text-display</code><span>64 / 1.1 / 900</span><span>首页社名、期页封面</span></div>
+      <div class="tb-scale-row"><code>--text-h1</code><span>40 / 1.25 / 700</span><span>页面主标题、作品题名</span></div>
+      <div class="tb-scale-row"><code>--text-h2</code><span>28 / 1.4 / 700</span><span>区块标题、期名</span></div>
+      <div class="tb-scale-row"><code>--text-body</code><span>18 / 1.95 / 400</span><span>正文、诗行（寒蝉锦书宋 Text）</span></div>
+      <div class="tb-scale-row"><code>--text-small</code><span>14 / 1.8 / 400</span><span>说明、注、按钮</span></div>
+      <div class="tb-scale-row"><code>--text-meta</code><span>12 / 1.5 / 400</span><span>作者、体裁、时间、数字</span></div>
+    </div>
+    <p class="tb-small">正文行宽 28–34 字；楷体只做注/序/题记；元信息用无衬线 + tabular。三族字，不再加第四套。正文由思源宋体换为<a href="font-test.html">寒蝉锦书宋 Text</a>（OFL 1.1），标题仍用思源宋体。</p>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>组件状态</h2><span class="tb-rule"></span><span class="tb-hint">状态矩阵 v1 · 不靠阴影与玻璃</span></div>
+    <div class="tb-grid">
+      <div class="tb-card">
+        <h3>按钮</h3>
+        <div class="tb-row"><button class="tb-btn" type="button">申请入社</button><button class="tb-btn ghost" type="button">赏读雅集</button><button class="tb-btn" type="button" disabled>不可用</button></div>
+        <div class="tb-row"><button class="tb-btn loading" type="button">正在提交</button><button class="tb-btn ghost" type="button">取消</button></div>
+      </div>
+      <div class="tb-card">
+        <h3>标签</h3>
+        <div class="tb-row"><button class="tb-tag" type="button">月 <b>3</b></button><button class="tb-tag on" type="button">星 <b>2</b></button><button class="tb-tag candidate" type="button">冷香 <b>候选</b></button></div>
+        <p class="tb-small">点一下即赞同，再点取消；候选虚线，编委采纳后转正。</p>
+      </div>
+      <div class="tb-card">
+        <h3>输入</h3>
+        <label class="tb-field">笔名<input class="tb-input" type="text" value="泊珩" /></label>
+        <label class="tb-field">口令<input class="tb-input focus" type="password" value="password" /></label>
+        <label class="tb-field err">邮箱<input class="tb-input err" type="text" value="not-an-email" /><span class="tb-error">邮箱格式似乎不对。</span></label>
+      </div>
+      <div class="tb-card">
+        <h3>弹窗</h3>
+        <div class="tb-modal">
+          <div class="tb-modal-head"><b>登录</b><span>×</span></div>
+          <label class="tb-field">昵称<input class="tb-input" type="text" placeholder="社员建议用笔名" /></label>
+          <label class="tb-field">口令<input class="tb-input" type="password" placeholder="至少 8 位" /></label>
+          <button class="tb-btn" type="button">登录</button>
+          <p class="tb-small">Escape / 点背景关闭；焦点锁在框内。</p>
+        </div>
+      </div>
+      <div class="tb-card">
+        <h3>Toast</h3>
+        <div class="tb-toast">已复制当前页链接</div>
+        <p class="tb-small">全局动作用 Toast；字段错误留在字段旁。</p>
+      </div>
+      <div class="tb-card">
+        <h3>空状态</h3>
+        <div class="tb-empty"><p>此页暂无相合篇目。</p><button class="tb-btn ghost" type="button">清除筛选</button></div>
+      </div>
+    </div>
+
+    <div class="tb-states">
+      <div class="tb-state-group">
+        <h3>按钮</h3>
+        <div class="tb-state-row"><span>默认</span><div class="demo"><button class="tb-btn" type="button">申请入社</button><button class="tb-btn ghost" type="button">赏读雅集</button></div></div>
+        <div class="tb-state-row"><span>hover</span><div class="demo"><button class="tb-btn is-hover" type="button">申请入社</button></div></div>
+        <div class="tb-state-row"><span>focus</span><div class="demo"><button class="tb-btn is-focus" type="button">申请入社</button></div></div>
+        <div class="tb-state-row"><span>active</span><div class="demo"><button class="tb-btn is-active" type="button">申请入社</button></div></div>
+        <div class="tb-state-row"><span>disabled</span><div class="demo"><button class="tb-btn" type="button" disabled>申请入社</button></div></div>
+        <div class="tb-state-row"><span>loading</span><div class="demo"><button class="tb-btn loading" type="button">正在提交</button></div></div>
+      </div>
+
+      <div class="tb-state-group">
+        <h3>输入</h3>
+        <div class="tb-state-row"><span>默认</span><div class="demo"><input class="tb-input" type="text" placeholder="社员建议用笔名" /></div></div>
+        <div class="tb-state-row"><span>focus</span><div class="demo"><input class="tb-input is-focus" type="text" value="泊珩" /></div></div>
+        <div class="tb-state-row"><span>已填</span><div class="demo"><input class="tb-input" type="text" value="泊珩" /></div></div>
+        <div class="tb-state-row"><span>错误</span><div class="demo"><input class="tb-input is-error" type="text" value="not-an-email" /><span class="tb-error-inline">邮箱格式似乎不对。</span></div></div>
+        <div class="tb-state-row"><span>disabled</span><div class="demo"><input class="tb-input is-disabled" type="text" value="不可用" disabled /></div></div>
+      </div>
+
+      <div class="tb-state-group">
+        <h3>标签</h3>
+        <div class="tb-state-row"><span>默认</span><div class="demo"><button class="tb-tag" type="button">月 <b>3</b></button></div></div>
+        <div class="tb-state-row"><span>hover</span><div class="demo"><button class="tb-tag is-hover" type="button">月 <b>3</b></button></div></div>
+        <div class="tb-state-row"><span>选中</span><div class="demo"><button class="tb-tag on" type="button">星 <b>2</b></button></div></div>
+        <div class="tb-state-row"><span>候选</span><div class="demo"><button class="tb-tag candidate" type="button">冷香 <b>候选</b></button></div></div>
+        <div class="tb-state-row"><span>disabled</span><div class="demo"><button class="tb-tag is-disabled" type="button">秋景 <b>1</b></button></div></div>
+      </div>
+
+      <div class="tb-state-group">
+        <h3>链接</h3>
+        <div class="tb-state-row"><span>默认</span><div class="demo"><a class="tb-textlink" href="#">读全文与关联作品</a></div></div>
+        <div class="tb-state-row"><span>hover</span><div class="demo"><a class="tb-textlink is-hover" href="#">读全文与关联作品</a></div></div>
+        <div class="tb-state-row"><span>focus</span><div class="demo"><a class="tb-textlink is-focus" href="#">读全文与关联作品</a></div></div>
+        <div class="tb-state-row"><span>visited</span><div class="demo"><a class="tb-textlink is-visited" href="#">读全文与关联作品</a></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>素材组件</h2><span class="tb-rule"></span><span class="tb-hint">StyleKit · Editorial / Ink Wash / Wabi-Sabi / Japanese Fresh</span></div>
+    <p class="tb-small">按 StyleKit 的 token 与组件配方改写成原生 CSS，不引入 Tailwind / React。来源：Editorial 的下划线显现、Ink Wash 的墨线按钮、Wabi-Sabi 的纸卡、Japanese Fresh 的浮动标签。</p>
+    <div class="tb-gallery">
+      <div class="tb-gallery-card">
+        <span class="tb-source">STYLEKIT · EDITORIAL</span>
+        <div class="tb-editorial-card">
+          <div class="tb-editorial-thumb" aria-hidden="true"></div>
+          <p class="tb-editorial-label">甲辰 · 清明雅集</p>
+          <h3 class="tb-editorial-title"><span>清明会序</span></h3>
+          <p class="tb-editorial-body">首聚当日，婺州风雨大作。六人同题共写，社长另为序一篇。</p>
+        </div>
+        <div class="tb-row" style="margin-top:16px"><button class="tb-editorial-btn" type="button">读全文</button><a class="tb-editorial-link" href="#">查看全部</a></div>
+      </div>
+
+      <div class="tb-gallery-card">
+        <span class="tb-source">STYLEKIT · INK WASH</span>
+        <button class="tb-ink-btn" type="button">继续</button>
+        <div class="tb-wabi-card">
+          <h4>山水之间</h4>
+          <p>墨随笔走，留白处自有山水。Ink flows where the mind wanders.</p>
+        </div>
+      </div>
+
+      <div class="tb-gallery-card">
+        <span class="tb-source">STYLEKIT · JAPANESE FRESH</span>
+        <label class="tb-float"><input type="text" placeholder=" " value="泊珩" /><span>笔名</span></label>
+        <div class="tb-paper-modal">
+          <div class="tb-modal-head"><b>登录</b><span>×</span></div>
+          <label class="tb-field">昵称<input class="tb-input" type="text" placeholder="社员建议用笔名" /></label>
+          <button class="tb-btn" type="button">登录</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>动效映射</h2><span class="tb-rule"></span><span class="tb-hint">StyleKit /animations · 60 个模式里选 11 个</span></div>
+    <p class="tb-small">选的是能强化纸墨气质的动效；Spotlight、Magnetic、3D Tilt、Flip、Confetti、Glitch 这些“表演型”动效不用。动效只回答“发生了什么”，不做装饰。</p>
+    <div class="tb-motion-table">
+      <div class="tb-motion-row head"><span>元素</span><span>StyleKit 动画</span><span>触发</span><span>时长</span><span>用法</span></div>
+      <div class="tb-motion-row"><b>主按钮</b><span>Hover Lift + CDS Press</span><span>hover / click</span><span>200 / 60·450ms</span><span>抬升 1px；按下 1px，15 阶弹簧回位（文字不缩放）</span></div>
+      <div class="tb-motion-row"><b>次按钮 / 文字链</b><span>Underline Draw</span><span>hover</span><span>300ms</span><span>下划线从左侧展开，离开收回</span></div>
+      <div class="tb-motion-row"><b>标签</b><span>CDS Press</span><span>click</span><span>60 / 450ms</span><span>投票后计数 +1，向下 1px 回弹</span></div>
+      <div class="tb-motion-row"><b>输入</b><span>Border Trace + Floating Label</span><span>focus</span><span>600 / 200ms</span><span>底线变墨青，标签上浮</span></div>
+      <div class="tb-motion-row"><b>编辑卡</b><span>Hover Lift + Underline Draw + Zoom</span><span>hover</span><span>200 / 300 / 1000ms</span><span>卡片抬升，标题划线，图缓慢放大</span></div>
+      <div class="tb-motion-row"><b>弹窗</b><span>Blur In + Scale In</span><span>open</span><span>500 / 400ms</span><span>从模糊到清晰，轻微放大</span></div>
+      <div class="tb-motion-row"><b>Toast</b><span>Slide In Right / Fade Out Down</span><span>show / hide</span><span>500 / 400ms</span><span>从右侧进入，向下淡出</span></div>
+      <div class="tb-motion-row"><b>列表</b><span>Stagger Children</span><span>mount</span><span>500ms</span><span>每行错开 40–60ms 进入</span></div>
+      <div class="tb-motion-row"><b>加载</b><span>Skeleton Pulse / Spinner Dots</span><span>continuous</span><span>2s / 1.4s</span><span>骨架用脉冲，按钮用细环</span></div>
+      <div class="tb-motion-row"><b>错误</b><span>Shake</span><span>invalid</span><span>500ms</span><span>横向 2px，三次衰减</span></div>
+      <div class="tb-motion-row"><b>主题切换</b><span>Ink Drop（现有）</span><span>click</span><span>940ms</span><span>正式站保留三滴墨；主题板暂不演示</span></div>
+    </div>
+
+    <div class="tb-motion-demo">
+      <div class="tb-motion-item">
+        <span>按钮 · Hover Lift + CDS Press</span>
+        <div class="tb-row"><button class="tb-btn" type="button">申请入社</button><button class="tb-editorial-btn" type="button">读全文</button></div>
+      </div>
+      <div class="tb-motion-item">
+        <span>文字链 · Underline Draw</span>
+        <a class="tb-editorial-link" href="#">查看全部</a>
+      </div>
+      <div class="tb-motion-item">
+        <span>标签 · CDS Press</span>
+        <div class="tb-tag-demo"><button class="tb-tag" type="button">月 <b>3</b></button><button class="tb-tag on" type="button">星 <b>2</b></button></div>
+      </div>
+      <div class="tb-motion-item">
+        <span>输入 · Border Trace + Floating Label</span>
+        <label class="tb-float"><input type="text" placeholder=" " value="泊珩" /><span>笔名</span></label>
+      </div>
+      <div class="tb-motion-item">
+        <span>错误 · Shake</span>
+        <div class="tb-row"><button class="tb-btn" type="button" data-shake-target="#shake-input">触发</button><input class="tb-input" id="shake-input" type="text" value="not-an-email" /></div>
+      </div>
+      <div class="tb-motion-item">
+        <span>Toast · Slide In Right / Fade Out Down</span>
+        <button class="tb-btn" type="button" data-toast-demo>显示 Toast</button>
+      </div>
+      <div class="tb-motion-item">
+        <span>加载 · Skeleton Pulse / Spinner Dots</span>
+        <div class="tb-skeleton"><i></i><i></i><i></i></div>
+        <div class="tb-dots" aria-label="加载中"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="tb-demo-toast" id="demo-toast" role="status" aria-live="polite">已复制当前页链接</div>
+  </section>
+
+  <section class="tb-section">
+    <div class="tb-sec-head"><h2>材质与印</h2><span class="tb-rule"></span><span class="tb-hint">纸纹 2–4% / 线 1px / 印只做确认</span></div>
+    <div class="tb-material">
+      <div class="tb-paper-card">
+        <p class="tb-paper-kicker">甲辰 · 清明雅集</p>
+        <p class="tb-paper-title">清明会序</p>
+        <p class="tb-paper-body">首聚当日，婺州风雨大作。六人同题共写，社长另为序一篇，录于卷首。</p>
+        <span class="tb-stamp">婺</span>
+      </div>
+      <div class="tb-material-notes">
+        <p><b>纸</b>：暖纸底，2–4% 的细噪点；不用阴影。</p>
+        <p><b>墨</b>：柔边、低反差；不用纯黑。</p>
+        <p><b>印</b>：朱砂只出现在确认、投票、落款；不大面积铺。</p>
+        <p><b>线</b>：1px，12–18% 墨；双线只用于期页。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="tb-foot">
+    <p>参考：StyleKit（Cultural / Editorial / Nature / Art Deco）、Design Prompts、StyleSeed、awesome-design-md、Uiverse Design、Mobbin / Page Flows。仅取方法与 token 结构，不照搬品牌色。</p>
+    <p>主题板 v6 · 2026-11-01 · 不参与正式构建 · 正文字体对比见 <a href="font-test.html">宋体试版</a></p>
+  </footer>
+</main>
+<script src="theme.js?v=20261101-6"></script>
+</body>
+</html>

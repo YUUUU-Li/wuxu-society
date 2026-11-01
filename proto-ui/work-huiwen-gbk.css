@@ -1,0 +1,22 @@
+/* 真实作品页 · 汇文明朝体 GBK 试版
+   与旧页同一气质，但用 2022/GBK 扩字版（23,655 字形 / 24,356 cmap）；
+   仍然只有 400，全页关闭伪粗体。 */
+@font-face{
+  font-family:"Huiwen Mincho GBK";
+  src:url("fonts/Huiwen-MinchoGBK-work.woff2?v=2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+}
+
+html.theme-huiwen-gbk{
+  --font-serif:"Huiwen Mincho GBK","Noto Serif SC","Source Han Serif SC",serif;
+  --font-text:"Huiwen Mincho GBK","Noto Serif SC","Source Han Serif SC",serif;
+  --font-ui:"Huiwen Mincho GBK","Noto Sans SC","Segoe UI",sans-serif;
+  --font-sans:"IBM Plex Sans","Huiwen Mincho GBK","Noto Sans SC",sans-serif;
+}
+
+html.theme-huiwen-gbk body{
+  font-family:var(--font-serif);font-weight:400;font-synthesis:none;
+}
+html.theme-huiwen-gbk *{
+  font-weight:400!important;font-synthesis:none;
+}

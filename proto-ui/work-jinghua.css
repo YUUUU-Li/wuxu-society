@@ -1,0 +1,80 @@
+/* 真实作品页 · 京华老宋体试版
+   1961 年北京新华字模厂 61-1 老宋复刻；用 v2.002 的 45,780 字形 / 38,627 cmap。
+   只有 400，全页关闭伪粗体。 */
+@font-face{
+  font-family:"KingHwa Old Song";
+  src:url("fonts/KingHwaOldSong-work.woff2?v=2") format("woff2");
+  font-weight:400;font-style:normal;font-display:swap;
+}
+
+html.theme-jinghua{
+  --font-serif:"KingHwa Old Song","Noto Serif SC","Source Han Serif SC",serif;
+  --font-text:"KingHwa Old Song","Noto Serif SC","Source Han Serif SC",serif;
+  --font-ui:"KingHwa Old Song","Noto Sans SC","Segoe UI",sans-serif;
+  --font-sans:"IBM Plex Sans","KingHwa Old Song","Noto Sans SC",sans-serif;
+}
+
+html.theme-jinghua body{
+  font-family:var(--font-serif);font-weight:400;font-synthesis:none;
+}
+html.theme-jinghua *{
+  font-weight:400!important;font-synthesis:none;
+}
+
+/* 京华页采用汇文放大版的正文尺度，但标题保持 work-type.css 的 3.8rem。
+   手机端不套这组覆盖，避免诗行和标题断行。 */
+@media (min-width:641px){
+  html.theme-jinghua body{font-size:22px}
+  html.theme-jinghua .p-meta{font-size:17px}
+  html.theme-jinghua .crumb{font-size:15.5px}
+  html.theme-jinghua .nav-links a.txt{font-size:17px}
+  html.theme-jinghua .nav-auth .btn{font-size:16.5px}
+  html.theme-jinghua .poem-body .stanza{font-size:24px;line-height:2.2}
+  html.theme-jinghua .work-epigraph,
+  html.theme-jinghua .work-selfnote{font-size:19px}
+  html.theme-jinghua .work-stats{font-size:15.5px}
+  html.theme-jinghua .rel h3{font-size:1.5rem}
+  html.theme-jinghua .rel h4,
+  html.theme-jinghua .rel .rel-h4{
+    font-size:17px;letter-spacing:.16em;
+  }
+  html.theme-jinghua .rel h4 .cnt{
+    font-size:17px!important;letter-spacing:.03em;opacity:.75;
+  }
+  html.theme-jinghua .rel .shuffle{font-size:16px!important;letter-spacing:.02em}
+  html.theme-jinghua .rel li{font-size:19.5px}
+  html.theme-jinghua .rel li span.reason{font-size:15.5px}
+  html.theme-jinghua .btn{font-size:18px;min-height:50px}
+  html.theme-jinghua .tagpill{font-size:15px}
+  html.theme-jinghua .zz-head h3{font-size:21px}
+  html.theme-jinghua .zz-rule,
+  html.theme-jinghua .zz-cap,
+  html.theme-jinghua .zz-note{font-size:14.5px}
+  html.theme-jinghua .z-meta,
+  html.theme-jinghua .z-reply,
+  html.theme-jinghua .z-r-as,
+  html.theme-jinghua .zz-msgline{font-size:14.5px}
+  html.theme-jinghua .z-text{font-size:18px}
+  html.theme-jinghua .z-form input,
+  html.theme-jinghua .z-form textarea,
+  html.theme-jinghua .z-r-text{font-size:17px}
+  html.theme-jinghua .field label{font-size:15px}
+  html.theme-jinghua .field input,
+  html.theme-jinghua .field select,
+  html.theme-jinghua .field textarea{font-size:17px}
+  html.theme-jinghua .zz-authpanel{font-size:17px}
+  html.theme-jinghua .zz-authhd b{font-size:1.35rem}
+  html.theme-jinghua .zz-f{font-size:17px}
+  html.theme-jinghua .zz-f > span{font-size:15px}
+  html.theme-jinghua .zz-f input{font-size:16.5px}
+  html.theme-jinghua .zz-hint{font-size:14.5px}
+  html.theme-jinghua .tag-wrap input{font-size:14.5px}
+  html.theme-jinghua .foot a{font-size:16px}
+  html.theme-jinghua .foot-note{font-size:14px}
+}
+
+/* 页脚导航行距：桌面和手机都收紧，避免链接之间拉得太开 */
+html.theme-jinghua .foot h4{margin-bottom:12px}
+html.theme-jinghua .foot ul{gap:5px}
+html.theme-jinghua .foot li{font-size:19px;line-height:2}
+html.theme-jinghua .foot a{line-height:2}
