@@ -6,3 +6,5 @@
 - 本目录的 `KingHwaOldSong-site.woff2` 是按当前站点字符生成的网页子集，`site.css` 在 `html.jinghua` 下全站使用；`work-jinghua.css` 只负责作品页字号。严格来说子集化属于修改字体文件，正式上线前应向作者确认；若不能确认，应改用完整字体文件或换用 OFL 字体。
 - 重新生成：从发布包取得 `KingHwaOldSong-v2.002.ttf`，用 `fontTools.subset` 按 `dist/**/*.html`、`src/static/*.js`、`functions/api/*.js` 的字符集生成 WOFF2，输出到本目录。
 - 字形覆盖：38,627 个编码位；《通用规范汉字表》8,105/8,105（100%）；GBK 21,672/21,791（99.5%）。
+
+- 楷体：CooperZhengKai（汇迹正楷，OFL 1.1），`src/static/cooper.css` 引用 `fonts/cooper/` 下按站点字符裁剪的分片；正文/标题仍用京华。分片只保留当前站内字符，新增生僻字时需重新下载/裁剪。

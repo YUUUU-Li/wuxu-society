@@ -245,18 +245,22 @@ module.exports = function (eleventyConfig) {
       return "";
     } catch { return ""; }
   }
+  const unquote = (v) => String(v || "").trim()
+    .replace(/^[“"「『]+/, "").replace(/[”"」』]+$/, "").trim();
   eleventyConfig.addFilter("homeCards", (works) =>
     works
       .filter((w) => !FOUNDING.includes(w.fileSlug))
       .map((w) => {
         const ex = String(w.data.excerpt || "").trim();
-        const line = ex ? (ex.length > 46 ? ex.slice(0, 46) + "…" : ex) : firstLine(w.fileSlug);
+        const raw = ex || firstLine(w.fileSlug);
+        const line = unquote(raw);
+        const short = line.length > 46 ? line.slice(0, 46) + "…" : line;
         return {
           href: w.fileSlug + ".html",
           title: w.data.title,
           name: String(w.data.author || "").replace("（", " · ").replace("）", ""),
           genre: w.data.genre || "",
-          line,
+          line: short,
         };
       })
       .sort((a, b) => (orderIdx[a.href.slice(0, -5)] ?? 999) - (orderIdx[b.href.slice(0, -5)] ?? 999))

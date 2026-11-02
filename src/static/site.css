@@ -34,6 +34,7 @@ html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);
   font-family:"KingHwa Old Song","Noto Serif SC","Songti SC","STSong","SimSun",serif;
   font-size:17px;line-height:1.9;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
 /* 京华只有一个字重：全站关闭伪粗体，层级靠字号、颜色与留白 */
 html.jinghua body{font-weight:400;font-synthesis:none}
 html.jinghua *{font-weight:400!important;font-synthesis:none}
@@ -154,8 +155,6 @@ a.plink:hover{color:var(--seal)}
 .poem-item .pi-title{font-size:21px;font-weight:700;letter-spacing:.05em}
 .poem-item .pi-meta{color:var(--dim);font-size:13.5px;display:flex;gap:14px;flex-wrap:wrap}
 .poem-item .pi-line{color:var(--ink-soft);font-size:15.5px;margin-top:8px;line-height:2}
-.poem-item .pi-link{font-size:13.5px;color:var(--seal);text-decoration:none;border-bottom:1px solid rgba(156,63,48,.4);padding-bottom:1px;align-self:flex-start;margin-top:12px}
-.poem-item .pi-link:hover{border-color:var(--seal)}
 @media (max-width:820px){.poem-grid{grid-template-columns:1fr}
   .poem-item:nth-child(2n){border-right:1px solid var(--line)}}
 
@@ -230,7 +229,7 @@ a.plink:hover{color:var(--seal)}
 .idx-undated{margin:36px 0 12px}
 .idx-undated .cnt{color:var(--dim);font-size:13px}
 .idx-undated[hidden]{display:none}
-.kaiti{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
+.kaiti{font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
 /* 题记(正文开篇) 与 自注(正文下方): 都由投稿表单的选填项生成, 统一楷体 */
 .work-epigraph{margin:0 0 20px;font-size:15.5px;line-height:1.9;color:var(--ink-soft,#4a453d);
   padding-left:14px;border-left:2px solid rgba(156,63,48,.35)}
@@ -374,7 +373,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 
 /* 刊期档案(作品库)与期页 */
 .archives{margin-top:26px}
-.issue-epi .epigraph{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+.issue-epi .epigraph{font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
   font-size:1.12rem;color:var(--ink-soft,#544e42);line-height:2;letter-spacing:.04em;
   border-left:3px solid var(--seal,#9c3f30);background:rgba(156,63,48,.05);
   padding:6px 0 6px 18px;margin:4px 0 0}
@@ -390,7 +389,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   padding:2px 12px;margin:0 6px 6px 0;font-size:13.5px;color:var(--ink-soft,#544e42);
   background:rgba(156,63,48,.04);text-decoration:none;transition:border-color .2s,color .2s}
 .chip:hover{border-color:var(--seal,#9c3f30);color:var(--seal,#9c3f30)}
-.concept-note{font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
+.concept-note{font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
 
 /* ══ 众注原型(zhu zhu) ══ */
 .zz{border:1px solid var(--line,#cfc6b4);border-top:2px solid var(--seal,#9c3f30);
@@ -478,12 +477,12 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
   font-size:14.5px;background:#fff;color:var(--ink,#3a3630);font-family:inherit;resize:vertical}
 .z-acts{display:flex;align-items:center;gap:12px}
 .zz-note{margin:16px 0 0;font-size:12.5px;color:var(--dim,#6e6a5e);border-top:1px dotted var(--line,#d8d0c0);padding-top:12px}
-.demo-quote{margin:0;text-align:center;font-size:1.35rem;font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
+.demo-quote{margin:0;text-align:center;font-size:1.35rem;font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif}
 .demo-sub{text-align:center;margin-top:6px;font-size:12.5px}
 
 /* 众注: 引文块与链接 */
 .z-quote{border-left:2px solid var(--seal,#9c3f30);background:rgba(156,63,48,.05);
-  margin:8px 0;padding:6px 12px;font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+  margin:8px 0;padding:6px 12px;font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
   font-size:14px;line-height:1.9;color:var(--ink-soft,#544e42)}
 .z-url{color:var(--seal,#9c3f30);word-break:break-all}
 
@@ -573,7 +572,7 @@ form.fm{background:var(--paper);border:1px solid var(--line);padding:30px}
 /* 投稿行首标记语法(《作品上传指南》方案2): ------ 分割线 / > 引文块 */
 .lib-body hr.rule{border:0;border-top:1px solid var(--line);margin:34px auto;width:82%}
 .lib-body blockquote.quote{margin:22px 0;padding:2px 0 2px 16px;border-left:3px solid var(--seal);
-  font-family:"Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
+  font-family:"CooperZhengKai","Kaiti SC","STKaiti","KaiTi","楷体","Noto Serif SC",serif;
   font-size:1.05rem;line-height:2;color:var(--ink-soft,#544e42)}
 
 /* 投稿页: 左写右预览 + 示例 */

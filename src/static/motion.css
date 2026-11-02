@@ -24,40 +24,48 @@ html.js .rv.in{transform:none;translate:0 0}
 .btn{
   transform:none;
   translate:0 0;
-  box-shadow:0 1px 2px rgba(38,34,26,.08);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),
+    0 2px 0 color-mix(in srgb,var(--action) 55%,var(--ink)),
+    0 6px 14px -8px rgba(0,0,0,.35);
   transition:translate var(--motion-release) var(--motion-spring),
     background-color .2s,color .2s,border-color .2s,box-shadow .2s;
 }
 .btn:hover{
   translate:0 -1px;
-  box-shadow:0 6px 14px -12px rgba(38,34,26,.45);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),
+    0 3px 0 color-mix(in srgb,var(--action) 55%,var(--ink)),
+    0 9px 18px -8px rgba(0,0,0,.4);
 }
 .btn:active{
   transform:none;
   translate:0 1px;
   transition:translate var(--motion-press) ease-out,background-color .12s;
-  box-shadow:inset 0 2px 3px rgba(0,0,0,.12);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.18);
 }
 .btn:focus-visible{
   outline:none;
-  box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 22%,transparent),0 1px 2px rgba(38,34,26,.08);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 22%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.18),
+    0 2px 0 color-mix(in srgb,var(--action) 55%,var(--ink)),
+    0 6px 14px -8px rgba(0,0,0,.35);
 }
+.btn.ghost{box-shadow:var(--elev-1)}
+.btn.ghost:hover{box-shadow:var(--elev-2)}
 
 /* 导航下划线：只动 1px 伪元素 */
 .nav-links a.txt{position:relative;background:none}
 .nav-links a.txt::after{
-  content:"";position:absolute;left:0;right:0;bottom:-5px;height:1px;
-  background:currentColor;transform:scaleX(0);transform-origin:left;
-  transition:transform var(--motion-hover) var(--motion-ease);
+  content:"";position:absolute;left:0;bottom:-6px;height:2px;width:0;
+  background:currentColor;opacity:.6;
+  transition:width var(--motion-hover) var(--motion-ease);
 }
 .nav-links a.txt:hover::after,
-.nav-links a.txt.on::after{transform:scaleX(1)}
+.nav-links a.txt.on::after{width:100%}
 
 /* 文字链：焦点可见，悬停仍走原有颜色/下划线 */
 .ink-link:focus-visible,
 .hero-link:focus-visible,
-a.plink:focus-visible,
-.pi-link:focus-visible{
+a.plink:focus-visible{
   outline:2px solid var(--ink);outline-offset:3px;border-radius:1px;
 }
 
@@ -70,8 +78,7 @@ a.plink:focus-visible,
 }
 .poem-item:hover,.member:hover{
   translate:0 -2px;
-  box-shadow:var(--motion-shadow);
-  background:color-mix(in srgb,var(--surface) 50%,transparent);
+  box-shadow:var(--elev-2);
 }
 .member:hover{border-color:color-mix(in srgb,var(--seal) 32%,transparent)}
 
@@ -93,7 +100,8 @@ a.plink:focus-visible,
 .chip:hover,.tagpill:hover{translate:0 -1px}
 .chip:active,.tagpill:active{translate:0 1px;transition:translate var(--motion-press) ease-out}
 .chip:focus-visible,.tagpill:focus-visible{
-  outline:2px solid var(--ink);outline-offset:2px;
+  outline:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--action) 22%,transparent),0 1px 0 var(--line-soft);
 }
 
 /* 主题切换：图标轻微转动，文字不动 */
@@ -111,3 +119,12 @@ a.plink:focus-visible,
   .btn,.chip,.tagpill,.poem-item,.member,.archive-row,.lib-item summary{translate:none!important}
   .nav-links a.txt::after{transition:none}
 }
+
+/* 诗文卡标题：悬停时 1px 下划线展开（主题板 Editorial 配方） */
+.poem-item .pi-title a{position:relative;display:inline-block}
+.poem-item .pi-title a::after{
+  content:"";position:absolute;left:0;bottom:-4px;height:2px;width:0;
+  background:currentColor;opacity:.6;transition:width .35s var(--motion-ease);
+}
+.poem-item:hover .pi-title a::after,
+.poem-item:focus-within .pi-title a::after{width:100%}
