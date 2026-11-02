@@ -63,7 +63,7 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
   <section id="picks">
     <div class="wrap">
       <div class="sec-head rv"><h2>随机拾读</h2><hr class="hair" /></div>
-      <p class="lead rv">满库诗笺，每次打开换四篇——不期而遇，亦算缘分。点篇名读全文与关联作品。</p>
+      <p class="lead rv">满库诗笺，每次打开换四篇——不期而遇，亦算缘分。点篇名读全文。</p>
       {% set homePool = collections.works | homeCards %}
       <div class="poem-grid" id="home-picks">
         {% for c in homePool.slice(0, 4) %}
@@ -71,7 +71,6 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
           <h3 class="pi-title"><a class="plink" href="{{ c.href }}">{{ c.title }}</a></h3>
           <p class="pi-meta"><span>{{ c.name }}</span><span>{{ c.genre }}</span></p>
           <p class="pi-line">“{{ c.line }}”</p>
-          <a class="pi-link" href="{{ c.href }}">读全文与关联作品</a>
         </article>
         {% endfor %}
       </div>
@@ -96,9 +95,7 @@ footerNote: "社中诗文，版权归诸作者。转载务署出处，毋作商�
           meta.appendChild(s1); meta.appendChild(s2);
           var line = document.createElement("p"); line.className = "pi-line";
           line.textContent = "“" + c.line + "”";
-          var more = document.createElement("a"); more.className = "pi-link"; more.href = c.href;
-          more.textContent = "读全文与关联作品";
-          a.appendChild(h); a.appendChild(meta); a.appendChild(line); a.appendChild(more);
+          a.appendChild(h); a.appendChild(meta); a.appendChild(line);
           return a;
         }
         function render() {
